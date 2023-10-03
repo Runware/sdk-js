@@ -17,7 +17,9 @@ export class Picfinder {
   constructor(environment: keyof typeof Environment, apikey: string) {
     this._apikey = apikey;
     this._environment = environment;
-    this._ws = new ReconnectingWebsocket(ENVIRONMENT_URLS[environment]);
+    this._ws = new (ReconnectingWebsocket as any)(
+      ENVIRONMENT_URLS[environment]
+    ) as ReconnectingWebsocketProps;
   }
 
   private addListener(lis: any) {
