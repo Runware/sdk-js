@@ -2,7 +2,7 @@ import { Environment } from "./types";
 
 export const ENVIRONMENT_URLS = {
   [Environment.DEVELOPMENT]: "wss://dev-ws-api.diffusionmaster.com/v1/",
-  [Environment.PRODUCTION]: "wss://dev-ws-api.diffusionmaster.com/v1/",
+  [Environment.PRODUCTION]: "wss://ws-api.diffusionmaster.com/v1/",
 };
 
 export const removeFromAray = <T>(col: T[], targetElem: T) => {
