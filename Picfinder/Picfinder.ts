@@ -1,9 +1,15 @@
-import ReconnectingWebSocket from "reconnecting-websocket";
-import { Environment, IImage, IRequestImage } from "./types";
+// @ts-ignore
+import ReconnectingWebsocket from "./reconnect";
+import {
+  Environment,
+  IImage,
+  IRequestImage,
+  ReconnectingWebsocketProps,
+} from "./types";
 import { ENVIRONMENT_URLS, removeFromAray } from "./utils";
 
 export class Picfinder {
-  _ws: ReconnectingWebSocket;
+  _ws: ReconnectingWebsocketProps;
   _listeners: MessageEvent[] = [];
   _apikey: string;
   _environment: string;
@@ -11,7 +17,7 @@ export class Picfinder {
   constructor(environment: keyof typeof Environment, apikey: string) {
     this._apikey = apikey;
     this._environment = environment;
-    this._ws = new ReconnectingWebSocket(ENVIRONMENT_URLS[environment]);
+    this._ws = new ReconnectingWebsocket(ENVIRONMENT_URLS[environment]);
   }
 
   private addListener(lis: any) {

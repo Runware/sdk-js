@@ -1,6 +1,6 @@
 {
   "name": "picfinder-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "./dist/csj/index.js",
   "module": "./dist/esm/index.js",
@@ -19,7 +19,5 @@
   "devDependencies": {
     "typescript": "^5.2.2"
   },
-  "dependencies": {
-    "reconnecting-websocket": "^4.4.0"
-  }
+  "dependencies": {}
 }

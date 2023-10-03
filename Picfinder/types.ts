@@ -33,3 +33,12 @@ export interface IRequestImage {
   lora?: ILora[];
   controlnet?: IControlNet;
 }
+
+export type ReconnectingWebsocketProps = {
+  addEventListener: (
+    type: string,
+    listener: EventListener,
+    options: any
+  ) => void;
+  send: (data: any) => void;
+} & WebSocket;
