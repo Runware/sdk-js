@@ -1,0 +1,25 @@
+{
+  "name": "picfinder-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/csj/index.js",
+  "module": "./dist/esm/index.js",
+  "files": [
+    "dist/"
+  ],
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "prepublishOnly": "npm run build",
+    "pkg": "npx pkgfiles"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "reconnecting-websocket": "^4.4.0"
+  }
+}
