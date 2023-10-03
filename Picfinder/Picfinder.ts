@@ -8,35 +8,54 @@ import {
 } from "./types";
 import { ENVIRONMENT_URLS, removeFromAray } from "./utils";
 
+// let allImages: IImage[] = [];
+
 export class Picfinder {
-  _ws: ReconnectingWebsocketProps;
+  _ws: ReconnectingWebsocketProps | any;
   _listeners: MessageEvent[] = [];
   _apikey: string;
   _environment: string;
+  _globalMessages: any[] = [];
+  _globalImages: IImage[] = [];
 
   constructor(environment: keyof typeof Environment, apikey: string) {
     this._apikey = apikey;
     this._environment = environment;
-    this._ws = new (ReconnectingWebsocket as any)(
-      ENVIRONMENT_URLS[environment]
-    ) as ReconnectingWebsocketProps;
+    if (apikey) {
+      this._ws = new (ReconnectingWebsocket as any)(
+        ENVIRONMENT_URLS[environment]
+      ) as ReconnectingWebsocketProps;
+      this.connect();
+    }
   }
 
-  private addListener(lis: any) {
-    this._listeners.push(lis);
-    return {
-      destroy: () => removeFromAray(this._listeners, lis),
+  private addListener({
+    lis,
+    check,
+  }: {
+    lis: (v: any) => any;
+    check: (v: any) => any;
+  }) {
+    this._ws.onmessage = (e: any) => {
+      const m = JSON.parse(e.data);
+      if (check(m)) {
+        lis(m);
+      }
     };
+  }
+
+  private destroy(lis: any) {
+    removeFromAray(this._listeners, lis);
   }
 
   private send = (msg: Object) => this._ws.send(JSON.stringify(msg));
 
   connect() {
-    this._ws.onopen = (e) => {
+    this._ws.onopen = (e: any) => {
       this.send({ newConnection: { apiKey: this._apikey } });
     };
 
-    this._ws.onmessage = (e) => {
+    this._ws.onmessage = (e: any) => {
       const data = JSON.parse(e.data);
       for (const listener of this._listeners) {
         const result = (listener as any)(data);
@@ -45,27 +64,36 @@ export class Picfinder {
     };
   }
 
-  listenToImages(callback: (images: IImage[]) => void) {
-    const images: any = [];
-    this.addListener((m: any) => {
-      if (m.newImages) {
-        callback(m.newImages?.images as IImage[]);
-      }
-      return images;
+  listenToImages() {
+    this.addListener({
+      check: (m) => m.newImages?.images,
+      lis: (m) => {
+        this._globalImages = [...this._globalImages, ...m.newImages?.images];
+      },
     });
   }
 
-  requestImages({
+  globalListener() {
+    this.addListener({
+      check: (m) => m,
+      lis: (m) => {
+        this._globalMessages.push(m);
+      },
+    });
+  }
+
+  async requestImages({
     modelId,
     positivePrompt,
     imageSize,
     negativePrompt,
     numberOfImages = 1,
     useCache = false,
-  }: IRequestImage) {
+  }: IRequestImage): Promise<IImage[]> {
+    const taskUUID = crypto.randomUUID();
     const requestObject = {
       newTask: {
-        taskUUID: crypto.randomUUID(),
+        taskUUID,
         offset: 0,
         modelId: modelId,
         promptText: `${positivePrompt} ${
@@ -81,5 +109,35 @@ export class Picfinder {
       },
     };
     this.send(requestObject);
+    this.listenToImages();
+    const promise = await this.getSimililarImage({ taskUUID, numberOfImages });
+    return promise;
   }
+
+  getSimililarImage({
+    taskUUID,
+    numberOfImages,
+  }: {
+    taskUUID: string;
+    numberOfImages: number;
+  }): Promise<IImage[]> {
+    return new Promise((resolve, reject) => {
+      const intervalId = setInterval(() => {
+        const imagesWithSimilarTask = this._globalImages.filter(
+          (img) => img.taskUUID === taskUUID
+        );
+
+        if (imagesWithSimilarTask.length === numberOfImages) {
+          clearInterval(intervalId);
+          this._globalImages = this._globalImages.filter(
+            (img) => img.taskUUID !== taskUUID
+          );
+          console.log({ removing: this._globalImages.length });
+
+          resolve(imagesWithSimilarTask); // Resolve the promise with the data
+        }
+      }, 1000); // Check every 1 second (adjust the interval as needed)
+    });
+  }
+  //end of data
 }
