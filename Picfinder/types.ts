@@ -61,6 +61,13 @@ export interface IRequestImage {
   imageMaskInitiator?: File | string;
   steps?: number;
 }
+export interface IRequestImageToText {
+  imageInitiator?: File | string;
+}
+export interface IImageToText {
+  taskUUID: string;
+  text: string;
+}
 
 export type ReconnectingWebsocketProps = {
   addEventListener: (
