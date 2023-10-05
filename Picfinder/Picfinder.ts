@@ -1,12 +1,26 @@
 // @ts-ignore
 import ReconnectingWebsocket from "./reconnect";
 import {
+  EPreProcessor,
+  EPreProcessorGroup,
   Environment,
+  IControlNet,
+  IControlNetWithUUID,
   IImage,
   IRequestImage,
   ReconnectingWebsocketProps,
+  UploadImageType,
 } from "./types";
-import { ENVIRONMENT_URLS, removeFromAray } from "./utils";
+import {
+  ENVIRONMENT_URLS,
+  compact,
+  fileToBase64,
+  getIntervalWithPromise,
+  getPreprocessorType,
+  getTaskType,
+  getUUID,
+  removeFromAray,
+} from "./utils";
 
 // let allImages: IImage[] = [];
 
@@ -50,6 +64,102 @@ export class Picfinder {
 
   private send = (msg: Object) => this._ws.send(JSON.stringify(msg));
 
+  private uploadImage = async (
+    file: File | string
+  ): Promise<UploadImageType | null> => {
+    try {
+      const imageBase64 =
+        typeof file === "string" ? file : await fileToBase64(file);
+      const taskUUID = getUUID();
+      this.send({
+        newImageUpload: {
+          imageBase64,
+          taskUUID,
+          taskType: 7,
+        },
+      });
+      this.globalListener();
+
+      const image = (await getIntervalWithPromise(
+        ({ resolve }) => {
+          const uploadedImage = this._globalMessages.find(
+            (v) => v?.newUploadedImageUUID?.taskUUID === taskUUID
+          );
+          if (uploadedImage) {
+            this._globalMessages = this._globalMessages.filter(
+              (v) => v?.newUploadedImageUUID?.taskUUID === taskUUID
+            );
+            resolve(uploadedImage?.newUploadedImageUUID);
+            return true;
+          }
+        },
+        { debugKey: "upload-image" }
+      )) as UploadImageType;
+
+      return image;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  private uploadUnprocessedImage = async ({
+    file,
+    preProcessorType,
+    width,
+    height,
+    lowThresholdCanny,
+    highThresholdCanny,
+    includeHandsAndFaceOpenPose = true,
+  }: {
+    file: File | string;
+    preProcessorType: EPreProcessorGroup;
+    width?: number;
+    height?: number;
+    lowThresholdCanny?: number;
+    highThresholdCanny?: number;
+    includeHandsAndFaceOpenPose?: boolean;
+  }): Promise<UploadImageType | null> => {
+    try {
+      const image = await this.uploadImage(file);
+      if (!image) return null;
+
+      const taskUUID = getUUID();
+      this.send({
+        newPreProcessControlNet: {
+          taskUUID,
+          preProcessorType,
+          guideImageUUID: image.newImageUUID,
+          includeHandsAndFaceOpenPose,
+          ...compact(lowThresholdCanny, { lowThresholdCanny }),
+          ...compact(highThresholdCanny, { highThresholdCanny }),
+          // width,
+          // height,
+        },
+      });
+      this.globalListener();
+
+      const guideImage = (await getIntervalWithPromise(
+        ({ resolve }) => {
+          const uploadedImage = this._globalMessages.find(
+            (v) => v?.newPreProcessControlNet?.taskUUID === taskUUID
+          );
+          if (uploadedImage) {
+            this._globalMessages = this._globalMessages.filter(
+              (v) => v?.newPreProcessControlNet?.taskUUID === taskUUID
+            );
+            resolve(uploadedImage?.newPreProcessControlNet);
+            return true;
+          }
+        },
+        { debugKey: "unprocessed-image" }
+      )) as UploadImageType;
+
+      return guideImage;
+    } catch (e: any) {
+      throw Error(e);
+    }
+  };
+
   connect() {
     this._ws.onopen = (e: any) => {
       this.send({ newConnection: { apiKey: this._apikey } });
@@ -89,55 +199,144 @@ export class Picfinder {
     negativePrompt,
     numberOfImages = 1,
     useCache = false,
+    imageInitiator,
+    controlNet,
+    imageMaskInitiator,
+    steps,
   }: IRequestImage): Promise<IImage[]> {
-    const taskUUID = crypto.randomUUID();
-    const requestObject = {
-      newTask: {
+    try {
+      let imageInitiatorUUID: string | null = null;
+      let imageMaskInitiatorUUID: string | null = null;
+      let controlNetData: IControlNetWithUUID[] = [];
+
+      if (imageInitiator) {
+        const uploadedImage = await this.uploadImage(imageInitiator);
+
+        if (!uploadedImage) return [];
+        imageInitiatorUUID = uploadedImage.newImageUUID;
+      }
+      if (imageMaskInitiator) {
+        const uploadedMaskInitiator = await this.uploadImage(
+          imageMaskInitiator
+        );
+        if (!uploadedMaskInitiator) return [];
+        imageMaskInitiatorUUID = uploadedMaskInitiator.newImageUUID;
+      }
+
+      if (controlNet?.length) {
+        for (let i = 0; i < controlNet.length; i++) {
+          const controlData: IControlNet = controlNet[i];
+          const anyControlData = controlData as any;
+          const {
+            endStep,
+            preprocessor,
+            startStep,
+            weight,
+            guideImage,
+            guideImageUnprocessed,
+          } = controlData;
+
+          const getCannyObject = () => {
+            if (controlData.preprocessor === "canny") {
+              return {
+                lowThresholdCanny: anyControlData.lowThresholdCanny,
+                highThresholdCanny: anyControlData.highThresholdCanny,
+              };
+            } else return {};
+          };
+
+          const imageUploaded = await (guideImageUnprocessed
+            ? this.uploadUnprocessedImage({
+                file: guideImageUnprocessed,
+                preProcessorType: getPreprocessorType(
+                  preprocessor as EPreProcessor
+                ),
+                includeHandsAndFaceOpenPose:
+                  anyControlData.includeHandsAndFaceOpenPose,
+                ...getCannyObject(),
+              })
+            : this.uploadImage(guideImage as File | string));
+
+          if (!imageUploaded) return [];
+
+          controlNetData.push({
+            guideImageUUID: imageUploaded.newImageUUID,
+            endStep,
+            preprocessor,
+            startStep,
+            weight,
+            ...getCannyObject(),
+          });
+        }
+      }
+
+      const taskUUID = crypto.randomUUID();
+      const prompt = `${positivePrompt} ${
+        negativePrompt ? `-no ${negativePrompt}` : ""
+      }`.trim();
+      const requestObject = {
+        newTask: {
+          taskUUID,
+          offset: 0,
+          modelId: modelId,
+          promptText: prompt,
+          numberResults: numberOfImages,
+          sizeId: imageSize,
+          taskType: getTaskType({
+            prompt,
+            controlNet,
+            imageInitiator,
+            imageMaskInitiator,
+          }),
+          useCache: useCache,
+          schedulerId: 22,
+          gScale: 7,
+          ...(steps ? { steps } : {}),
+          ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
+          ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
+          ...(controlNetData.length ? { controlNet: controlNetData } : {}),
+        },
+      };
+      this.send(requestObject);
+      this.listenToImages();
+      const promise = await this.getSimililarImage({
         taskUUID,
-        offset: 0,
-        modelId: modelId,
-        promptText: `${positivePrompt} ${
-          negativePrompt ? `-no ${negativePrompt}` : ""
-        }`.trim(),
-        numberResults: numberOfImages,
-        sizeId: imageSize, //512x768
-        taskType: 1, //9 controlnet
-        useCache: useCache,
-        schedulerId: 22,
-        gScale: 7,
-        steps: 30,
-      },
-    };
-    this.send(requestObject);
-    this.listenToImages();
-    const promise = await this.getSimililarImage({ taskUUID, numberOfImages });
-    return promise;
+        numberOfImages,
+      });
+      return promise;
+    } catch (e: any) {
+      throw Error(e);
+    }
   }
 
-  getSimililarImage({
+  async getSimililarImage({
     taskUUID,
     numberOfImages,
   }: {
     taskUUID: string;
     numberOfImages: number;
   }): Promise<IImage[]> {
-    return new Promise((resolve, reject) => {
-      const intervalId = setInterval(() => {
+    const result = (await getIntervalWithPromise(
+      ({ resolve }) => {
         const imagesWithSimilarTask = this._globalImages.filter(
           (img) => img.taskUUID === taskUUID
         );
 
         if (imagesWithSimilarTask.length === numberOfImages) {
-          clearInterval(intervalId);
+          // clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(
             (img) => img.taskUUID !== taskUUID
           );
-          console.log({ removing: this._globalImages.length });
 
-          resolve(imagesWithSimilarTask); // Resolve the promise with the data
+          resolve<IImage[]>(imagesWithSimilarTask);
+          return true;
+          // Resolve the promise with the data
         }
-      }, 1000); // Check every 1 second (adjust the interval as needed)
-    });
+      },
+      { debugKey: "getting images" }
+    )) as IImage[];
+
+    return result;
   }
   //end of data
 }
