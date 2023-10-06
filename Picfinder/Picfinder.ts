@@ -8,6 +8,7 @@ import {
   IControlNetWithUUID,
   IImage,
   IImageToText,
+  IRemoveImageBackground,
   IRequestImage,
   IRequestImageToText,
   ReconnectingWebsocketProps,
@@ -324,6 +325,49 @@ export class Picfinder {
         newReverseImageClip: {
           imageUUID: imageUploaded.newImageUUID,
           taskUUID,
+        },
+      });
+      this.globalListener();
+
+      const response = await getIntervalWithPromise(
+        ({ resolve }) => {
+          const newReverseClip = this._globalMessages.find(
+            (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
+          );
+          if (newReverseClip) {
+            this._globalMessages = this._globalMessages.filter(
+              (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
+            );
+            resolve(newReverseClip?.newReverseClip?.texts[0]);
+            return true;
+          }
+        },
+        { debugKey: "request-image-to-text" }
+      );
+
+      return response as IImageToText;
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  removeImageBackground = async ({
+    imageInitiator,
+  }: IRemoveImageBackground) => {
+    try {
+      const imageUploaded = await this.uploadImage(
+        imageInitiator as File | string
+      );
+
+      if (!imageUploaded?.newImageUUID) return null;
+
+      const taskUUID = getUUID();
+
+      this.send({
+        newRemoveBackground: {
+          imageUUID: imageUploaded.newImageUUID,
+          taskUUID,
+          taskType: 8,
         },
       });
       this.globalListener();

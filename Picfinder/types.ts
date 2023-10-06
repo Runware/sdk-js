@@ -69,6 +69,8 @@ export interface IImageToText {
   text: string;
 }
 
+export interface IRemoveImageBackground extends IRequestImageToText {}
+
 export type ReconnectingWebsocketProps = {
   addEventListener: (
     type: string,
