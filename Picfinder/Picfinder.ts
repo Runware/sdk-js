@@ -6,16 +6,20 @@ import {
   Environment,
   IControlNet,
   IControlNetWithUUID,
+  IEnhancedPrompt,
   IImage,
   IImageToText,
+  IPromptEnhancer,
   IRemoveImageBackground,
   IRequestImage,
   IRequestImageToText,
+  IUpscaleGan,
   ReconnectingWebsocketProps,
   UploadImageType,
 } from "./types";
 import {
   ENVIRONMENT_URLS,
+  accessDeepObject,
   compact,
   fileToBase64,
   getIntervalWithPromise,
@@ -32,7 +36,8 @@ export class Picfinder {
   _listeners: MessageEvent[] = [];
   _apikey: string;
   _environment: string;
-  _globalMessages: any[] = [];
+  // _globalMessages: any[] = [];
+  _globalMessages: Record<string, any> = {};
   _globalImages: IImage[] = [];
 
   constructor(environment: keyof typeof Environment, apikey: string) {
@@ -81,18 +86,17 @@ export class Picfinder {
           taskType: 7,
         },
       });
-      this.globalListener();
+      this.globalListener({
+        responseKey: "newUploadedImageUUID",
+        taskKey: "newUploadedImageUUID",
+      });
 
       const image = (await getIntervalWithPromise(
         ({ resolve }) => {
-          const uploadedImage = this._globalMessages.find(
-            (v) => v?.newUploadedImageUUID?.taskUUID === taskUUID
-          );
+          const uploadedImage = this._globalMessages[taskUUID];
           if (uploadedImage) {
-            this._globalMessages = this._globalMessages.filter(
-              (v) => v?.newUploadedImageUUID?.taskUUID === taskUUID
-            );
-            resolve(uploadedImage?.newUploadedImageUUID);
+            delete this._globalMessages[taskUUID];
+            resolve(uploadedImage);
             return true;
           }
         },
@@ -139,17 +143,17 @@ export class Picfinder {
           // height,
         },
       });
-      this.globalListener();
+      this.globalListener({
+        responseKey: "newPreProcessControlNet",
+        taskKey: "newPreProcessControlNet",
+      });
 
       const guideImage = (await getIntervalWithPromise(
         ({ resolve }) => {
-          const uploadedImage = this._globalMessages.find(
-            (v) => v?.newPreProcessControlNet?.taskUUID === taskUUID
-          );
+          const uploadedImage = this._globalMessages[taskUUID];
+
           if (uploadedImage) {
-            this._globalMessages = this._globalMessages.filter(
-              (v) => v?.newPreProcessControlNet?.taskUUID === taskUUID
-            );
+            delete this._globalMessages[taskUUID];
             resolve(uploadedImage?.newPreProcessControlNet);
             return true;
           }
@@ -177,20 +181,59 @@ export class Picfinder {
     };
   }
 
-  listenToImages() {
+  listenToImages({
+    onPartialImages,
+    taskUUID,
+  }: {
+    taskUUID: string;
+    onPartialImages?: (images: IImage[]) => void;
+  }) {
     this.addListener({
       check: (m) => m.newImages?.images,
       lis: (m) => {
+        onPartialImages?.(
+          (m.newImages?.images as IImage[]).filter(
+            (img) => img.taskUUID === taskUUID
+          )
+        );
         this._globalImages = [...this._globalImages, ...m.newImages?.images];
       },
     });
   }
 
-  globalListener() {
+  globalListener({
+    responseKey,
+    taskKey,
+  }: {
+    responseKey: string;
+    taskKey: string;
+  }) {
     this.addListener({
-      check: (m) => m,
+      check: (m) => {
+        const value = accessDeepObject({
+          key: responseKey,
+          data: m,
+          useZero: false,
+        });
+        return !!value;
+      },
       lis: (m) => {
-        this._globalMessages.push(m);
+        const value = accessDeepObject({
+          key: taskKey,
+          data: m,
+          useZero: false,
+        });
+
+        if (Array.isArray(value)) {
+          value.forEach((v) => {
+            this._globalMessages[v.taskUUID] = [
+              ...(this._globalMessages[v.taskUUID] ?? []),
+              v,
+            ];
+          });
+        } else {
+          this._globalMessages[value.taskUUID] = value;
+        }
       },
     });
   }
@@ -206,6 +249,7 @@ export class Picfinder {
     controlNet,
     imageMaskInitiator,
     steps,
+    onPartialImages,
   }: IRequestImage): Promise<IImage[]> {
     try {
       let imageInitiatorUUID: string | null = null;
@@ -301,7 +345,7 @@ export class Picfinder {
         },
       };
       this.send(requestObject);
-      this.listenToImages();
+      this.listenToImages({ onPartialImages, taskUUID });
       const promise = await this.getSimililarImage({
         taskUUID,
         numberOfImages,
@@ -327,22 +371,22 @@ export class Picfinder {
           taskUUID,
         },
       });
-      this.globalListener();
+      this.globalListener({
+        responseKey: "newReverseClip",
+        taskKey: "newReverseClip.texts",
+      });
 
       const response = await getIntervalWithPromise(
         ({ resolve }) => {
-          const newReverseClip = this._globalMessages.find(
-            (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
-          );
+          const newReverseClip = this._globalMessages[taskUUID];
+
           if (newReverseClip) {
-            this._globalMessages = this._globalMessages.filter(
-              (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
-            );
-            resolve(newReverseClip?.newReverseClip?.texts[0]);
+            delete this._globalMessages[taskUUID];
+            resolve(newReverseClip[0]);
             return true;
           }
         },
-        { debugKey: "request-image-to-text" }
+        { debugKey: "remove-image-background" }
       );
 
       return response as IImageToText;
@@ -370,25 +414,106 @@ export class Picfinder {
           taskType: 8,
         },
       });
-      this.globalListener();
+      this.globalListener({
+        responseKey: "newReverseClip",
+        taskKey: "newReverseClip.texts",
+      });
 
       const response = await getIntervalWithPromise(
         ({ resolve }) => {
-          const newReverseClip = this._globalMessages.find(
-            (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
-          );
+          const newReverseClip = this._globalMessages[taskUUID];
+
           if (newReverseClip) {
-            this._globalMessages = this._globalMessages.filter(
-              (v) => v?.newReverseClip?.texts[0]?.taskUUID === taskUUID
-            );
+            delete this._globalMessages[taskUUID];
             resolve(newReverseClip?.newReverseClip?.texts[0]);
             return true;
           }
         },
-        { debugKey: "request-image-to-text" }
+        { debugKey: "remove-image-background" }
       );
 
       return response as IImageToText;
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  upscaleGan = async ({ imageInitiator, upscaleFactor }: IUpscaleGan) => {
+    try {
+      const imageUploaded = await this.uploadImage(
+        imageInitiator as File | string
+      );
+
+      if (!imageUploaded?.newImageUUID) return null;
+      const taskUUID = getUUID();
+
+      this.send({
+        newUpscaleGan: {
+          imageUUID: imageUploaded.newImageUUID,
+          taskUUID,
+          upscaleFactor,
+        },
+      });
+      this.globalListener({
+        responseKey: "newUpscaleGan",
+        taskKey: "newUpscaleGan.images",
+      });
+
+      const response = await getIntervalWithPromise(
+        ({ resolve }) => {
+          const newUpscaleGan = this._globalMessages[taskUUID];
+          if (newUpscaleGan) {
+            delete this._globalMessages[taskUUID];
+            resolve(newUpscaleGan);
+            return true;
+          }
+        },
+        { debugKey: "upscale-gan" }
+      );
+
+      return response as IImage[];
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  enhancePrompt = async ({
+    prompt,
+    promptMaxLength = 380,
+    promptLanguageId = 1,
+    promptVersions = 1,
+  }: IPromptEnhancer) => {
+    try {
+      const taskUUID = getUUID();
+
+      this.send({
+        newPromptEnhance: {
+          prompt,
+          taskUUID,
+          promptMaxLength,
+          promptVersions,
+          promptLanguageId,
+        },
+      });
+      this.globalListener({
+        responseKey: "newPromptEnhancer",
+        taskKey: "newPromptEnhancer.texts",
+      });
+
+      const response = await getIntervalWithPromise(
+        ({ resolve }) => {
+          const reducedPrompt: IEnhancedPrompt[] =
+            this._globalMessages[taskUUID];
+          if (reducedPrompt?.length >= promptVersions) {
+            delete this._globalMessages[taskUUID];
+            resolve(reducedPrompt);
+            return true;
+          }
+        },
+        { debugKey: "enhance-prompt" }
+      );
+
+      return response as IEnhancedPrompt[];
     } catch (e) {
       throw e;
     }
@@ -406,7 +531,7 @@ export class Picfinder {
         const imagesWithSimilarTask = this._globalImages.filter(
           (img) => img.taskUUID === taskUUID
         );
-
+        // onPartialImages?.(imagesWithSimilarTask)
         if (imagesWithSimilarTask.length === numberOfImages) {
           // clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(

@@ -60,7 +60,8 @@ export interface IRequestImage {
   imageInitiator?: File | string;
   imageMaskInitiator?: File | string;
   steps?: number;
-}
+  onPartialImages?: (images: IImage[]) => void
+} 
 export interface IRequestImageToText {
   imageInitiator?: File | string;
 }
@@ -70,6 +71,19 @@ export interface IImageToText {
 }
 
 export interface IRemoveImageBackground extends IRequestImageToText {}
+export interface IPromptEnhancer {
+  promptMaxLength: number;
+  promptLanguageId?: number;
+  promptVersions?: number;
+  prompt: string;
+}
+
+export interface IEnhancedPrompt extends IImageToText {}
+
+export interface IUpscaleGan {
+  imageInitiator?: File | string;
+  upscaleFactor: number;
+}
 
 export type ReconnectingWebsocketProps = {
   addEventListener: (

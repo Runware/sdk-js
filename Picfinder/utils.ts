@@ -180,3 +180,25 @@ export const getPreprocessorType = (
       return EPreProcessorGroup.canny;
   }
 };
+
+export const accessDeepObject = ({
+  key,
+  data,
+  useZero = true,
+  shouldReturnString = false,
+}: {
+  key: string;
+  data: Record<string, any>;
+  useZero?: boolean;
+  shouldReturnString?: boolean;
+}) => {
+  const value = key.split(".").reduce((acc, curr) => {
+    const returnZero = useZero ? 0 : "N/A";
+    return acc[curr] ?? returnZero;
+  }, data || {});
+
+  // if (typeof value === "object" && shouldReturnString) {
+  //   return JSON.stringify(value);
+  // }
+  return value ?? {};
+};
