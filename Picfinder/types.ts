@@ -1,6 +1,7 @@
 export enum Environment {
   PRODUCTION = "PRODUCTION",
   DEVELOPMENT = "DEVELOPMENT",
+  TEST = "TEST",
 }
 
 export interface IImage {
@@ -60,8 +61,8 @@ export interface IRequestImage {
   imageInitiator?: File | string;
   imageMaskInitiator?: File | string;
   steps?: number;
-  onPartialImages?: (images: IImage[]) => void
-} 
+  onPartialImages?: (images: IImage[]) => void;
+}
 export interface IRequestImageToText {
   imageInitiator?: File | string;
 }
@@ -72,7 +73,7 @@ export interface IImageToText {
 
 export interface IRemoveImageBackground extends IRequestImageToText {}
 export interface IPromptEnhancer {
-  promptMaxLength: number;
+  promptMaxLength?: number;
   promptLanguageId?: number;
   promptVersions?: number;
   prompt: string;

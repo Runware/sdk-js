@@ -1,4 +1,5 @@
 // @ts-ignore
+import { asyncRetry } from "./async-retry";
 import ReconnectingWebsocket from "./reconnect";
 import {
   EPreProcessor,
@@ -105,7 +106,7 @@ export class Picfinder {
 
       return image;
     } catch (e) {
-      return null;
+      throw e;
     }
   };
 
@@ -163,7 +164,7 @@ export class Picfinder {
 
       return guideImage;
     } catch (e: any) {
-      throw Error(e);
+      throw e;
     }
   };
 
@@ -252,144 +253,148 @@ export class Picfinder {
     onPartialImages,
   }: IRequestImage): Promise<IImage[]> {
     try {
-      let imageInitiatorUUID: string | null = null;
-      let imageMaskInitiatorUUID: string | null = null;
-      let controlNetData: IControlNetWithUUID[] = [];
+      return await asyncRetry(async () => {
+        let imageInitiatorUUID: string | null = null;
+        let imageMaskInitiatorUUID: string | null = null;
+        let controlNetData: IControlNetWithUUID[] = [];
 
-      if (imageInitiator) {
-        const uploadedImage = await this.uploadImage(imageInitiator);
+        if (imageInitiator) {
+          const uploadedImage = await this.uploadImage(imageInitiator);
 
-        if (!uploadedImage) return [];
-        imageInitiatorUUID = uploadedImage.newImageUUID;
-      }
-      if (imageMaskInitiator) {
-        const uploadedMaskInitiator = await this.uploadImage(
-          imageMaskInitiator
-        );
-        if (!uploadedMaskInitiator) return [];
-        imageMaskInitiatorUUID = uploadedMaskInitiator.newImageUUID;
-      }
-
-      if (controlNet?.length) {
-        for (let i = 0; i < controlNet.length; i++) {
-          const controlData: IControlNet = controlNet[i];
-          const anyControlData = controlData as any;
-          const {
-            endStep,
-            preprocessor,
-            startStep,
-            weight,
-            guideImage,
-            guideImageUnprocessed,
-          } = controlData;
-
-          const getCannyObject = () => {
-            if (controlData.preprocessor === "canny") {
-              return {
-                lowThresholdCanny: anyControlData.lowThresholdCanny,
-                highThresholdCanny: anyControlData.highThresholdCanny,
-              };
-            } else return {};
-          };
-
-          const imageUploaded = await (guideImageUnprocessed
-            ? this.uploadUnprocessedImage({
-                file: guideImageUnprocessed,
-                preProcessorType: getPreprocessorType(
-                  preprocessor as EPreProcessor
-                ),
-                includeHandsAndFaceOpenPose:
-                  anyControlData.includeHandsAndFaceOpenPose,
-                ...getCannyObject(),
-              })
-            : this.uploadImage(guideImage as File | string));
-
-          if (!imageUploaded) return [];
-
-          controlNetData.push({
-            guideImageUUID: imageUploaded.newImageUUID,
-            endStep,
-            preprocessor,
-            startStep,
-            weight,
-            ...getCannyObject(),
-          });
+          if (!uploadedImage) return [];
+          imageInitiatorUUID = uploadedImage.newImageUUID;
         }
-      }
+        if (imageMaskInitiator) {
+          const uploadedMaskInitiator = await this.uploadImage(
+            imageMaskInitiator
+          );
+          if (!uploadedMaskInitiator) return [];
+          imageMaskInitiatorUUID = uploadedMaskInitiator.newImageUUID;
+        }
 
-      const taskUUID = crypto.randomUUID();
-      const prompt = `${positivePrompt} ${
-        negativePrompt ? `-no ${negativePrompt}` : ""
-      }`.trim();
-      const requestObject = {
-        newTask: {
+        if (controlNet?.length) {
+          for (let i = 0; i < controlNet.length; i++) {
+            const controlData: IControlNet = controlNet[i];
+            const anyControlData = controlData as any;
+            const {
+              endStep,
+              preprocessor,
+              startStep,
+              weight,
+              guideImage,
+              guideImageUnprocessed,
+            } = controlData;
+
+            const getCannyObject = () => {
+              if (controlData.preprocessor === "canny") {
+                return {
+                  lowThresholdCanny: anyControlData.lowThresholdCanny,
+                  highThresholdCanny: anyControlData.highThresholdCanny,
+                };
+              } else return {};
+            };
+
+            const imageUploaded = await (guideImageUnprocessed
+              ? this.uploadUnprocessedImage({
+                  file: guideImageUnprocessed,
+                  preProcessorType: getPreprocessorType(
+                    preprocessor as EPreProcessor
+                  ),
+                  includeHandsAndFaceOpenPose:
+                    anyControlData.includeHandsAndFaceOpenPose,
+                  ...getCannyObject(),
+                })
+              : this.uploadImage(guideImage as File | string));
+
+            if (!imageUploaded) return [];
+
+            controlNetData.push({
+              guideImageUUID: imageUploaded.newImageUUID,
+              endStep,
+              preprocessor,
+              startStep,
+              weight,
+              ...getCannyObject(),
+            });
+          }
+        }
+
+        const taskUUID = crypto.randomUUID();
+        const prompt = `${positivePrompt} ${
+          negativePrompt ? `-no ${negativePrompt}` : ""
+        }`.trim();
+        const requestObject = {
+          newTask: {
+            taskUUID,
+            offset: 0,
+            modelId: modelId,
+            promptText: prompt,
+            numberResults: numberOfImages,
+            sizeId: imageSize,
+            taskType: getTaskType({
+              prompt,
+              controlNet,
+              imageInitiator,
+              imageMaskInitiator,
+            }),
+            useCache: useCache,
+            schedulerId: 22,
+            gScale: 7,
+            ...(steps ? { steps } : {}),
+            ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
+            ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
+            ...(controlNetData.length ? { controlNet: controlNetData } : {}),
+          },
+        };
+        this.send(requestObject);
+        this.listenToImages({ onPartialImages, taskUUID });
+        const promise = await this.getSimililarImage({
           taskUUID,
-          offset: 0,
-          modelId: modelId,
-          promptText: prompt,
-          numberResults: numberOfImages,
-          sizeId: imageSize,
-          taskType: getTaskType({
-            prompt,
-            controlNet,
-            imageInitiator,
-            imageMaskInitiator,
-          }),
-          useCache: useCache,
-          schedulerId: 22,
-          gScale: 7,
-          ...(steps ? { steps } : {}),
-          ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
-          ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
-          ...(controlNetData.length ? { controlNet: controlNetData } : {}),
-        },
-      };
-      this.send(requestObject);
-      this.listenToImages({ onPartialImages, taskUUID });
-      const promise = await this.getSimililarImage({
-        taskUUID,
-        numberOfImages,
+          numberOfImages,
+        });
+        return promise;
       });
-      return promise;
-    } catch (e: any) {
-      throw Error(e);
+    } catch (e) {
+      throw e;
     }
   }
 
   requestImageToText = async ({ imageInitiator }: IRequestImageToText) => {
     try {
-      const imageUploaded = await this.uploadImage(
-        imageInitiator as File | string
-      );
+      return await asyncRetry(async () => {
+        const imageUploaded = await this.uploadImage(
+          imageInitiator as File | string
+        );
 
-      if (!imageUploaded?.newImageUUID) return null;
+        if (!imageUploaded?.newImageUUID) return null;
 
-      const taskUUID = getUUID();
-      this.send({
-        newReverseImageClip: {
-          imageUUID: imageUploaded.newImageUUID,
-          taskUUID,
-        },
+        const taskUUID = getUUID();
+        this.send({
+          newReverseImageClip: {
+            imageUUID: imageUploaded.newImageUUID,
+            taskUUID,
+          },
+        });
+        this.globalListener({
+          responseKey: "newReverseClip",
+          taskKey: "newReverseClip.texts",
+        });
+
+        const response = await getIntervalWithPromise(
+          ({ resolve }) => {
+            const newReverseClip = this._globalMessages[taskUUID];
+
+            if (newReverseClip) {
+              delete this._globalMessages[taskUUID];
+              resolve(newReverseClip[0]);
+              return true;
+            }
+          },
+          { debugKey: "remove-image-background" }
+        );
+
+        return response as IImageToText;
       });
-      this.globalListener({
-        responseKey: "newReverseClip",
-        taskKey: "newReverseClip.texts",
-      });
-
-      const response = await getIntervalWithPromise(
-        ({ resolve }) => {
-          const newReverseClip = this._globalMessages[taskUUID];
-
-          if (newReverseClip) {
-            delete this._globalMessages[taskUUID];
-            resolve(newReverseClip[0]);
-            return true;
-          }
-        },
-        { debugKey: "remove-image-background" }
-      );
-
-      return response as IImageToText;
     } catch (e) {
       throw e;
     }
@@ -399,40 +404,42 @@ export class Picfinder {
     imageInitiator,
   }: IRemoveImageBackground) => {
     try {
-      const imageUploaded = await this.uploadImage(
-        imageInitiator as File | string
-      );
+      return await asyncRetry(async () => {
+        const imageUploaded = await this.uploadImage(
+          imageInitiator as File | string
+        );
 
-      if (!imageUploaded?.newImageUUID) return null;
+        if (!imageUploaded?.newImageUUID) return null;
 
-      const taskUUID = getUUID();
+        const taskUUID = getUUID();
 
-      this.send({
-        newRemoveBackground: {
-          imageUUID: imageUploaded.newImageUUID,
-          taskUUID,
-          taskType: 8,
-        },
+        this.send({
+          newRemoveBackground: {
+            imageUUID: imageUploaded.newImageUUID,
+            taskUUID,
+            taskType: 8,
+          },
+        });
+        this.globalListener({
+          responseKey: "newRemoveBackground",
+          taskKey: "newRemoveBackground.images",
+        });
+
+        const response = await getIntervalWithPromise(
+          ({ resolve }) => {
+            const newRemoveBackground = this._globalMessages[taskUUID];
+
+            if (newRemoveBackground) {
+              delete this._globalMessages[taskUUID];
+              resolve(newRemoveBackground);
+              return true;
+            }
+          },
+          { debugKey: "remove-image-background" }
+        );
+
+        return response as IImageToText;
       });
-      this.globalListener({
-        responseKey: "newReverseClip",
-        taskKey: "newReverseClip.texts",
-      });
-
-      const response = await getIntervalWithPromise(
-        ({ resolve }) => {
-          const newReverseClip = this._globalMessages[taskUUID];
-
-          if (newReverseClip) {
-            delete this._globalMessages[taskUUID];
-            resolve(newReverseClip?.newReverseClip?.texts[0]);
-            return true;
-          }
-        },
-        { debugKey: "remove-image-background" }
-      );
-
-      return response as IImageToText;
     } catch (e) {
       throw e;
     }
@@ -440,38 +447,40 @@ export class Picfinder {
 
   upscaleGan = async ({ imageInitiator, upscaleFactor }: IUpscaleGan) => {
     try {
-      const imageUploaded = await this.uploadImage(
-        imageInitiator as File | string
-      );
+      return await asyncRetry(async () => {
+        const imageUploaded = await this.uploadImage(
+          imageInitiator as File | string
+        );
 
-      if (!imageUploaded?.newImageUUID) return null;
-      const taskUUID = getUUID();
+        if (!imageUploaded?.newImageUUID) return null;
+        const taskUUID = getUUID();
 
-      this.send({
-        newUpscaleGan: {
-          imageUUID: imageUploaded.newImageUUID,
-          taskUUID,
-          upscaleFactor,
-        },
+        this.send({
+          newUpscaleGan: {
+            imageUUID: imageUploaded.newImageUUID,
+            taskUUID,
+            upscaleFactor,
+          },
+        });
+        this.globalListener({
+          responseKey: "newUpscaleGan",
+          taskKey: "newUpscaleGan.images",
+        });
+
+        const response = await getIntervalWithPromise(
+          ({ resolve }) => {
+            const newUpscaleGan = this._globalMessages[taskUUID];
+            if (newUpscaleGan) {
+              delete this._globalMessages[taskUUID];
+              resolve(newUpscaleGan);
+              return true;
+            }
+          },
+          { debugKey: "upscale-gan" }
+        );
+
+        return response as IImage[];
       });
-      this.globalListener({
-        responseKey: "newUpscaleGan",
-        taskKey: "newUpscaleGan.images",
-      });
-
-      const response = await getIntervalWithPromise(
-        ({ resolve }) => {
-          const newUpscaleGan = this._globalMessages[taskUUID];
-          if (newUpscaleGan) {
-            delete this._globalMessages[taskUUID];
-            resolve(newUpscaleGan);
-            return true;
-          }
-        },
-        { debugKey: "upscale-gan" }
-      );
-
-      return response as IImage[];
     } catch (e) {
       throw e;
     }
@@ -484,36 +493,38 @@ export class Picfinder {
     promptVersions = 1,
   }: IPromptEnhancer) => {
     try {
-      const taskUUID = getUUID();
+      return await asyncRetry(async () => {
+        const taskUUID = getUUID();
 
-      this.send({
-        newPromptEnhance: {
-          prompt,
-          taskUUID,
-          promptMaxLength,
-          promptVersions,
-          promptLanguageId,
-        },
+        this.send({
+          newPromptEnhance: {
+            prompt,
+            taskUUID,
+            promptMaxLength,
+            promptVersions,
+            promptLanguageId,
+          },
+        });
+        this.globalListener({
+          responseKey: "newPromptEnhancer",
+          taskKey: "newPromptEnhancer.texts",
+        });
+
+        const response = await getIntervalWithPromise(
+          ({ resolve }) => {
+            const reducedPrompt: IEnhancedPrompt[] =
+              this._globalMessages[taskUUID];
+            if (reducedPrompt?.length >= promptVersions) {
+              delete this._globalMessages[taskUUID];
+              resolve(reducedPrompt);
+              return true;
+            }
+          },
+          { debugKey: "enhance-prompt" }
+        );
+
+        return response as IEnhancedPrompt[];
       });
-      this.globalListener({
-        responseKey: "newPromptEnhancer",
-        taskKey: "newPromptEnhancer.texts",
-      });
-
-      const response = await getIntervalWithPromise(
-        ({ resolve }) => {
-          const reducedPrompt: IEnhancedPrompt[] =
-            this._globalMessages[taskUUID];
-          if (reducedPrompt?.length >= promptVersions) {
-            delete this._globalMessages[taskUUID];
-            resolve(reducedPrompt);
-            return true;
-          }
-        },
-        { debugKey: "enhance-prompt" }
-      );
-
-      return response as IEnhancedPrompt[];
     } catch (e) {
       throw e;
     }

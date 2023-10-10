@@ -6,12 +6,13 @@ import {
   IRequestImage,
 } from "./types";
 
-const TIMEOUT_DURATION = 30000; // 30s;
+const TIMEOUT_DURATION = 10000; // 30s;
 const POLLING_INTERVAL = 1000; // 1s;
 
 export const ENVIRONMENT_URLS = {
   [Environment.DEVELOPMENT]: "wss://dev-ws-api.diffusionmaster.com/v1/",
   [Environment.PRODUCTION]: "wss://ws-api.diffusionmaster.com/v1/",
+  [Environment.TEST]: "ws://localhost:8080",
 };
 
 export const removeFromAray = <T>(col: T[], targetElem: T) => {
@@ -35,7 +36,7 @@ export const getIntervalWithPromise = (
 
       if (shouldClear) {
         clearInterval(intervalId);
-        intervalId = 0;
+        (intervalId as any) = 0;
       }
       // resolve(imagesWithSimilarTask); // Resolve the promise with the data
     }, POLLING_INTERVAL); // Check every 1 second (adjust the interval as needed)
@@ -192,9 +193,25 @@ export const accessDeepObject = ({
   useZero?: boolean;
   shouldReturnString?: boolean;
 }) => {
-  const value = key.split(".").reduce((acc, curr) => {
-    const returnZero = useZero ? 0 : "N/A";
-    return acc[curr] ?? returnZero;
+  const splittedKeys = key.split(/\.|\[/).map((key) => key.replace(/\]$/, ""));
+
+  const value = splittedKeys.reduce((acc, curr) => {
+    const returnZero = useZero ? 0 : undefined;
+    const currentValue = acc?.[curr];
+
+    if (!currentValue) {
+      return returnZero;
+    }
+    if (Array.isArray(currentValue) && /^\d+$/.test(curr)) {
+      const index = parseInt(curr, 10);
+      if (index >= 0 && index < currentValue.length) {
+        return (acc[curr] = currentValue[index]);
+      } else {
+        return acc[curr] ?? returnZero;
+      }
+    } else {
+      return acc[curr] ?? returnZero;
+    }
   }, data || {});
 
   // if (typeof value === "object" && shouldReturnString) {
@@ -202,3 +219,29 @@ export const accessDeepObject = ({
   // }
   return value ?? {};
 };
+
+export const delay = (time: number, milliseconds = 1000) => {
+  return new Promise((resolve) => setTimeout(resolve, time * milliseconds));
+};
+
+export class MockFile {
+  create = function (name: string, size: number, mimeType: string) {
+    name = name || "mock.txt";
+    size = size || 1024;
+    mimeType = mimeType || "plain/txt";
+
+    var blob: any = new Blob([range(size)], { type: mimeType });
+    blob.lastModifiedDate = new Date();
+    blob.name = name;
+
+    return blob;
+  };
+}
+
+function range(count: number) {
+  var output = "";
+  for (var i = 0; i < count; i++) {
+    output += "a";
+  }
+  return output;
+}

@@ -12,13 +12,21 @@
     "build": "tsup Picfinder/index.ts --format cjs,esm --dts",
     "lint": "tsc",
     "prepublishOnly": "npm run lint && npm run build",
-    "pkg": "npx pkgfiles"
+    "pkg": "npx pkgfiles",
+    "dev-test": "vitest",
+    "test": "vitest run"
   },
-  "keywords": [],
+  "keywords": [
+    "picfinder",
+    "sdk",
+    "ai"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "mock-socket": "^9.3.1",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
   }
 }
