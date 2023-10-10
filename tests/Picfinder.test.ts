@@ -1,15 +1,15 @@
 import { expect, test, beforeAll, vi, describe, afterEach } from "vitest";
-import { Picfinder } from "../Picfinder";
+import { Picfinder } from "../Picfinder/Picfinder";
 import {
   getIntervalWithPromise,
   fileToBase64,
   delay,
   MockFile,
-} from "../utils";
+} from "../Picfinder/utils";
 import { Server } from "mock-socket";
 
-vi.mock("../utils", async () => {
-  const actual = await vi.importActual("../utils");
+vi.mock("../Picfinder/utils", async () => {
+  const actual = await vi.importActual("../Picfinder/utils");
 
   return {
     ...(actual as any),
