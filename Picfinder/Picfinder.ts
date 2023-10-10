@@ -77,35 +77,40 @@ export class Picfinder {
     file: File | string
   ): Promise<UploadImageType | null> => {
     try {
-      const imageBase64 =
-        typeof file === "string" ? file : await fileToBase64(file);
-      const taskUUID = getUUID();
-      this.send({
-        newImageUpload: {
-          imageBase64,
-          taskUUID,
-          taskType: 7,
-        },
-      });
-      this.globalListener({
-        responseKey: "newUploadedImageUUID",
-        taskKey: "newUploadedImageUUID",
-      });
+      return await asyncRetry(async () => {
+        const imageBase64 =
+          typeof file === "string" ? file : await fileToBase64(file);
 
-      const image = (await getIntervalWithPromise(
-        ({ resolve }) => {
-          const uploadedImage = this._globalMessages[taskUUID];
-          if (uploadedImage) {
-            delete this._globalMessages[taskUUID];
-            resolve(uploadedImage);
-            return true;
-          }
-        },
-        { debugKey: "upload-image" }
-      )) as UploadImageType;
+        const taskUUID = getUUID();
 
-      return image;
+        this.send({
+          newImageUpload: {
+            imageBase64,
+            taskUUID,
+            taskType: 7,
+          },
+        });
+        this.globalListener({
+          responseKey: "newUploadedImageUUID",
+          taskKey: "newUploadedImageUUID",
+        });
+
+        const image = (await getIntervalWithPromise(
+          ({ resolve }) => {
+            const uploadedImage = this._globalMessages[taskUUID];
+            if (uploadedImage) {
+              delete this._globalMessages[taskUUID];
+              resolve(uploadedImage);
+              return true;
+            }
+          },
+          { debugKey: "upload-image" }
+        )) as UploadImageType;
+
+        return image;
+      });
     } catch (e) {
+      console.log(e);
       throw e;
     }
   };
@@ -318,8 +323,8 @@ export class Picfinder {
             });
           }
         }
+        const taskUUID = getUUID();
 
-        const taskUUID = crypto.randomUUID();
         const prompt = `${positivePrompt} ${
           negativePrompt ? `-no ${negativePrompt}` : ""
         }`.trim();

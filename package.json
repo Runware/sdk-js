@@ -13,8 +13,9 @@
     "lint": "tsc",
     "prepublishOnly": "npm run lint && npm run build",
     "pkg": "npx pkgfiles",
-    "dev-test": "vitest",
-    "test": "vitest run"
+    "dev:test": "vitest --reporter verbose",
+    "test": "vitest run --reporter verbose",
+    "test:single": "vitest run --reporter verbose tests/Picfinder/enhance-prompt.test.ts"
   },
   "keywords": [
     "picfinder",
