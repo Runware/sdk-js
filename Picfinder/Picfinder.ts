@@ -32,6 +32,7 @@ import {
 
 // let allImages: IImage[] = [];
 
+let connectionSessionUUID: string | undefined;
 export class Picfinder {
   _ws: ReconnectingWebsocketProps | any;
   _listeners: MessageEvent[] = [];
@@ -175,7 +176,24 @@ export class Picfinder {
 
   connect() {
     this._ws.onopen = (e: any) => {
-      this.send({ newConnection: { apiKey: this._apikey } });
+      if (connectionSessionUUID) {
+        this.send({
+          newConnection: {
+            apiKey: this._apikey,
+            connectionSessionUUID,
+          },
+        });
+      } else {
+        this.send({ newConnection: { apiKey: this._apikey } });
+      }
+
+      this.addListener({
+        check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
+        lis: (m) => {
+          connectionSessionUUID =
+            m?.newConnectionSessionUUID?.connectionSessionUUID;
+        },
+      });
     };
 
     this._ws.onmessage = (e: any) => {

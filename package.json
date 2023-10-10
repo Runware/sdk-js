@@ -1,6 +1,6 @@
 {
   "name": "picfinder-sdk",
-  "version": "1.0.5",
+  "version": "1.0.9",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -11,7 +11,6 @@
   "scripts": {
     "build": "tsup Picfinder/index.ts --format cjs,esm --dts",
     "lint": "tsc",
-    "prepublishOnly": "npm run lint && npm run build",
     "pkg": "npx pkgfiles",
     "dev:test": "vitest --reporter verbose",
     "test": "vitest run --reporter verbose",
