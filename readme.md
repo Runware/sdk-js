@@ -117,7 +117,7 @@ return interface IImageToText {
 
 &nbsp;
 
-### Request Image Background
+### Remove Image Background
 
 ```js
 
@@ -166,7 +166,7 @@ return interface IImage {
 
 &nbsp;
 
-### Enahnce Prompt
+### Enhance Prompt
 
 ```js
 
