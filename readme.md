@@ -1,10 +1,207 @@
-# Picfinder-sdk-js
+# Picfinder-Sdk
 
-## Install
+> This sdk allows you to use the picfinder apis.
 
-    npm i picfinder-sdk
+## Installation
 
-## Demo Link
+To install and set up the library, run:
 
-[Demo](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
-// "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+```sh
+
+$  npm  install  picfinder-sdk
+
+```
+
+Or if you prefer using Yarn:
+
+```sh
+
+$  yarn  add  picfinder-sdk
+
+```
+
+## Request for API access
+
+You can request for api access and get your API key [here](https://picfinder.ai/support/en/articles/7944975-how-to-access-the-picfinder-api)
+
+## Instantiating the SDK
+
+```js
+const picfinder = new Picfinder(ENVIRONMENT, API_KEY);
+```
+
+| Parameter   | Type   | Use                         |
+| ----------- | ------ | --------------------------- |
+| ENVIRONMENT | string | "PRODUCTION", "DEVELOPMENT" |
+| API_KEY     | string | The environment api key     |
+
+## API
+
+### Request Image
+
+```js
+
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const images = await picfinder.requestImages({
+	positivePrompt: string;
+	imageSize: number;
+	modelId: number;
+	numberOfImages?: number;
+	negativePrompt?: string;
+	useCache?: boolean;
+	lora?: ILora[];
+	controlNet?: IControlNet[];
+	imageInitiator?: File | string;
+	imageMaskInitiator?: File | string;
+	steps?: number;
+	onPartialImages?: (images: IImage[]) =>  void;
+})
+console.log(images)
+
+return interface IImage {
+	imageSrc: string;
+	imageUUID: string;
+	taskUUID: string;
+	bNSFWContent: boolean;
+}[]
+
+```
+
+| Parameter          | Type                               | Use                                                                                                                                                            |
+| ------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| positivePrompt     | string                             | Defines the positive prompt description of the image.                                                                                                          |
+| imageSize          | number                             | Controls the image size.                                                                                                                                       |
+| modelId            | number                             | The model id of the image to be requested.                                                                                                                     |
+| numberOfImages     | number: `(Optional)` (default = 1) | `(Optional)` The number of images to be sent.                                                                                                                  |
+| useCache           | string: `(Optional)`               | Should use cached images (for faster response) or generate new images.                                                                                         |
+| lora               | ILora[]: `(Optional)`              | If provided it should be an array of objects. Each object must have two attributes: `loraCivitaiAIR` (string) and `weight` (float) with values from 0 to 1.    |
+| controlNet         | IControlNet[]: `(Optional)`        | If provided, should be an array of objects. Each object must have five attributes:                                                                             |
+| imageInitiator     | string or File: `(Optional)`       | The image requires for the seed image. It can be the UUID of previously generated image or an a file image.                                                    |
+| imageMaskInitiator | string or File: `(Optional)`       | The mask image requires for the seed image. It can be the UUID of previously generated image or an a file image.                                               |
+| steps              | number: `(Optional)`               | The steps required to generate the image.                                                                                                                      |
+| onPartialImages    | function: `(Optional)`             | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function. |
+
+##### ControlNet Params
+
+| Parameter             | Type                               | Use                                                                                                                                                                                                                                                                                                                               |
+| --------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| preprocessor          | string                             | Defines the positive prompt description of the image.                                                                                                                                                                                                                                                                             |
+| weight                | number                             | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
+| startStep             | number                             | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
+| numberOfImages        | number: `(Optional)` (default = 1) | `(Optional)` The number of images to be sent.                                                                                                                                                                                                                                                                                     |
+| endStep               | number                             | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `startStepPercentage` (float).                                                                                                                                                     |
+| guideImage            | file or string `(Optional)`        | The image requires for the guide image. It can be the UUID of previously generated image or an a file image.                                                                                                                                                                                                                      |
+| guideImageUnprocessed | file or string `(Optional)`        | The image requires for the guide image unprocessed. It can be the UUID of previously generated image or an a file image.                                                                                                                                                                                                          |
+
+&nbsp;
+
+### Request Image To Text
+
+```js
+
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const imageToText = await picfinder.requestImageToText({
+	imageInitiator: string | File
+})
+console.log(imageToText)
+
+return interface IImageToText {
+	taskUUID: string;
+	text: string;
+}
+```
+
+| Parameter      | Type           | Use                                                                                                         |
+| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
+
+&nbsp;
+
+### Request Image Background
+
+```js
+
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const image = await picfinder.removeImageBackground({
+	imageInitiator: string | File
+})
+console.log(image)
+return interface IImage {
+	imageSrc: string;
+	imageUUID: string;
+	taskUUID: string;
+	bNSFWContent: boolean;
+}[]
+```
+
+| Parameter      | Type           | Use                                                                                                         |
+| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
+
+&nbsp;
+
+### Upscale Image
+
+```js
+
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const image = await picfinder.upscaleGan({
+	imageInitiator: string | File;
+	upscaleFactor: number;
+})
+console.log(image)
+return interface IImage {
+	imageSrc: string;
+	imageUUID: string;
+	taskUUID: string;
+	bNSFWContent: boolean;
+}[]
+
+```
+
+| Parameter      | Type           | Use                                                                                                         |
+| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
+| upscaleFactor  | number         | The number of times to upscale;                                                                             |
+
+&nbsp;
+
+### Enahnce Prompt
+
+```js
+
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const enhancedPrompt = await picfinder.enhancePrompt({
+	prompt: string;
+	promptMaxLength?: number;
+	promptLanguageId?: number;
+	promptVersions?: number;
+})
+console.log(enhancedPrompt)
+return interface IEnhancedPrompt {
+	taskUUID: string;
+	text: string;
+}[]
+
+```
+
+| Parameter        | Type               | Use                                                                                                                         |
+| ---------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| prompt           | string             | The prompt that you intend to enhance.                                                                                      |
+| promptMaxLength  | number: `Optional` | Character count. Represents the maximum length of the prompt that you intend to receive. Can take values between 1 and 380. |
+| promptVersions   | number: `Optional` | The number of prompt versions that will be received. Can take values between 1 and 5.                                       |
+| promptLanguageId | number: `Optional` | The language prompt text. Can take values between 1 and 298. Default is `1` - English. Options are provided below.          |
+
+&nbsp;
+
+## Demo
+
+[**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
+
+## Contributing
+
+## Credits
+
+## Resources
+
+[**API Docs**](https://picfinder.ai/support/en/collections/4049537-api-docs)

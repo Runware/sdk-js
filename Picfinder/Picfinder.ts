@@ -382,7 +382,9 @@ export class Picfinder {
     }
   }
 
-  requestImageToText = async ({ imageInitiator }: IRequestImageToText) => {
+  requestImageToText = async ({
+    imageInitiator,
+  }: IRequestImageToText): Promise<IImageToText> => {
     try {
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
@@ -425,7 +427,7 @@ export class Picfinder {
 
   removeImageBackground = async ({
     imageInitiator,
-  }: IRemoveImageBackground) => {
+  }: IRemoveImageBackground): Promise<IImage[]> => {
     try {
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
@@ -461,14 +463,17 @@ export class Picfinder {
           { debugKey: "remove-image-background" }
         );
 
-        return response as IImageToText;
+        return response as IImage[];
       });
     } catch (e) {
       throw e;
     }
   };
 
-  upscaleGan = async ({ imageInitiator, upscaleFactor }: IUpscaleGan) => {
+  upscaleGan = async ({
+    imageInitiator,
+    upscaleFactor,
+  }: IUpscaleGan): Promise<IImage[]> => {
     try {
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
@@ -514,7 +519,7 @@ export class Picfinder {
     promptMaxLength = 380,
     promptLanguageId = 1,
     promptVersions = 1,
-  }: IPromptEnhancer) => {
+  }: IPromptEnhancer): Promise<IEnhancedPrompt> => {
     try {
       return await asyncRetry(async () => {
         const taskUUID = getUUID();

@@ -82,7 +82,7 @@ export interface IPromptEnhancer {
 export interface IEnhancedPrompt extends IImageToText {}
 
 export interface IUpscaleGan {
-  imageInitiator?: File | string;
+  imageInitiator: File | string;
   upscaleFactor: number;
 }
 
