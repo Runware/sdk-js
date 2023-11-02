@@ -1,6 +1,10 @@
-# Picfinder-Sdk
+# Picfinder Javascript & Typescript SDK
 
-> This sdk allows you to use the picfinder apis.
+> The SDK is used to run image inference with the PicFinder API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.
+
+## Request for API access
+
+You can request for api access and get your API key [here](https://picfinder.ai/support/en/articles/7944975-how-to-access-the-picfinder-api)
 
 ## Installation
 
@@ -20,14 +24,14 @@ $  yarn  add  picfinder-sdk
 
 ```
 
-## Request for API access
-
-You can request for api access and get your API key [here](https://picfinder.ai/support/en/articles/7944975-how-to-access-the-picfinder-api)
-
 ## Instantiating the SDK
 
 ```js
-const picfinder = new Picfinder(ENVIRONMENT, API_KEY);
+# For Client (Javascript, React, Vue etc) Use
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+
+# For Server (Nodejs) Use
+const  picfinder  =  new  PicfinderServer(ENVIRONMENT	, API_KEY);
 ```
 
 | Parameter   | Type   | Use                         |
@@ -38,6 +42,8 @@ const picfinder = new Picfinder(ENVIRONMENT, API_KEY);
 ## API
 
 ### Request Image
+
+NB: All errors can be catched in the catch block of each request
 
 ```js
 
@@ -54,7 +60,7 @@ const images = await picfinder.requestImages({
 	imageInitiator?: File | string;
 	imageMaskInitiator?: File | string;
 	steps?: number;
-	onPartialImages?: (images: IImage[]) =>  void;
+	onPartialImages?: (images: IImage[], error: IError) =>  void;
 })
 console.log(images)
 

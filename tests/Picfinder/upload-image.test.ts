@@ -72,6 +72,7 @@ describe("When user uploads an image:", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newUploadedImageUUID",
       taskKey: "newUploadedImageUUID",
+      taskUUID: mockTaskUUID,
     });
     expect(getIntervalWithPromise).toHaveBeenCalledTimes(1);
   });

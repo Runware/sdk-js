@@ -59,6 +59,7 @@ describe("When user request to upscale gan", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newUpscaleGan",
       taskKey: "newUpscaleGan.images",
+      taskUUID: mockTaskUUID,
     });
   });
 });

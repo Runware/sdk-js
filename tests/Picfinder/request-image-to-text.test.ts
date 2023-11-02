@@ -55,6 +55,7 @@ describe("When user request image to text", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newReverseClip",
       taskKey: "newReverseClip.texts",
+      taskUUID: mockTaskUUID,
     });
   });
 });

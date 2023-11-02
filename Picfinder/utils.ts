@@ -5,6 +5,7 @@ import {
   GetWithPromiseCallBackType,
   IRequestImage,
 } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 const TIMEOUT_DURATION = 10000; // 30s;
 const POLLING_INTERVAL = 1000; // 1s;
@@ -32,8 +33,7 @@ export const getIntervalWithPromise = (
 ) => {
   return new Promise((resolve, reject) => {
     let intervalId = setInterval(async () => {
-      const shouldClear = await callback({ resolve });
-
+      const shouldClear = await callback({ resolve, reject });
       if (shouldClear) {
         clearInterval(intervalId);
         (intervalId as any) = 0;
@@ -62,7 +62,8 @@ export const fileToBase64 = (file: File) =>
     };
   });
 
-export const getUUID = () => crypto.randomUUID();
+// export const getUUID = () => crypto.randomUUID();
+export const getUUID = () => uuidv4();
 
 export const getTaskType = ({
   prompt,

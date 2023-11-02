@@ -56,6 +56,7 @@ describe("When user request to remove image background", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newRemoveBackground",
       taskKey: "newRemoveBackground.images",
+      taskUUID: mockTaskUUID,
     });
   });
 });

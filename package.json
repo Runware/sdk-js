@@ -1,6 +1,6 @@
 {
   "name": "picfinder-sdk",
-  "version": "1.0.11",
+  "version": "1.0.15",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -14,7 +14,7 @@
     "pkg": "npx pkgfiles",
     "dev:test": "vitest --reporter verbose",
     "test": "vitest run --reporter verbose",
-    "test:single": "vitest run --reporter verbose tests/Picfinder/enhance-prompt.test.ts"
+    "test:single": "vitest run --reporter verbose tests/Picfinder/upscale-gan.test.ts"
   },
   "keywords": [
     "picfinder",
@@ -24,9 +24,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/uuid": "^9.0.6",
+    "@types/ws": "^8.5.8",
     "mock-socket": "^9.3.1",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
   }
 }

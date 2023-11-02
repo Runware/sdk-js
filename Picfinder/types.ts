@@ -49,6 +49,12 @@ export type IControlNetWithUUID = Omit<IControlNet, "guideImage"> & {
   guideImageUUID: string;
 };
 
+export interface IError {
+  error: boolean;
+  errorMessage: string;
+  taskUUID: string;
+}
+
 export interface IRequestImage {
   positivePrompt: string;
   imageSize: number;
@@ -61,7 +67,7 @@ export interface IRequestImage {
   imageInitiator?: File | string;
   imageMaskInitiator?: File | string;
   steps?: number;
-  onPartialImages?: (images: IImage[]) => void;
+  onPartialImages?: (images: IImage[], error?: IError) => void;
 }
 export interface IRequestImageToText {
   imageInitiator?: File | string;
@@ -103,8 +109,10 @@ export type UploadImageType = {
 
 export type GetWithPromiseCallBackType = ({
   resolve,
+  reject,
 }: {
   resolve: <T>(value: T) => void;
+  reject: <T>(value: T) => void;
 }) => boolean | undefined;
 
 export enum EPreProcessorGroup {

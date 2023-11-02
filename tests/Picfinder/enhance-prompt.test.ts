@@ -60,6 +60,7 @@ describe("When user request to enhance prompt", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newPromptEnhancer",
       taskKey: "newPromptEnhancer.texts",
+      taskUUID: mockTaskUUID,
     });
   });
 
@@ -83,6 +84,7 @@ describe("When user request to enhance prompt", async () => {
     expect(globalListenerSpy).toHaveBeenCalledWith({
       responseKey: "newPromptEnhancer",
       taskKey: "newPromptEnhancer.texts",
+      taskUUID: mockTaskUUID,
     });
   });
 });
