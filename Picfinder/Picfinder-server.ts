@@ -4,18 +4,20 @@ import WebSocket from "ws";
 
 import { PicfinderBase } from "./Picfinder-base";
 import { Environment, IImage } from "./types";
-import { ENVIRONMENT_URLS } from "./utils";
+import { ENVIRONMENT_URLS, delay } from "./utils";
 
 // let allImages: IImage[] = [];
 
-let connectionSessionUUID: string | undefined;
 export class PicfinderServer extends PicfinderBase {
+  _instantiated: boolean = false;
+  _listeners: any[] = [];
+  _reconnectingIntervalId: null | any = null;
+  _pingTimeout: any;
+  _pongListener: any;
+
   constructor(environment: keyof typeof Environment, apikey: string) {
     super(environment, apikey);
     if (apikey) {
-      this._ws = new WebSocket(ENVIRONMENT_URLS[environment], {
-        perMessageDeflate: false,
-      });
       this.connect();
     }
   }
@@ -27,39 +29,89 @@ export class PicfinderServer extends PicfinderBase {
     lis: (v: any) => any;
     check: (v: any) => any;
   }) {
-    this._ws.on("message", (e: any, isBinary: any) => {
-      const data = isBinary ? e : e?.toString();
-
-      if (!data) return;
-      const m = JSON.parse(data);
-      if (m.error) {
-        lis(m);
-      } else if (check(m)) {
-        lis(m);
+    const listener = (msg: any) => {
+      if (msg?.error) {
+        lis(msg);
+      } else if (check(msg)) {
+        lis(msg);
       }
-    });
+    };
+    this._listeners.push(listener);
+    const destroy = () => {
+      remove1Mutate(this._listeners, listener);
+    };
+
+    return {
+      destroy,
+    };
   }
 
-  protected connect() {
-    this._ws.on("error", console.error);
+  protected async connect() {
+    this._ws = new WebSocket((ENVIRONMENT_URLS as any)[this._environment], {
+      perMessageDeflate: false,
+    });
+    delay(1);
+
+    this._ws.on("error", () => {});
+    this._ws.on("close", () => this.handleClose());
+
     this._ws.on("open", () => {
-      if (connectionSessionUUID) {
+      // console.log("open");
+      if (this._reconnectingIntervalId) {
+        // console.log("clearing");
+        clearInterval(this._reconnectingIntervalId);
+      }
+      if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
         this.send({
           newConnection: {
             apiKey: this._apikey,
-            connectionSessionUUID,
+            connectionSessionUUID: this._connectionSessionUUID,
           },
         });
       } else {
-        this.send({ newConnection: { apiKey: this._apikey } });
+        if (this.isWebsocketReadyState()) {
+          this.send({ newConnection: { apiKey: this._apikey } });
+        }
       }
 
       this.addListener({
         check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
         lis: (m) => {
-          connectionSessionUUID =
+          if (m?.error) {
+            if (m.errorId === 19) {
+              this._invalidAPIkey = "Invalid API key";
+            } else {
+              this._invalidAPIkey = "Error connection ";
+            }
+            return;
+          }
+          this._connectionSessionUUID =
             m?.newConnectionSessionUUID?.connectionSessionUUID;
+          this._invalidAPIkey = undefined;
+          this.heartBeat();
         },
+      });
+      this._pongListener?.destroy();
+      this._pongListener = this.addListener({
+        check: (m) => m?.pong,
+        lis: (m) => {
+          // console.log({ m });
+          if (m.pong) {
+            this.heartBeat();
+          }
+        },
+      });
+    });
+
+    this._ws.on("message", (e: any, isBinary: any) => {
+      const data = isBinary ? e : e?.toString();
+      if (!data) return;
+      const m = JSON.parse(data);
+      this._listeners.forEach((lis) => {
+        const result = lis(m);
+        if (result) {
+          return;
+        }
       });
     });
   }
@@ -68,5 +120,40 @@ export class PicfinderServer extends PicfinderBase {
     this._ws.send(JSON.stringify(msg));
   };
 
+  protected handleClose() {
+    // console.log("closing");
+    // console.log("ivanlid", this._invalidAPIkey);
+    if (this._invalidAPIkey) {
+      console.error(this._invalidAPIkey);
+      return;
+    }
+    if (this._reconnectingIntervalId) {
+      clearInterval(this._reconnectingIntervalId);
+    }
+    this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
+  }
+
+  protected heartBeat() {
+    clearTimeout(this._pingTimeout);
+
+    this._pingTimeout = setTimeout(() => {
+      if (this.isWebsocketReadyState()) {
+        this.send({ ping: true });
+      }
+    }, 5000);
+  }
+
   //end of data
+}
+
+function remove1Mutate(col: any, targetElem: any) {
+  if (col == null) {
+    return;
+  }
+
+  let i = col.indexOf(targetElem);
+  if (i === -1) {
+    return;
+  }
+  col.splice(i, 1);
 }

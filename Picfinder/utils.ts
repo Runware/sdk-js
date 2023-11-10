@@ -8,7 +8,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 
 const TIMEOUT_DURATION = 10000; // 30s;
-const POLLING_INTERVAL = 1000; // 1s;
+const POLLING_INTERVAL = 100; // 1s;
 
 export const ENVIRONMENT_URLS = {
   [Environment.DEVELOPMENT]: "wss://dev-ws-api.diffusionmaster.com/v1/",

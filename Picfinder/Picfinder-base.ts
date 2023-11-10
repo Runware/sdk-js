@@ -32,21 +32,24 @@ import {
 
 // let allImages: IImage[] = [];
 
-let connectionSessionUUID: string | undefined;
 export class PicfinderBase {
   _ws: ReconnectingWebsocketProps | any;
-  _listeners: MessageEvent[] = [];
+  _listeners: any[] = [];
   _apikey: string;
   _environment: string;
   // _globalMessages: any[] = [];
   _globalMessages: Record<string, any> = {};
   _globalImages: IImage[] = [];
   _globalError: IError | undefined;
+  _connectionSessionUUID: string | undefined;
+  _invalidAPIkey: string | undefined;
 
   constructor(environment: keyof typeof Environment, apikey: string) {
     this._apikey = apikey;
     this._environment = environment;
   }
+
+  protected isWebsocketReadyState = () => this._ws?.readyState === 1;
 
   protected addListener({
     lis,
@@ -54,7 +57,7 @@ export class PicfinderBase {
   }: {
     lis: (v: any) => any;
     check: (v: any) => any;
-  }) {
+  }): { destroy: Function } {
     this._ws.onmessage = (e: any) => {
       const m = JSON.parse(e.data);
 
@@ -64,15 +67,19 @@ export class PicfinderBase {
         lis(m);
       }
     };
+
+    return {
+      destroy: () => {},
+    };
   }
 
   protected connect() {
     this._ws.onopen = (e: any) => {
-      if (connectionSessionUUID) {
+      if (this._connectionSessionUUID) {
         this.send({
           newConnection: {
             apiKey: this._apikey,
-            connectionSessionUUID,
+            connectionSessionUUID: this._connectionSessionUUID,
           },
         });
       } else {
@@ -82,8 +89,17 @@ export class PicfinderBase {
       this.addListener({
         check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
         lis: (m) => {
-          connectionSessionUUID =
+          if (m?.error) {
+            if (m.errorId === 19) {
+              this._invalidAPIkey = "Invalid API key";
+            } else {
+              this._invalidAPIkey = "Error connection ";
+            }
+            return;
+          }
+          this._connectionSessionUUID =
             m?.newConnectionSessionUUID?.connectionSessionUUID;
+          this._invalidAPIkey = undefined;
         },
       });
     };
@@ -93,6 +109,15 @@ export class PicfinderBase {
       for (const listener of this._listeners) {
         const result = (listener as any)(data);
         if (result) return;
+      }
+    };
+
+    this._ws.onclose = (e: any) => {
+      // console.log("closing");
+      // console.log("ivanlid", this._invalidAPIkey);
+      if (this._invalidAPIkey) {
+        console.error(this._invalidAPIkey);
+        return;
       }
     };
   }
@@ -119,7 +144,7 @@ export class PicfinderBase {
             taskType: 7,
           },
         });
-        this.globalListener({
+        const lis = this.globalListener({
           responseKey: "newUploadedImageUUID",
           taskKey: "newUploadedImageUUID",
           taskUUID,
@@ -142,6 +167,8 @@ export class PicfinderBase {
           },
           { debugKey: "upload-image" }
         )) as UploadImageType;
+
+        lis.destroy();
 
         return image;
       });
@@ -184,7 +211,7 @@ export class PicfinderBase {
           // height,
         },
       });
-      this.globalListener({
+      const lis = this.globalListener({
         responseKey: "newPreProcessControlNet",
         taskKey: "newPreProcessControlNet",
         taskUUID,
@@ -208,6 +235,8 @@ export class PicfinderBase {
         { debugKey: "unprocessed-image" }
       )) as UploadImageType;
 
+      lis.destroy();
+
       return guideImage;
     } catch (e: any) {
       throw e;
@@ -221,7 +250,7 @@ export class PicfinderBase {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
   }) {
-    this.addListener({
+    return this.addListener({
       check: (m) => m.newImages?.images,
       lis: (m) => {
         onPartialImages?.(
@@ -249,7 +278,7 @@ export class PicfinderBase {
     taskKey: string;
     taskUUID: string;
   }) {
-    this.addListener({
+    return this.addListener({
       check: (m) => {
         const value = accessDeepObject({
           key: responseKey,
@@ -298,6 +327,7 @@ export class PicfinderBase {
     onPartialImages,
   }: IRequestImage): Promise<IImage[]> {
     try {
+      await this.ensureConnection();
       return asyncRetry(async () => {
         try {
           let imageInitiatorUUID: string | null = null;
@@ -393,11 +423,15 @@ export class PicfinderBase {
             },
           };
           this.send(requestObject);
-          this.listenToImages({ onPartialImages, taskUUID });
+
+          const lis = this.listenToImages({ onPartialImages, taskUUID });
+
           const promise = await this.getSimililarImage({
             taskUUID,
             numberOfImages,
           });
+
+          lis.destroy();
 
           return promise;
         } catch (e) {
@@ -416,6 +450,7 @@ export class PicfinderBase {
     imageInitiator,
   }: IRequestImageToText): Promise<IImageToText> => {
     try {
+      await this.ensureConnection();
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
           imageInitiator as File | string
@@ -430,7 +465,7 @@ export class PicfinderBase {
             taskUUID,
           },
         });
-        this.globalListener({
+        const lis = this.globalListener({
           responseKey: "newReverseClip",
           taskKey: "newReverseClip.texts",
           taskUUID,
@@ -454,6 +489,8 @@ export class PicfinderBase {
           { debugKey: "remove-image-background" }
         );
 
+        lis.destroy();
+
         return response as IImageToText;
       });
     } catch (e) {
@@ -465,6 +502,7 @@ export class PicfinderBase {
     imageInitiator,
   }: IRemoveImageBackground): Promise<IImage[]> => {
     try {
+      await this.ensureConnection();
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
           imageInitiator as File | string
@@ -481,7 +519,7 @@ export class PicfinderBase {
             taskType: 8,
           },
         });
-        this.globalListener({
+        const lis = this.globalListener({
           responseKey: "newRemoveBackground",
           taskKey: "newRemoveBackground.images",
           taskUUID,
@@ -505,6 +543,8 @@ export class PicfinderBase {
           { debugKey: "remove-image-background" }
         );
 
+        lis.destroy();
+
         return response as IImage[];
       });
     } catch (e) {
@@ -517,6 +557,7 @@ export class PicfinderBase {
     upscaleFactor,
   }: IUpscaleGan): Promise<IImage[]> => {
     try {
+      await this.ensureConnection();
       return await asyncRetry(async () => {
         const imageUploaded = await this.uploadImage(
           imageInitiator as File | string
@@ -532,7 +573,7 @@ export class PicfinderBase {
             upscaleFactor,
           },
         });
-        this.globalListener({
+        const lis = this.globalListener({
           responseKey: "newUpscaleGan",
           taskKey: "newUpscaleGan.images",
           taskUUID,
@@ -556,6 +597,8 @@ export class PicfinderBase {
           { debugKey: "upscale-gan" }
         );
 
+        lis.destroy();
+
         return response as IImage[];
       });
     } catch (e) {
@@ -570,6 +613,7 @@ export class PicfinderBase {
     promptVersions = 1,
   }: IPromptEnhancer): Promise<IEnhancedPrompt> => {
     try {
+      await this.ensureConnection();
       return await asyncRetry(async () => {
         const taskUUID = getUUID();
 
@@ -582,7 +626,7 @@ export class PicfinderBase {
             promptLanguageId,
           },
         });
-        this.globalListener({
+        const lis = this.globalListener({
           responseKey: "newPromptEnhancer",
           taskKey: "newPromptEnhancer.texts",
           taskUUID,
@@ -607,6 +651,7 @@ export class PicfinderBase {
           { debugKey: "enhance-prompt" }
         );
 
+        lis.destroy();
         return response as IEnhancedPrompt[];
       });
     } catch (e) {
@@ -614,6 +659,54 @@ export class PicfinderBase {
       throw e;
     }
   };
+
+  async ensureConnection() {
+    let isConnected = this.connected() && this._ws.readyState === 1;
+
+    try {
+      if (this._invalidAPIkey) throw this._invalidAPIkey;
+      if (!isConnected) {
+        const listenerTaskUID = getUUID();
+
+        if (this._ws.readyState === 1) {
+          this.send({
+            newConnection: { apiKey: this._apikey, taskUUID: listenerTaskUID },
+          });
+        }
+        const lis = this.globalListener({
+          responseKey: "newConnectionSessionUUID",
+          taskKey: "newConnectionSessionUUID.connectionSessionUUID",
+          taskUUID: listenerTaskUID,
+        });
+
+        await getIntervalWithPromise(
+          ({ resolve, reject }) => {
+            const connectionId: string = this._globalMessages[listenerTaskUID];
+
+            if ((connectionId as any)?.error) {
+              reject(connectionId);
+              return true;
+            }
+
+            if (connectionId) {
+              delete this._globalMessages[listenerTaskUID];
+              this._connectionSessionUUID = connectionId;
+              resolve(connectionId);
+              return true;
+            }
+          },
+          { debugKey: "listen-to-connection" }
+        );
+
+        lis.destroy();
+      }
+    } catch (e) {
+      throw (
+        this._invalidAPIkey ??
+        "Could not connect to server. Ensure your API key is correct"
+      );
+    }
+  }
 
   async getSimililarImage({
     taskUUID,
@@ -651,5 +744,8 @@ export class PicfinderBase {
 
     return result;
   }
+
+  connected = () =>
+    this.isWebsocketReadyState() && !!this._connectionSessionUUID;
   //end of data
 }

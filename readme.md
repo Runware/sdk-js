@@ -204,12 +204,26 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
-### - v1.0.15
+### - v1.0.19
 
 **Added or Changed**
 
-- Added Server implementation (Nodejs)
-- Added Errors catching
+- Allow server sdk to reconnect on connection loss
+- Prevent duplicate message in server sdk
+- Modify connected method
+- Reduced polling interval
+
+### - v1.0.18
+
+**Added or Changed**
+
+- Expose is connected method
+
+### - v1.0.17
+
+**Added or Changed**
+
+- Minor Fixes
 
 ### - v1.0.16
 
@@ -217,11 +231,12 @@ return interface IEnhancedPrompt {
 
 - Added Release Notes
 
-### - v1.0.17
+### - v1.0.15
 
 **Added or Changed**
 
-- Minor Fixes
+- Added Server implementation (Nodejs)
+- Added Errors catching
 
 ## Contributing
 
