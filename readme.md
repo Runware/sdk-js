@@ -204,6 +204,18 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
+### - v1.0.21
+
+**Added or Changed**
+
+- Add control mode to control net
+
+### - v1.0.20
+
+**Added or Changed**
+
+- Ensure connection for non instantiated instance
+
 ### - v1.0.19
 
 **Added or Changed**

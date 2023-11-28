@@ -1,3 +1,4 @@
+import { EControlMode } from "../Picfinder";
 import { MockFile } from "../Picfinder/utils";
 
 const promptText = "A beautiful picfinder";
@@ -45,5 +46,6 @@ export const testExamples = {
     guideImage: mockTextImageUpload,
     preprocessor: "canny" as any,
     weight: 1,
+    controlMode: EControlMode.CONTROL_NET,
   },
 };

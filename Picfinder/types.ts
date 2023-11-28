@@ -16,6 +16,12 @@ interface ILora {
   weight: number;
 }
 
+export enum EControlMode {
+  BALANCED = "balanced",
+  PROMPT = "prompt",
+  CONTROL_NET = "controlnet",
+}
+
 export type IControlNetGeneral = {
   preprocessor: keyof typeof EPreProcessor;
   weight: number;
@@ -23,6 +29,7 @@ export type IControlNetGeneral = {
   endStep: number;
   guideImage: string | File;
   guideImageUnprocessed: string | File;
+  controlMode: EControlMode;
 };
 
 export type IControlNetA = RequireOnlyOne<

@@ -1,6 +1,7 @@
 // @ts-ignore
 import { asyncRetry } from "./async-retry";
 import {
+  EControlMode,
   EPreProcessor,
   EPreProcessorGroup,
   Environment,
@@ -22,6 +23,7 @@ import {
   ENVIRONMENT_URLS,
   accessDeepObject,
   compact,
+  delay,
   fileToBase64,
   getIntervalWithPromise,
   getPreprocessorType,
@@ -359,6 +361,7 @@ export class PicfinderBase {
                 weight,
                 guideImage,
                 guideImageUnprocessed,
+                controlMode,
               } = controlData;
 
               const getCannyObject = () => {
@@ -390,6 +393,7 @@ export class PicfinderBase {
                 preprocessor,
                 startStep,
                 weight,
+                controlMode: controlMode || EControlMode.CONTROL_NET,
                 ...getCannyObject(),
               });
             }
@@ -665,40 +669,42 @@ export class PicfinderBase {
 
     try {
       if (this._invalidAPIkey) throw this._invalidAPIkey;
+
       if (!isConnected) {
-        const listenerTaskUID = getUUID();
+        this.connect();
+        await delay(2);
+        // const listenerTaskUID = getUUID();
+        // if (this._ws.readyState === 1) {
+        //   this.send({
+        //     newConnection: { apiKey: this._apikey, taskUUID: listenerTaskUID },
+        //   });
+        // }
+        // const lis = this.globalListener({
+        //   responseKey: "newConnectionSessionUUID",
+        //   taskKey: "newConnectionSessionUUID.connectionSessionUUID",
+        //   taskUUID: listenerTaskUID,
+        // });
 
-        if (this._ws.readyState === 1) {
-          this.send({
-            newConnection: { apiKey: this._apikey, taskUUID: listenerTaskUID },
-          });
-        }
-        const lis = this.globalListener({
-          responseKey: "newConnectionSessionUUID",
-          taskKey: "newConnectionSessionUUID.connectionSessionUUID",
-          taskUUID: listenerTaskUID,
-        });
+        // await getIntervalWithPromise(
+        //   ({ resolve, reject }) => {
+        //     const connectionId: string = this._globalMessages[listenerTaskUID];
 
-        await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const connectionId: string = this._globalMessages[listenerTaskUID];
+        //     if ((connectionId as any)?.error) {
+        //       reject(connectionId);
+        //       return true;
+        //     }
 
-            if ((connectionId as any)?.error) {
-              reject(connectionId);
-              return true;
-            }
+        //     if (connectionId) {
+        //       delete this._globalMessages[listenerTaskUID];
+        //       this._connectionSessionUUID = connectionId;
+        //       resolve(connectionId);
+        //       return true;
+        //     }
+        //   },
+        //   { debugKey: "listen-to-connection" }
+        // );
 
-            if (connectionId) {
-              delete this._globalMessages[listenerTaskUID];
-              this._connectionSessionUUID = connectionId;
-              resolve(connectionId);
-              return true;
-            }
-          },
-          { debugKey: "listen-to-connection" }
-        );
-
-        lis.destroy();
+        // lis.destroy();
       }
     } catch (e) {
       throw (

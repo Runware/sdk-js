@@ -10,6 +10,7 @@ import {
 import { getTaskType } from "../../Picfinder/utils";
 import { mockTextImageUpload, testExamples } from "./../test-utils";
 import { startMockServer } from "../mockServer";
+import { EControlMode } from "../../Picfinder";
 
 vi.mock("../../Picfinder/utils", async () => {
   const actual = await vi.importActual("../../Picfinder/utils");
@@ -132,6 +133,7 @@ describe("When user request an image", async () => {
         imageMaskInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
         controlNet: [
           {
+            controlMode: EControlMode.CONTROL_NET,
             endStep: 20,
             guideImageUUID: "NEW_IMAGE_UID",
             highThresholdCanny: undefined,
