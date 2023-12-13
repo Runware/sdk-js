@@ -559,20 +559,27 @@ export class PicfinderBase {
   upscaleGan = async ({
     imageInitiator,
     upscaleFactor,
+    isImageUUID,
   }: IUpscaleGan): Promise<IImage[]> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
-        const imageUploaded = await this.uploadImage(
-          imageInitiator as File | string
-        );
+        let imageUploaded;
 
-        if (!imageUploaded?.newImageUUID) return null;
+        if (!isImageUUID) {
+          imageUploaded = await this.uploadImage(
+            imageInitiator as File | string
+          );
+          if (!imageUploaded?.newImageUUID) return null;
+        }
+
         const taskUUID = getUUID();
 
         this.send({
           newUpscaleGan: {
-            imageUUID: imageUploaded.newImageUUID,
+            imageUUID: isImageUUID
+              ? imageInitiator
+              : imageUploaded?.newImageUUID,
             taskUUID,
             upscaleFactor,
           },

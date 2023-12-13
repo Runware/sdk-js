@@ -204,6 +204,18 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
+### - v1.0.23
+
+**Added or Changed**
+
+- Fixed Upscalegan to allow imageUUID
+
+### - v1.0.22
+
+**Added or Changed**
+
+- Fixed bugs
+
 ### - v1.0.21
 
 **Added or Changed**

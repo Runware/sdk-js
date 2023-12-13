@@ -97,6 +97,7 @@ export interface IEnhancedPrompt extends IImageToText {}
 export interface IUpscaleGan {
   imageInitiator: File | string;
   upscaleFactor: number;
+  isImageUUID?: boolean;
 }
 
 export type ReconnectingWebsocketProps = {
