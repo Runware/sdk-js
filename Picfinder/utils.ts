@@ -7,7 +7,7 @@ import {
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
-const TIMEOUT_DURATION = 10000; // 30s;
+const TIMEOUT_DURATION = 60000; // 120S;
 const POLLING_INTERVAL = 100; // 1s;
 
 export const ENVIRONMENT_URLS = {
@@ -29,7 +29,15 @@ export const removeFromAray = <T>(col: T[], targetElem: T) => {
 
 export const getIntervalWithPromise = (
   callback: GetWithPromiseCallBackType,
-  { debugKey = "debugKey" }: { debugKey?: string }
+  {
+    debugKey = "debugKey",
+    timeOutDuration = TIMEOUT_DURATION,
+    shouldThrowError = true,
+  }: {
+    debugKey?: string;
+    timeOutDuration?: number;
+    shouldThrowError?: boolean;
+  }
 ) => {
   return new Promise((resolve, reject) => {
     let intervalId = setInterval(async () => {
@@ -44,12 +52,14 @@ export const getIntervalWithPromise = (
     const timeoutId = setTimeout(() => {
       if (intervalId) {
         clearInterval(intervalId);
-        reject(`Message could not be received for ${debugKey}`);
-        console.error("Message could not be received for ", debugKey);
+        if (shouldThrowError) {
+          reject(`Message could not be received for ${debugKey}`);
+          console.error("Message could not be received for ", debugKey);
+        }
       }
       clearTimeout(timeoutId);
       // reject();
-    }, TIMEOUT_DURATION);
+    }, timeOutDuration);
   });
 };
 
@@ -246,3 +256,8 @@ function range(count: number) {
   }
   return output;
 }
+
+export const RETRY_SDK_COUNTS = {
+  GLOBAL: 2,
+  REQUEST_IMAGES: 2,
+};

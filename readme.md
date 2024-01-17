@@ -204,6 +204,13 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
+### - v1.0.24
+
+**Added or Changed**
+
+- Introduce retry for missing images
+- Increase Polling time
+
 ### - v1.0.23
 
 **Added or Changed**
