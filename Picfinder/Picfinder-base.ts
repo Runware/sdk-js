@@ -327,10 +327,13 @@ export class PicfinderBase {
     imageMaskInitiator,
     steps,
     onPartialImages,
-  }: IRequestImage): Promise<IImage[]> {
+    lora,
+    seed,
+  }: IRequestImage): Promise<IImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
+    let retryCount = 0;
 
     try {
       await this.ensureConnection();
@@ -423,10 +426,13 @@ export class PicfinderBase {
         ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
         ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
+        ...(lora?.length ? { lora: lora } : {}),
+        ...(seed ? { seed: seed } : {}),
       };
 
-      return asyncRetry(
+      return await asyncRetry(
         async () => {
+          retryCount++;
           lis?.destroy();
           const imagesWithSimilarTask = this._globalImages.filter((img) =>
             taskUUIDs.includes(img.taskUUID)
@@ -452,6 +458,7 @@ export class PicfinderBase {
           const promise = await this.getSimililarImage({
             taskUUID: taskUUIDs,
             numberOfImages,
+            lis,
           });
 
           lis.destroy();
@@ -465,11 +472,33 @@ export class PicfinderBase {
         }
       );
     } catch (e) {
-      throw e;
+      if (retryCount >= 2) {
+        return this.handleIncompleteImages({ taskUUIDs, error: e });
+      }
     }
 
     // console.log({ res });
     // return res.the;
+  }
+
+  handleIncompleteImages({
+    taskUUIDs,
+    error,
+  }: {
+    taskUUIDs: string[];
+    error: any;
+  }) {
+    const imagesWithSimilarTask = this._globalImages.filter((img) =>
+      taskUUIDs.includes(img.taskUUID)
+    );
+    if (imagesWithSimilarTask.length > 1) {
+      this._globalImages = this._globalImages.filter(
+        (img) => !taskUUIDs.includes(img.taskUUID)
+      );
+      return imagesWithSimilarTask;
+    } else {
+      throw error;
+    }
   }
 
   requestImageToText = async ({
@@ -746,13 +775,15 @@ export class PicfinderBase {
     taskUUID,
     numberOfImages,
     shouldThrowError,
+    lis,
   }: {
     taskUUID: string | string[];
     numberOfImages: number;
     shouldThrowError?: boolean;
+    lis: any;
   }): Promise<IImage[] | IError> {
-    const result = (await getIntervalWithPromise(
-      ({ resolve, reject }) => {
+    return (await getIntervalWithPromise(
+      ({ resolve, reject, intervalId }) => {
         const taskUUIDs = Array.isArray(taskUUID) ? taskUUID : [taskUUID];
         const imagesWithSimilarTask = this._globalImages.filter((img) =>
           taskUUIDs.includes(img.taskUUID)
@@ -762,24 +793,26 @@ export class PicfinderBase {
           const newData = this._globalError;
           this._globalError = undefined;
           // throw errorData[0]
+          clearInterval(intervalId);
           reject<IError>?.(newData);
           return true;
         }
         // onPartialImages?.(imagesWithSimilarTask)
         else if (imagesWithSimilarTask.length >= numberOfImages) {
-          // clearInterval(intervalId);
+          lis?.destroy();
+          clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(
             (img) => !taskUUIDs.includes(img.taskUUID)
           );
-          resolve<IImage[]>(imagesWithSimilarTask.slice(0, numberOfImages));
+          resolve<IImage[]>(
+            [...imagesWithSimilarTask].slice(0, numberOfImages)
+          );
           return true;
           // Resolve the promise with the data
         }
       },
       { debugKey: "getting images", shouldThrowError }
     )) as IImage[];
-
-    return result;
   }
 
   connected = () =>

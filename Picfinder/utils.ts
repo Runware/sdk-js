@@ -41,7 +41,7 @@ export const getIntervalWithPromise = (
 ) => {
   return new Promise((resolve, reject) => {
     let intervalId = setInterval(async () => {
-      const shouldClear = await callback({ resolve, reject });
+      const shouldClear = await callback({ resolve, reject, intervalId });
       if (shouldClear) {
         clearInterval(intervalId);
         (intervalId as any) = 0;

@@ -12,7 +12,7 @@ export interface IImage {
 }
 
 interface ILora {
-  loraCivitaiAIR: string;
+  modelId: string;
   weight: number;
 }
 
@@ -75,6 +75,7 @@ export interface IRequestImage {
   imageMaskInitiator?: File | string;
   steps?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
+  seed?: number;
 }
 export interface IRequestImageToText {
   imageInitiator?: File | string;
@@ -118,9 +119,11 @@ export type UploadImageType = {
 export type GetWithPromiseCallBackType = ({
   resolve,
   reject,
+  intervalId,
 }: {
   resolve: <T>(value: T) => void;
   reject: <T>(value: T) => void;
+  intervalId: any;
 }) => boolean | undefined;
 
 export enum EPreProcessorGroup {

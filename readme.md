@@ -204,6 +204,15 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
+### - v1.0.25
+
+**Added or Changed**
+
+- Add Buffer utils necessary for server ws
+- Return images generated if timeout reached
+- Added support for LoRA
+- Added support for seed
+
 ### - v1.0.24
 
 **Added or Changed**

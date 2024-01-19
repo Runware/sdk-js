@@ -1,6 +1,6 @@
 {
   "name": "picfinder-sdk",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -34,5 +34,8 @@
   "dependencies": {
     "uuid": "^9.0.1",
     "ws": "^8.14.2"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8"
   }
 }
