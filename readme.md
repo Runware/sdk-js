@@ -208,6 +208,12 @@ return interface IEnhancedPrompt {
 
 **Added or Changed**
 
+- Validate valid UUID as image initiator
+
+### - v1.0.25
+
+**Added or Changed**
+
 - Add Buffer utils necessary for server ws
 - Return images generated if timeout reached
 - Added support for LoRA

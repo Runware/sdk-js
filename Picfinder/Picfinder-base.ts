@@ -29,6 +29,7 @@ import {
   getPreprocessorType,
   getTaskType,
   getUUID,
+  isValidUUID,
   removeFromAray,
 } from "./utils";
 
@@ -134,10 +135,18 @@ export class PicfinderBase {
   ): Promise<UploadImageType | null> => {
     try {
       return await asyncRetry(async () => {
+        const taskUUID = getUUID();
+
+        if (typeof file === "string" && isValidUUID(file)) {
+          return {
+            newImageUUID: file,
+            newImageSrc: file,
+            taskUUID,
+          };
+        }
+
         const imageBase64 =
           typeof file === "string" ? file : await fileToBase64(file);
-
-        const taskUUID = getUUID();
 
         this.send({
           newImageUpload: {
@@ -610,27 +619,20 @@ export class PicfinderBase {
   upscaleGan = async ({
     imageInitiator,
     upscaleFactor,
-    isImageUUID,
   }: IUpscaleGan): Promise<IImage[]> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
         let imageUploaded;
 
-        if (!isImageUUID) {
-          imageUploaded = await this.uploadImage(
-            imageInitiator as File | string
-          );
-          if (!imageUploaded?.newImageUUID) return null;
-        }
+        imageUploaded = await this.uploadImage(imageInitiator as File | string);
+        if (!imageUploaded?.newImageUUID) return null;
 
         const taskUUID = getUUID();
 
         this.send({
           newUpscaleGan: {
-            imageUUID: isImageUUID
-              ? imageInitiator
-              : imageUploaded?.newImageUUID,
+            imageUUID: imageUploaded?.newImageUUID,
             taskUUID,
             upscaleFactor,
           },

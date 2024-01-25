@@ -5,7 +5,7 @@ import {
   GetWithPromiseCallBackType,
   IRequestImage,
 } from "./types";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, validate as validateUUID } from "uuid";
 
 const TIMEOUT_DURATION = 60000; // 120S;
 const POLLING_INTERVAL = 100; // 1s;
@@ -74,6 +74,8 @@ export const fileToBase64 = (file: File) =>
 
 // export const getUUID = () => crypto.randomUUID();
 export const getUUID = () => uuidv4();
+
+export const isValidUUID = (uuid: string) => validateUUID(uuid);
 
 export const getTaskType = ({
   prompt,
