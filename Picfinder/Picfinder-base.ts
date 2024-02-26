@@ -16,11 +16,14 @@ import {
   IRequestImage,
   IRequestImageToText,
   IUpscaleGan,
+  ListenerType,
   ReconnectingWebsocketProps,
+  SdkType,
   UploadImageType,
 } from "./types";
 import {
   ENVIRONMENT_URLS,
+  LISTEN_TO_IMAGES_KEY,
   accessDeepObject,
   compact,
   delay,
@@ -31,13 +34,14 @@ import {
   getUUID,
   isValidUUID,
   removeFromAray,
+  removeListener,
 } from "./utils";
 
 // let allImages: IImage[] = [];
 
 export class PicfinderBase {
   _ws: ReconnectingWebsocketProps | any;
-  _listeners: any[] = [];
+  _listeners: ListenerType[] = [];
   _apikey: string;
   _environment: string;
   // _globalMessages: any[] = [];
@@ -46,33 +50,63 @@ export class PicfinderBase {
   _globalError: IError | undefined;
   _connectionSessionUUID: string | undefined;
   _invalidAPIkey: string | undefined;
+  _sdkType: SdkType;
 
   constructor(environment: keyof typeof Environment, apikey: string) {
     this._apikey = apikey;
     this._environment = environment;
+    this._sdkType = SdkType.CLIENT;
   }
 
   protected isWebsocketReadyState = () => this._ws?.readyState === 1;
 
+  // protected addListener({
+  //   lis,
+  //   check,
+  // }: {
+  //   lis: (v: any) => any;
+  //   check: (v: any) => any;
+  //   groupKey?: string;
+  // }): { destroy: Function } {
+  //   this._ws.onmessage = (e: any) => {
+  //     const m = JSON.parse(e.data);
+
+  //     if (m?.error) {
+  //       lis(m);
+  //     } else if (check(m)) {
+  //       lis(m);
+  //     }
+  //   };
+
+  //   return {
+  //     destroy: () => {},
+  //   };
+  // }
+
   protected addListener({
     lis,
     check,
+    groupKey,
   }: {
     lis: (v: any) => any;
     check: (v: any) => any;
-  }): { destroy: Function } {
-    this._ws.onmessage = (e: any) => {
-      const m = JSON.parse(e.data);
-
-      if (m?.error) {
-        lis(m);
-      } else if (check(m)) {
-        lis(m);
+    groupKey?: string;
+  }) {
+    const listener = (msg: any) => {
+      if (msg?.error) {
+        lis(msg);
+      } else if (check(msg)) {
+        lis(msg);
       }
+    };
+    const groupListener = { key: getUUID(), listener, groupKey };
+    this._listeners.push(groupListener);
+    const destroy = () => {
+      this._listeners = removeListener(this._listeners, groupListener);
     };
 
     return {
-      destroy: () => {},
+      destroy,
     };
   }
 
@@ -109,8 +143,8 @@ export class PicfinderBase {
 
     this._ws.onmessage = (e: any) => {
       const data = JSON.parse(e.data);
-      for (const listener of this._listeners) {
-        const result = (listener as any)(data);
+      for (const lis of this._listeners) {
+        const result = (lis as any)?.listener?.(data);
         if (result) return;
       }
     };
@@ -257,26 +291,34 @@ export class PicfinderBase {
   listenToImages({
     onPartialImages,
     taskUUID,
+    groupKey,
   }: {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
+    groupKey: LISTEN_TO_IMAGES_KEY;
   }) {
     return this.addListener({
       check: (m) => m.newImages?.images,
       lis: (m) => {
-        onPartialImages?.(
-          (m.newImages?.images as IImage[])?.filter(
-            (img) => img.taskUUID === taskUUID
-          ),
-          m?.error && m
+        const images = (m.newImages?.images as IImage[])?.filter(
+          (img) => img.taskUUID === taskUUID
         );
+        onPartialImages?.(images, m?.error && m);
 
         if (m.error) {
           this._globalError = m;
         } else {
-          this._globalImages = [...this._globalImages, ...m.newImages?.images];
+          if (this._sdkType === SdkType.CLIENT) {
+            this._globalImages = [
+              ...this._globalImages,
+              ...m.newImages?.images,
+            ];
+          } else {
+            this._globalImages = [...this._globalImages, ...images];
+          }
         }
       },
+      groupKey,
     });
   }
 
@@ -462,7 +504,11 @@ export class PicfinderBase {
           };
           this.send(newRequestObject);
 
-          lis = this.listenToImages({ onPartialImages, taskUUID: taskUUID });
+          lis = this.listenToImages({
+            onPartialImages,
+            taskUUID: taskUUID,
+            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+          });
 
           const promise = await this.getSimililarImage({
             taskUUID: taskUUIDs,
@@ -470,7 +516,7 @@ export class PicfinderBase {
             lis,
           });
 
-          lis.destroy();
+          // lis.destroy();
           return promise;
         },
         {
@@ -801,7 +847,7 @@ export class PicfinderBase {
         }
         // onPartialImages?.(imagesWithSimilarTask)
         else if (imagesWithSimilarTask.length >= numberOfImages) {
-          lis?.destroy();
+          // lis?.destroy();
           clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(
             (img) => !taskUUIDs.includes(img.taskUUID)

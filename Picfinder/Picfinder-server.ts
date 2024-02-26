@@ -3,8 +3,8 @@
 import WebSocket from "ws";
 
 import { PicfinderBase } from "./Picfinder-base";
-import { Environment, IImage } from "./types";
-import { ENVIRONMENT_URLS, delay } from "./utils";
+import { Environment, IImage, SdkType } from "./types";
+import { ENVIRONMENT_URLS, delay, getUUID, removeListener } from "./utils";
 
 // let allImages: IImage[] = [];
 
@@ -17,34 +17,38 @@ export class PicfinderServer extends PicfinderBase {
 
   constructor(environment: keyof typeof Environment, apikey: string) {
     super(environment, apikey);
+    this._sdkType = SdkType.SERVER;
     if (apikey) {
       this.connect();
     }
   }
 
-  protected addListener({
-    lis,
-    check,
-  }: {
-    lis: (v: any) => any;
-    check: (v: any) => any;
-  }) {
-    const listener = (msg: any) => {
-      if (msg?.error) {
-        lis(msg);
-      } else if (check(msg)) {
-        lis(msg);
-      }
-    };
-    this._listeners.push(listener);
-    const destroy = () => {
-      remove1Mutate(this._listeners, listener);
-    };
+  // protected addListener({
+  //   lis,
+  //   check,
+  //   groupKey,
+  // }: {
+  //   lis: (v: any) => any;
+  //   check: (v: any) => any;
+  //   groupKey?: string;
+  // }) {
+  //   const listener = (msg: any) => {
+  //     if (msg?.error) {
+  //       lis(msg);
+  //     } else if (check(msg)) {
+  //       lis(msg);
+  //     }
+  //   };
+  //   const groupListener = { key: getUUID(), listener, groupKey };
+  //   this._listeners.push(groupListener);
+  //   const destroy = () => {
+  //     this._listeners = removeListener(this._listeners, groupListener);
+  //   };
 
-    return {
-      destroy,
-    };
-  }
+  //   return {
+  //     destroy,
+  //   };
+  // }
 
   protected async connect() {
     this._ws = new WebSocket((ENVIRONMENT_URLS as any)[this._environment], {
@@ -108,7 +112,7 @@ export class PicfinderServer extends PicfinderBase {
       if (!data) return;
       const m = JSON.parse(data);
       this._listeners.forEach((lis) => {
-        const result = lis(m);
+        const result = lis.listener(m);
         if (result) {
           return;
         }
@@ -144,16 +148,4 @@ export class PicfinderServer extends PicfinderBase {
   }
 
   //end of data
-}
-
-function remove1Mutate(col: any, targetElem: any) {
-  if (col == null) {
-    return;
-  }
-
-  let i = col.indexOf(targetElem);
-  if (i === -1) {
-    return;
-  }
-  col.splice(i, 1);
 }

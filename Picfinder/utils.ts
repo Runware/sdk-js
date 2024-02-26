@@ -41,7 +41,7 @@ export const getIntervalWithPromise = (
 ) => {
   return new Promise((resolve, reject) => {
     let intervalId = setInterval(async () => {
-      const shouldClear = await callback({ resolve, reject, intervalId });
+      const shouldClear = callback({ resolve, reject, intervalId });
       if (shouldClear) {
         clearInterval(intervalId);
         (intervalId as any) = 0;
@@ -263,3 +263,33 @@ export const RETRY_SDK_COUNTS = {
   GLOBAL: 2,
   REQUEST_IMAGES: 2,
 };
+
+export const remove1Mutate = (col: any, targetElem: any) => {
+  if (col == null) {
+    return;
+  }
+
+  let i = col.indexOf(targetElem);
+  if (i === -1) {
+    return;
+  }
+  col.splice(i, 1);
+};
+
+export const removeListener = (listeners: any[], listener: any) => {
+  return listeners.filter((lis) => lis.key !== listener.key);
+};
+
+export const removeAllKeyListener = ({
+  listeners,
+  key,
+}: {
+  listeners: any[];
+  key: any;
+}) => {
+  return listeners.filter((lis) => lis?.key !== key);
+};
+
+export enum LISTEN_TO_IMAGES_KEY {
+  REQUEST_IMAGES = "REQUEST_IMAGES",
+}

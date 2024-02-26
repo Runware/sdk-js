@@ -71,6 +71,42 @@ return interface IImage {
 }[]
 ```
 
+##### Parallel Requests (2 or more requests at the same time)
+
+```js
+const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+
+const [firstImagesRequest, secondImagesRequest] = await Promise.all([
+	picfinder.requestImages({
+		positivePrompt: string;
+		imageSize: number;
+		modelId: number;
+		numberOfImages?: number;
+		negativePrompt?: string;
+		useCache?: boolean;
+		onPartialImages?: (images: IImage[], error: IError) =>  void;
+	}),
+	picfinder.requestImages({
+		positivePrompt: string;
+		imageSize: number;
+		modelId: number;
+		numberOfImages?: number;
+		negativePrompt?: string;
+		useCache?: boolean;
+		onPartialImages?: (images: IImage[], error: IError) =>  void;
+	})
+])
+
+console.log({firstImagesRequest, secondImagesRequest})
+
+return interface IImage {
+	imageSrc: string;
+	imageUUID: string;
+	taskUUID: string;
+	bNSFWContent: boolean;
+}[]
+```
+
 | Parameter          | Type                               | Use                                                                                                                                                            |
 | ------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | positivePrompt     | string                             | Defines the positive prompt description of the image.                                                                                                          |
@@ -204,7 +240,14 @@ return interface IEnhancedPrompt {
 
 ## Changelog
 
-### - v1.0.25
+### - v1.0.27
+
+**Added or Changed**
+
+- Refactor websocket listeners
+- Allow users to make parallel requests
+
+### - v1.0.26
 
 **Added or Changed**
 

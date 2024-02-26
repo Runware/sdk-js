@@ -152,4 +152,40 @@ describe("When user request an image", async () => {
       },
     });
   });
+  test("it should request multiple images in parallel", async () => {
+    const sendSpy = vi.spyOn(picfinder as any, "send");
+    const listenToImages = vi.spyOn(picfinder as any, "listenToImages");
+
+    await Promise.all([
+      picfinder.requestImages({
+        ...testExamples.imageReq,
+      }),
+      picfinder.requestImages({
+        ...testExamples.imageReq,
+        positivePrompt: "cat",
+      }),
+    ]);
+
+    expect(sendSpy).toHaveBeenCalledTimes(2);
+
+    expect(sendSpy).toHaveBeenCalledWith({
+      newTask: {
+        ...testExamples.imageRes,
+        taskType: getTaskType({
+          prompt: testExamples.imageReq.positivePrompt,
+        }),
+      },
+    });
+    expect(sendSpy).toHaveBeenCalledWith({
+      newTask: {
+        ...testExamples.imageRes,
+        promptText: "cat",
+        taskType: getTaskType({
+          prompt: "cat",
+        }),
+      },
+    });
+
+    expect(listenToImages).toHaveBeenCalledTimes(2);
+  });
 });
