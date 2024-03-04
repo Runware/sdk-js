@@ -10,8 +10,8 @@ import {
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
 
-vi.mock("../../Picfinder/utils", async () => {
-  const actual = await vi.importActual("../../Picfinder/utils");
+vi.mock("../../Runware/utils", async () => {
+  const actual = await vi.importActual("../../Runware/utils");
   return {
     ...(actual as any),
     fileToBase64: vi.fn().mockReturnValue("FILE_TO_BASE_64"),
@@ -20,8 +20,8 @@ vi.mock("../../Picfinder/utils", async () => {
   };
 });
 
-describe("When user request to upscale gan", async () => {
-  const { mockServer, picfinder } = await startMockServer();
+describe("When user request to remove image background", async () => {
+  const { mockServer, runware } = await startMockServer();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -32,33 +32,30 @@ describe("When user request to upscale gan", async () => {
   });
 
   beforeAll(async () => {
-    vi.spyOn(picfinder as any, "uploadImage").mockReturnValue(
+    vi.spyOn(runware as any, "uploadImage").mockReturnValue(
       testExamples.imageUploadRes
     );
   });
 
-  test("it should upscale gan", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const globalListenerSpy = vi.spyOn(picfinder, "globalListener");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+  test("it should remove an image background", async () => {
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const sendSpy = vi.spyOn(runware as any, "send");
 
-    await picfinder.upscaleGan({
-      imageInitiator: mockUploadFile,
-      upscaleFactor: 2,
-    });
+    await runware.removeImageBackground({ imageInitiator: mockUploadFile });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newUpscaleGan: {
+      newRemoveBackground: {
         imageUUID: testExamples.imageUploadRes.newImageUUID,
         taskUUID: mockTaskUUID,
-        upscaleFactor: 2,
+        taskType: 8,
       },
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newUpscaleGan",
-      taskKey: "newUpscaleGan.images",
+      responseKey: "newRemoveBackground",
+      taskKey: "newRemoveBackground.images",
       taskUUID: mockTaskUUID,
     });
   });

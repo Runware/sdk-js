@@ -1,6 +1,6 @@
 import { Server } from "mock-socket";
-import { Picfinder, PicfinderServer } from "../Picfinder";
-import { delay } from "../Picfinder/utils";
+import { Runware, RunwareServer } from "../Runware";
+import { delay } from "../Runware/utils";
 import { WebSocketServer } from "ws";
 
 export const startMockServer = async () => {
@@ -12,10 +12,10 @@ export const startMockServer = async () => {
     });
   });
 
-  const picfinder = new Picfinder("TEST", "API_KEY");
+  const runware = new Runware("TEST", "API_KEY");
   await delay(1);
 
-  return { picfinder, mockServer };
+  return { runware, mockServer };
 };
 
 export const startMockBackendServer = async () => {
@@ -28,8 +28,8 @@ export const startMockBackendServer = async () => {
     });
   });
 
-  const picfinderServer = new PicfinderServer("TEST", "API_KEY");
+  const runwareServer = new RunwareServer("TEST", "API_KEY");
   await delay(1);
 
-  return { picfinderServer, mockServer };
+  return { runwareServer, mockServer };
 };

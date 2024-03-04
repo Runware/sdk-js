@@ -39,7 +39,7 @@ import {
 
 // let allImages: IImage[] = [];
 
-export class PicfinderBase {
+export class RunwareBase {
   _ws: ReconnectingWebsocketProps | any;
   _listeners: ListenerType[] = [];
   _apikey: string;

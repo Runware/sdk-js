@@ -3,17 +3,17 @@ import {
   getIntervalWithPromise,
   fileToBase64,
   MockFile,
-} from "../../Picfinder/utils";
+} from "../../Runware/utils";
 import {
   mockFileToBase64,
   mockTaskUUID,
   mockTextImageUpload,
   mockUploadFile,
-} from "./../test-utils";
+} from "../test-utils";
 import { startMockServer } from "../mockServer";
 
-vi.mock("../../Picfinder/utils", async () => {
-  const actual = await vi.importActual("../../Picfinder/utils");
+vi.mock("../../Runware/utils", async () => {
+  const actual = await vi.importActual("../../Runware/utils");
   return {
     ...(actual as any),
     fileToBase64: vi.fn().mockReturnValue("FILE_TO_BASE_64"),
@@ -23,7 +23,7 @@ vi.mock("../../Picfinder/utils", async () => {
 });
 
 describe("When user uploads an image:", async () => {
-  const { mockServer, picfinder } = await startMockServer();
+  const { mockServer, runware } = await startMockServer();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -34,15 +34,15 @@ describe("When user uploads an image:", async () => {
   });
 
   test("it should accept string during image upload", async () => {
-    const sendSpy = vi.spyOn(picfinder as any, "send");
-    await picfinder["uploadImage"]("IMAGE_UPLOAD");
+    const sendSpy = vi.spyOn(runware as any, "send");
+    await runware["uploadImage"]("IMAGE_UPLOAD");
     expect(fileToBase64).to.not.toHaveBeenCalled();
     expect(sendSpy).toBeCalledTimes(1);
   });
 
   test("it should accept file during image upload", async () => {
-    const sendSpy = vi.spyOn(picfinder as any, "send");
-    await picfinder["uploadImage"](mockUploadFile);
+    const sendSpy = vi.spyOn(runware as any, "send");
+    await runware["uploadImage"](mockUploadFile);
 
     expect(fileToBase64).toHaveBeenCalled();
     expect(sendSpy).toBeCalledTimes(1);
@@ -56,9 +56,9 @@ describe("When user uploads an image:", async () => {
   });
 
   test("it should upload image successfully", async () => {
-    const sendSpy = vi.spyOn(picfinder as any, "send");
-    const globalListenerSpy = vi.spyOn(picfinder, "globalListener");
-    await picfinder["uploadImage"](mockTextImageUpload);
+    const sendSpy = vi.spyOn(runware as any, "send");
+    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    await runware["uploadImage"](mockTextImageUpload);
 
     expect(fileToBase64).to.not.toHaveBeenCalled();
     expect(sendSpy).toHaveBeenCalledWith({

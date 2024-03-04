@@ -7,13 +7,13 @@ import {
   afterEach,
   beforeEach,
 } from "vitest";
-import { getTaskType } from "../../Picfinder/utils";
-import { mockTextImageUpload, testExamples } from "./../test-utils";
+import { getTaskType } from "../../Runware/utils";
+import { mockTextImageUpload, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
-import { EControlMode } from "../../Picfinder";
+import { EControlMode } from "../../Runware";
 
-vi.mock("../../Picfinder/utils", async () => {
-  const actual = await vi.importActual("../../Picfinder/utils");
+vi.mock("../../Runware/utils", async () => {
+  const actual = await vi.importActual("../../Runware/utils");
   return {
     ...(actual as any),
     fileToBase64: vi.fn().mockReturnValue("FILE_TO_BASE_64"),
@@ -23,7 +23,7 @@ vi.mock("../../Picfinder/utils", async () => {
 });
 
 describe("When user request an image", async () => {
-  const { mockServer, picfinder } = await startMockServer();
+  const { mockServer, runware } = await startMockServer();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -34,20 +34,20 @@ describe("When user request an image", async () => {
   });
 
   beforeAll(async () => {
-    vi.spyOn(picfinder as any, "uploadImage").mockReturnValue(
+    vi.spyOn(runware as any, "uploadImage").mockReturnValue(
       testExamples.imageUploadRes
     );
   });
 
   test("it should request image without an image initiator", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const sendSpy = vi.spyOn(runware as any, "send");
     const uploadUnprocessedImageSpy = vi.spyOn(
-      picfinder as any,
+      runware as any,
       "uploadUnprocessedImage"
     );
 
-    await picfinder.requestImages(testExamples.imageReq);
+    await runware.requestImages(testExamples.imageReq);
 
     expect(imageUploadSpy).not.toHaveBeenCalled();
     expect(uploadUnprocessedImageSpy).not.toHaveBeenCalled();
@@ -57,14 +57,14 @@ describe("When user request an image", async () => {
   });
 
   test("it should request image with an image initiator", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const sendSpy = vi.spyOn(runware as any, "send");
     const uploadUnprocessedImageSpy = vi.spyOn(
-      picfinder as any,
+      runware as any,
       "uploadUnprocessedImage"
     );
 
-    await picfinder.requestImages({
+    await runware.requestImages({
       ...testExamples.imageReq,
       imageInitiator: mockTextImageUpload,
     });
@@ -85,14 +85,14 @@ describe("When user request an image", async () => {
   });
 
   test("it should request image with an image initiator and image mask initiator", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const sendSpy = vi.spyOn(runware as any, "send");
     const uploadUnprocessedImageSpy = vi.spyOn(
-      picfinder as any,
+      runware as any,
       "uploadUnprocessedImage"
     );
 
-    await picfinder.requestImages({
+    await runware.requestImages({
       ...testExamples.imageReq,
       imageInitiator: mockTextImageUpload,
       imageMaskInitiator: mockTextImageUpload,
@@ -115,10 +115,10 @@ describe("When user request an image", async () => {
   });
 
   test("it should request image with an image initiator and image mask initiator and control net", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const sendSpy = vi.spyOn(runware as any, "send");
 
-    await picfinder.requestImages({
+    await runware.requestImages({
       ...testExamples.imageReq,
       imageInitiator: mockTextImageUpload,
       imageMaskInitiator: mockTextImageUpload,
@@ -153,14 +153,14 @@ describe("When user request an image", async () => {
     });
   });
   test("it should request multiple images in parallel", async () => {
-    const sendSpy = vi.spyOn(picfinder as any, "send");
-    const listenToImages = vi.spyOn(picfinder as any, "listenToImages");
+    const sendSpy = vi.spyOn(runware as any, "send");
+    const listenToImages = vi.spyOn(runware as any, "listenToImages");
 
     await Promise.all([
-      picfinder.requestImages({
+      runware.requestImages({
         ...testExamples.imageReq,
       }),
-      picfinder.requestImages({
+      runware.requestImages({
         ...testExamples.imageReq,
         positivePrompt: "cat",
       }),

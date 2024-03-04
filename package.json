@@ -1,6 +1,6 @@
 {
-  "name": "picfinder-sdk",
-  "version": "1.0.27",
+  "name": "runware-sdk",
+  "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -9,15 +9,15 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsup Picfinder/index.ts --format cjs,esm --dts",
+    "build": "tsup Runware/index.ts --format cjs,esm --dts",
     "lint": "tsc",
     "pkg": "npx pkgfiles",
     "dev:test": "vitest --reporter verbose",
     "test": "vitest run --reporter verbose",
-    "test:single": "vitest run --reporter verbose tests/Picfinder/request-images.test.ts"
+    "test:single": "vitest run --reporter verbose tests/Runware/request-images.test.ts"
   },
   "keywords": [
-    "picfinder",
+    "runware",
     "sdk",
     "ai"
   ],

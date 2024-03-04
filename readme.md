@@ -1,37 +1,37 @@
-# Picfinder Javascript & Typescript SDK
+# Runware Javascript & Typescript SDK
 
-> The SDK is used to run image inference with the PicFinder API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.
+> The SDK is used to run image inference with the Runware API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.
 
 ## Request for API access
 
-You can request for api access and get your API key [here](https://picfinder.ai/support/en/articles/7944975-how-to-access-the-picfinder-api)
+You can request for api access and get your API key [here](https://runware.ai/support/en/articles/7944975-how-to-access-the-runware-api)
 
 ## Installation
 
 To install and set up the library, run:
 
 ```sh
-$  npm  install  picfinder-sdk
+$  npm  install  runware-sdk
 ```
 
 Or if you prefer using Yarn:
 
 ```sh
-$  yarn  add  picfinder-sdk
+$  yarn  add  runware-sdk
 ```
 
 ## Request for API access
 
-You can request for api access and get your API key [here](https://picfinder.ai/support/en/articles/7944975-how-to-access-the-picfinder-api)
+You can request for api access and get your API key [here](https://runware.ai/support/en/articles/7944975-how-to-access-the-runware-api)
 
 ## Instantiating the SDK
 
 ```js
 # For  Client (Javascript, React, Vue  etc) Use
-const  picfinder  =  new  Picfinder(ENVIRONMENT , API_KEY);
+const  runware  =  new  Runware(ENVIRONMENT , API_KEY);
 
 # For  Server (Nodejs) Use
-const  picfinder  =  new  PicfinderServer(ENVIRONMENT , API_KEY);
+const  runware  =  new  RunwareServer(ENVIRONMENT , API_KEY);
 ```
 
 | Parameter   | Type   | Use                         |
@@ -46,8 +46,8 @@ const  picfinder  =  new  PicfinderServer(ENVIRONMENT , API_KEY);
 NB: All errors can be catched in the catch block of each request
 
 ```js
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
-const images = await picfinder.requestImages({
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const images = await runware.requestImages({
 	positivePrompt: string;
 	imageSize: number;
 	modelId: number;
@@ -74,10 +74,10 @@ return interface IImage {
 ##### Parallel Requests (2 or more requests at the same time)
 
 ```js
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
 
 const [firstImagesRequest, secondImagesRequest] = await Promise.all([
-	picfinder.requestImages({
+	runware.requestImages({
 		positivePrompt: string;
 		imageSize: number;
 		modelId: number;
@@ -86,7 +86,7 @@ const [firstImagesRequest, secondImagesRequest] = await Promise.all([
 		useCache?: boolean;
 		onPartialImages?: (images: IImage[], error: IError) =>  void;
 	}),
-	picfinder.requestImages({
+	runware.requestImages({
 		positivePrompt: string;
 		imageSize: number;
 		modelId: number;
@@ -139,8 +139,8 @@ return interface IImage {
 
 ```js
 
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
-const imageToText = await picfinder.requestImageToText({
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const imageToText = await runware.requestImageToText({
 	imageInitiator: string | File
 })
 console.log(imageToText)
@@ -161,8 +161,8 @@ return interface IImageToText {
 
 ```js
 
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
-const image = await picfinder.removeImageBackground({
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const image = await runware.removeImageBackground({
 	imageInitiator: string | File
 })
 console.log(image)
@@ -184,8 +184,8 @@ return interface IImage {
 
 ```js
 
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
-const image = await picfinder.upscaleGan({
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const image = await runware.upscaleGan({
 	imageInitiator: string | File;
 	upscaleFactor: number;
 })
@@ -210,8 +210,8 @@ return interface IImage {
 
 ```js
 
-const  picfinder  =  new  Picfinder(ENVIRONMENT	, API_KEY);
-const enhancedPrompt = await picfinder.enhancePrompt({
+const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const enhancedPrompt = await runware.enhancePrompt({
 	prompt: string;
 	promptMaxLength?: number;
 	promptLanguageId?: number;
@@ -235,6 +235,8 @@ return interface IEnhancedPrompt {
 &nbsp;
 
 ## Demo
+
+<!-- To be changed to another example -->
 
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
@@ -333,4 +335,4 @@ return interface IEnhancedPrompt {
 
 ## Resources
 
-[**API Docs**](https://picfinder.ai/support/en/collections/4049537-api-docs)
+[**API Docs**](https://runware.ai/support/en/collections/4049537-api-docs)

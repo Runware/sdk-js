@@ -10,8 +10,8 @@ import {
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
 
-vi.mock("../../Picfinder/utils", async () => {
-  const actual = await vi.importActual("../../Picfinder/utils");
+vi.mock("../../Runware/utils", async () => {
+  const actual = await vi.importActual("../../Runware/utils");
   return {
     ...(actual as any),
     fileToBase64: vi.fn().mockReturnValue("FILE_TO_BASE_64"),
@@ -20,8 +20,8 @@ vi.mock("../../Picfinder/utils", async () => {
   };
 });
 
-describe("When user request to remove image background", async () => {
-  const { mockServer, picfinder } = await startMockServer();
+describe("When user request image to text", async () => {
+  const { mockServer, runware } = await startMockServer();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -32,30 +32,29 @@ describe("When user request to remove image background", async () => {
   });
 
   beforeAll(async () => {
-    vi.spyOn(picfinder as any, "uploadImage").mockReturnValue(
+    vi.spyOn(runware as any, "uploadImage").mockReturnValue(
       testExamples.imageUploadRes
     );
   });
 
-  test("it should remove an image background", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const globalListenerSpy = vi.spyOn(picfinder, "globalListener");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+  test("it should get a text conversion", async () => {
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const sendSpy = vi.spyOn(runware as any, "send");
 
-    await picfinder.removeImageBackground({ imageInitiator: mockUploadFile });
+    await runware.requestImageToText({ imageInitiator: mockUploadFile });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newRemoveBackground: {
+      newReverseImageClip: {
         imageUUID: testExamples.imageUploadRes.newImageUUID,
         taskUUID: mockTaskUUID,
-        taskType: 8,
       },
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newRemoveBackground",
-      taskKey: "newRemoveBackground.images",
+      responseKey: "newReverseClip",
+      taskKey: "newReverseClip.texts",
       taskUUID: mockTaskUUID,
     });
   });

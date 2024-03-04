@@ -1,7 +1,7 @@
-import { EControlMode } from "../Picfinder";
-import { MockFile } from "../Picfinder/utils";
+import { EControlMode } from "../Runware";
+import { MockFile } from "../Runware/utils";
 
-const promptText = "A beautiful picfinder";
+const promptText = "A beautiful runware";
 
 export const mockTaskUUID = "UNIQUE_UID";
 export const mockTextImageUpload = "IMAGE_UPLOAD";

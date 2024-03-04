@@ -10,8 +10,8 @@ import {
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
 
-vi.mock("../../Picfinder/utils", async () => {
-  const actual = await vi.importActual("../../Picfinder/utils");
+vi.mock("../../Runware/utils", async () => {
+  const actual = await vi.importActual("../../Runware/utils");
   return {
     ...(actual as any),
     fileToBase64: vi.fn().mockReturnValue("FILE_TO_BASE_64"),
@@ -20,8 +20,8 @@ vi.mock("../../Picfinder/utils", async () => {
   };
 });
 
-describe("When user request image to text", async () => {
-  const { mockServer, picfinder } = await startMockServer();
+describe("When user request to upscale gan", async () => {
+  const { mockServer, runware } = await startMockServer();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -32,29 +32,33 @@ describe("When user request image to text", async () => {
   });
 
   beforeAll(async () => {
-    vi.spyOn(picfinder as any, "uploadImage").mockReturnValue(
+    vi.spyOn(runware as any, "uploadImage").mockReturnValue(
       testExamples.imageUploadRes
     );
   });
 
-  test("it should get a text conversion", async () => {
-    const imageUploadSpy = vi.spyOn(picfinder as any, "uploadImage");
-    const globalListenerSpy = vi.spyOn(picfinder, "globalListener");
-    const sendSpy = vi.spyOn(picfinder as any, "send");
+  test("it should upscale gan", async () => {
+    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
+    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const sendSpy = vi.spyOn(runware as any, "send");
 
-    await picfinder.requestImageToText({ imageInitiator: mockUploadFile });
+    await runware.upscaleGan({
+      imageInitiator: mockUploadFile,
+      upscaleFactor: 2,
+    });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newReverseImageClip: {
+      newUpscaleGan: {
         imageUUID: testExamples.imageUploadRes.newImageUUID,
         taskUUID: mockTaskUUID,
+        upscaleFactor: 2,
       },
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newReverseClip",
-      taskKey: "newReverseClip.texts",
+      responseKey: "newUpscaleGan",
+      taskKey: "newUpscaleGan.images",
       taskUUID: mockTaskUUID,
     });
   });

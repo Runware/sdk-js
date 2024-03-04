@@ -2,13 +2,13 @@
 // import ReconnectingWebsocket from "./reconnect";
 import WebSocket from "ws";
 
-import { PicfinderBase } from "./Picfinder-base";
+import { RunwareBase } from "./Runware-base";
 import { Environment, IImage, SdkType } from "./types";
 import { ENVIRONMENT_URLS, delay, getUUID, removeListener } from "./utils";
 
 // let allImages: IImage[] = [];
 
-export class PicfinderServer extends PicfinderBase {
+export class RunwareServer extends RunwareBase {
   _instantiated: boolean = false;
   _listeners: any[] = [];
   _reconnectingIntervalId: null | any = null;

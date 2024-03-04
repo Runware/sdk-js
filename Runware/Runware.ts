@@ -1,10 +1,10 @@
 // @ts-ignore
-import { PicfinderBase } from "./Picfinder-base";
+import { RunwareBase } from "./Runware-base";
 import ReconnectingWebsocket from "./reconnect";
 import { Environment, ReconnectingWebsocketProps } from "./types";
 import { ENVIRONMENT_URLS } from "./utils";
 
-export class Picfinder extends PicfinderBase {
+export class Runware extends RunwareBase {
   constructor(environment: keyof typeof Environment, apikey: string) {
     super(environment, apikey);
     if (apikey) {
