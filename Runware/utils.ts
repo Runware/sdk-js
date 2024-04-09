@@ -16,6 +16,11 @@ export const ENVIRONMENT_URLS = {
   [Environment.TEST]: "ws://localhost:8080",
 };
 
+export const BASE_RUNWARE_URLS = {
+  [Environment.PRODUCTION]: "wss://ws-api.runware.ai/v1",
+  [Environment.TEST]: "ws://localhost:8080",
+};
+
 export const removeFromAray = <T>(col: T[], targetElem: T) => {
   if (col == null) {
     return;

@@ -8,6 +8,11 @@ export enum SdkType {
   SERVER = "SERVER",
 }
 
+export type RunwareBaseType = {
+  apiKey: string;
+  url?: string;
+};
+
 export interface IImage {
   imageSrc: string;
   imageUUID: string;

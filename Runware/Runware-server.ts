@@ -3,8 +3,8 @@
 import WebSocket from "ws";
 
 import { RunwareBase } from "./Runware-base";
-import { Environment, IImage, SdkType } from "./types";
-import { ENVIRONMENT_URLS, delay, getUUID, removeListener } from "./utils";
+import { RunwareBaseType, SdkType } from "./types";
+import { delay } from "./utils";
 
 // let allImages: IImage[] = [];
 
@@ -15,10 +15,11 @@ export class RunwareServer extends RunwareBase {
   _pingTimeout: any;
   _pongListener: any;
 
-  constructor(environment: keyof typeof Environment, apikey: string) {
-    super(environment, apikey);
+  constructor({ apiKey, url }: RunwareBaseType) {
+    super({ apiKey, url });
+
     this._sdkType = SdkType.SERVER;
-    if (apikey) {
+    if (apiKey) {
       this.connect();
     }
   }
@@ -51,7 +52,8 @@ export class RunwareServer extends RunwareBase {
   // }
 
   protected async connect() {
-    this._ws = new WebSocket((ENVIRONMENT_URLS as any)[this._environment], {
+    if (!this._url) return;
+    this._ws = new WebSocket(this._url, {
       perMessageDeflate: false,
     });
     delay(1);
@@ -68,13 +70,13 @@ export class RunwareServer extends RunwareBase {
       if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
         this.send({
           newConnection: {
-            apiKey: this._apikey,
+            apiKey: this._apiKey,
             connectionSessionUUID: this._connectionSessionUUID,
           },
         });
       } else {
         if (this.isWebsocketReadyState()) {
-          this.send({ newConnection: { apiKey: this._apikey } });
+          this.send({ newConnection: { apiKey: this._apiKey } });
         }
       }
 

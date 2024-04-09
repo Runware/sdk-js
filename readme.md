@@ -2,9 +2,11 @@
 
 > The SDK is used to run image inference with the Runware API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.
 
-## Request for API access
+## Get API access
 
-You can request for api access and get your API key [here](https://runware.ai/support/en/articles/7944975-how-to-access-the-runware-api)
+For an API Key and trial credits, [Create a free account](https://my.runware.ai/) with [Runware](https://runware.ai)
+
+### NB: Please keep your API key private
 
 ## Installation
 

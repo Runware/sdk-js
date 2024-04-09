@@ -1,6 +1,6 @@
 import { Server } from "mock-socket";
 import { Runware, RunwareServer } from "../Runware";
-import { delay } from "../Runware/utils";
+import { BASE_RUNWARE_URLS, delay } from "../Runware/utils";
 import { WebSocketServer } from "ws";
 
 export const startMockServer = async () => {
@@ -12,7 +12,10 @@ export const startMockServer = async () => {
     });
   });
 
-  const runware = new Runware("TEST", "API_KEY");
+  const runware = new Runware({
+    apiKey: "API_KEY",
+    url: BASE_RUNWARE_URLS.TEST,
+  });
   await delay(1);
 
   return { runware, mockServer };
@@ -28,7 +31,10 @@ export const startMockBackendServer = async () => {
     });
   });
 
-  const runwareServer = new RunwareServer("TEST", "API_KEY");
+  const runwareServer = new RunwareServer({
+    apiKey: "API_KEY",
+    url: BASE_RUNWARE_URLS.TEST,
+  });
   await delay(1);
 
   return { runwareServer, mockServer };

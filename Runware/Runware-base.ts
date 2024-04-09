@@ -18,10 +18,12 @@ import {
   IUpscaleGan,
   ListenerType,
   ReconnectingWebsocketProps,
+  RunwareBaseType,
   SdkType,
   UploadImageType,
 } from "./types";
 import {
+  BASE_RUNWARE_URLS,
   ENVIRONMENT_URLS,
   LISTEN_TO_IMAGES_KEY,
   accessDeepObject,
@@ -42,8 +44,8 @@ import {
 export class RunwareBase {
   _ws: ReconnectingWebsocketProps | any;
   _listeners: ListenerType[] = [];
-  _apikey: string;
-  _environment: string;
+  _apiKey: string;
+  _url?: string;
   // _globalMessages: any[] = [];
   _globalMessages: Record<string, any> = {};
   _globalImages: IImage[] = [];
@@ -52,9 +54,9 @@ export class RunwareBase {
   _invalidAPIkey: string | undefined;
   _sdkType: SdkType;
 
-  constructor(environment: keyof typeof Environment, apikey: string) {
-    this._apikey = apikey;
-    this._environment = environment;
+  constructor({ apiKey, url = BASE_RUNWARE_URLS.PRODUCTION }: RunwareBaseType) {
+    this._apiKey = apiKey;
+    this._url = url;
     this._sdkType = SdkType.CLIENT;
   }
 
@@ -115,12 +117,12 @@ export class RunwareBase {
       if (this._connectionSessionUUID) {
         this.send({
           newConnection: {
-            apiKey: this._apikey,
+            apiKey: this._apiKey,
             connectionSessionUUID: this._connectionSessionUUID,
           },
         });
       } else {
-        this.send({ newConnection: { apiKey: this._apikey } });
+        this.send({ newConnection: { apiKey: this._apiKey } });
       }
 
       this.addListener({
@@ -781,7 +783,7 @@ export class RunwareBase {
         // const listenerTaskUID = getUUID();
         // if (this._ws.readyState === 1) {
         //   this.send({
-        //     newConnection: { apiKey: this._apikey, taskUUID: listenerTaskUID },
+        //     newConnection: { apiKey: this._apiKey, taskUUID: listenerTaskUID },
         //   });
         // }
         // const lis = this.globalListener({
