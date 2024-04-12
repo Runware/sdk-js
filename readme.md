@@ -30,16 +30,16 @@ You can request for api access and get your API key [here](https://runware.ai/su
 
 ```js
 # For  Client (Javascript, React, Vue  etc) Use
-const  runware  =  new  Runware(ENVIRONMENT , API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 
 # For  Server (Nodejs) Use
-const  runware  =  new  RunwareServer(ENVIRONMENT , API_KEY);
+const  runware  =  new RunwareServer({ apiKey: "API_KEY" });
 ```
 
-| Parameter   | Type   | Use                         |
-| ----------- | ------ | --------------------------- |
-| ENVIRONMENT | string | "PRODUCTION", "DEVELOPMENT" |
-| API_KEY     | string | The environment api key     |
+| Parameter | Type   | Use                               |
+| --------- | ------ | --------------------------------- |
+| url       | string | Url to get images from (optional) |
+| apiKey    | string | The environment api key           |
 
 ## API
 
@@ -48,7 +48,7 @@ const  runware  =  new  RunwareServer(ENVIRONMENT , API_KEY);
 NB: All errors can be catched in the catch block of each request
 
 ```js
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new  Runware({ apiKey: "API_KEY" });
 const images = await runware.requestImages({
 	positivePrompt: string;
 	imageSize: number;
@@ -76,7 +76,7 @@ return interface IImage {
 ##### Parallel Requests (2 or more requests at the same time)
 
 ```js
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 
 const [firstImagesRequest, secondImagesRequest] = await Promise.all([
 	runware.requestImages({
@@ -141,7 +141,7 @@ return interface IImage {
 
 ```js
 
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 const imageToText = await runware.requestImageToText({
 	imageInitiator: string | File
 })
@@ -163,7 +163,7 @@ return interface IImageToText {
 
 ```js
 
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 const image = await runware.removeImageBackground({
 	imageInitiator: string | File
 })
@@ -186,7 +186,7 @@ return interface IImage {
 
 ```js
 
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 const image = await runware.upscaleGan({
 	imageInitiator: string | File;
 	upscaleFactor: number;
@@ -212,7 +212,7 @@ return interface IImage {
 
 ```js
 
-const  runware  =  new  Runware(ENVIRONMENT	, API_KEY);
+const  runware  =  new Runware({ apiKey: "API_KEY" });
 const enhancedPrompt = await runware.enhancePrompt({
 	prompt: string;
 	promptMaxLength?: number;

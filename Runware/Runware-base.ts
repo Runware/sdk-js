@@ -24,7 +24,6 @@ import {
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
-  ENVIRONMENT_URLS,
   LISTEN_TO_IMAGES_KEY,
   accessDeepObject,
   compact,

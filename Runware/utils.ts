@@ -10,12 +10,6 @@ import { v4 as uuidv4, validate as validateUUID } from "uuid";
 const TIMEOUT_DURATION = 60000; // 120S;
 const POLLING_INTERVAL = 100; // 1s;
 
-export const ENVIRONMENT_URLS = {
-  [Environment.DEVELOPMENT]: "wss://dev-ws-api.diffusionmaster.com/v1/",
-  [Environment.PRODUCTION]: "wss://ws-api.diffusionmaster.com/v1/",
-  [Environment.TEST]: "ws://localhost:8080",
-};
-
 export const BASE_RUNWARE_URLS = {
   [Environment.PRODUCTION]: "wss://ws-api.runware.ai/v1",
   [Environment.TEST]: "ws://localhost:8080",
