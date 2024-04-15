@@ -1,25 +1,41 @@
 {
-  "name": "picfinder-sdk",
-  "version": "1.0.0",
+  "name": "sdk-js",
+  "version": "0.0.1",
   "description": "",
-  "main": "./dist/csj/index.js",
-  "module": "./dist/esm/index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "files": [
     "dist/"
   ],
-  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
-    "prepublishOnly": "npm run build",
-    "pkg": "npx pkgfiles"
+    "build": "tsup Runware/index.ts --format cjs,esm --dts",
+    "lint": "tsc",
+    "pkg": "npx pkgfiles",
+    "dev:test": "vitest --reporter verbose",
+    "test": "vitest run --reporter verbose",
+    "test:single": "vitest run --reporter verbose tests/Runware/request-images.test.ts"
   },
-  "keywords": [],
+  "keywords": [
+    "runware",
+    "sdk",
+    "ai"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^5.2.2"
+    "@types/uuid": "^9.0.6",
+    "@types/ws": "^8.5.8",
+    "mock-socket": "^9.3.1",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
   },
   "dependencies": {
-    "reconnecting-websocket": "^4.4.0"
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8"
   }
 }
