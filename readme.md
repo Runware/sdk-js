@@ -22,10 +22,6 @@ Or if you prefer using Yarn:
 $  yarn  add  runware-sdk
 ```
 
-## Request for API access
-
-You can request for api access and get your API key [here](https://runware.ai/support/en/articles/7944975-how-to-access-the-runware-api)
-
 ## Instantiating the SDK
 
 ```js
@@ -337,4 +333,4 @@ return interface IEnhancedPrompt {
 
 ## Resources
 
-[**API Docs**](https://runware.ai/support/en/collections/4049537-api-docs)
+[**API Docs**](https://docs.runware.ai/)
