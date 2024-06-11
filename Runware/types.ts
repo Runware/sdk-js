@@ -21,7 +21,7 @@ export interface IImage {
 }
 
 interface ILora {
-  modelId: string;
+  modelId: string | number;
   weight: number;
 }
 
@@ -74,7 +74,7 @@ export interface IError {
 export interface IRequestImage {
   positivePrompt: string;
   imageSize: number;
-  modelId: number;
+  modelId: number | string;
   numberOfImages?: number; // default to 1
   negativePrompt?: string;
   useCache?: boolean;

@@ -1,10 +1,10 @@
 # Runware Javascript & Typescript SDK
 
-> The SDK is used to run image inference with the Runware API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.
+> This SDK is used to run AI image generation with the Runware API, powered by the RunWare inference platform. With this SDK you can generate images with text-to-image and image-to-image with sub-second inference times. It also allows the use of an existing library of more than 150k models, including any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting, outpainting, ControlNets, and more. Visit the Runware site for [detailed feature breakdown](https://runware.ai/features/).
 
 ## Get API access
 
-For an API Key and trial credits, [Create a free account](https://my.runware.ai/) with [Runware](https://runware.ai)
+For an API Key and free trial credits, [create a free account](https://my.runware.ai/) with [Runware](https://runware.ai)
 
 ### NB: Please keep your API key private
 
@@ -41,7 +41,7 @@ const  runware  =  new RunwareServer({ apiKey: "API_KEY" });
 
 ### Request Image
 
-NB: All errors can be catched in the catch block of each request
+NB: All errors can be caught in the catch block of each request
 
 ```js
 const  runware  =  new  Runware({ apiKey: "API_KEY" });
@@ -114,8 +114,8 @@ return interface IImage {
 | useCache           | string: `(Optional)`               | Should use cached images (for faster response) or generate new images.                                                                                         |
 | lora               | ILora[]: `(Optional)`              | If provided it should be an array of objects. Each object must have two attributes: `loraCivitaiAIR` (string) and `weight` (float) with values from 0 to 1.    |
 | controlNet         | IControlNet[]: `(Optional)`        | If provided, should be an array of objects. Each object must have five attributes:                                                                             |
-| imageInitiator     | string or File: `(Optional)`       | The image requires for the seed image. It can be the UUID of previously generated image or an a file image.                                                    |
-| imageMaskInitiator | string or File: `(Optional)`       | The mask image requires for the seed image. It can be the UUID of previously generated image or an a file image.                                               |
+| imageInitiator     | string or File: `(Optional)`       | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file.                                             |
+| imageMaskInitiator | string or File: `(Optional)`       | The image to be used as the mask image. It can be the UUID of previously generated image, or an image from a file.                                             |
 | steps              | number: `(Optional)`               | The steps required to generate the image.                                                                                                                      |
 | onPartialImages    | function: `(Optional)`             | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function. |
 
@@ -128,8 +128,8 @@ return interface IImage {
 | startStep             | number                             | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
 | numberOfImages        | number: `(Optional)` (default = 1) | `(Optional)` The number of images to be sent.                                                                                                                                                                                                                                                                                     |
 | endStep               | number                             | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `startStepPercentage` (float).                                                                                                                                                     |
-| guideImage            | file or string `(Optional)`        | The image requires for the guide image. It can be the UUID of previously generated image or an a file image.                                                                                                                                                                                                                      |
-| guideImageUnprocessed | file or string `(Optional)`        | The image requires for the guide image unprocessed. It can be the UUID of previously generated image or an a file image.                                                                                                                                                                                                          |
+| guideImage            | file or string `(Optional)`        | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
+| guideImageUnprocessed | file or string `(Optional)`        | The image requires for the guide image unprocessed. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                    |
 
 &nbsp;
 
@@ -149,9 +149,9 @@ return interface IImageToText {
 }
 ```
 
-| Parameter      | Type           | Use                                                                                                         |
-| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
+| Parameter      | Type           | Use                                                                                                                |
+| -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| imageInitiator | string or File | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
 
 &nbsp;
 
@@ -172,9 +172,9 @@ return interface IImage {
 }[]
 ```
 
-| Parameter      | Type           | Use                                                                                                         |
-| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
+| Parameter      | Type           | Use                                                                                                                |
+| -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| imageInitiator | string or File | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
 
 &nbsp;
 
@@ -197,10 +197,10 @@ return interface IImage {
 
 ```
 
-| Parameter      | Type           | Use                                                                                                         |
-| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| imageInitiator | string or File | The image requires for the seed image. It can be the UUID of previously generated image or an a file image. |
-| upscaleFactor  | number         | The number of times to upscale;                                                                             |
+| Parameter      | Type           | Use                                                                                                                |
+| -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| imageInitiator | string or File | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
+| upscaleFactor  | number         | The number of times to upscale;                                                                                    |
 
 &nbsp;
 
@@ -306,7 +306,7 @@ return interface IEnhancedPrompt {
 
 **Added or Changed**
 
-- Expose is connected method
+- Exposed `connected`` method
 
 ### - v1.0.17
 
