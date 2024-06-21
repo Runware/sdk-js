@@ -127,7 +127,6 @@ export class RunwareBase {
       this.addListener({
         check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
         lis: (m) => {
-          console.log("message", m);
           if (m?.error) {
             if (m.errorId === 19) {
               this._invalidAPIkey = "Invalid API key";
