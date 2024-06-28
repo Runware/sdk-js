@@ -4,7 +4,6 @@ import {
   EControlMode,
   EPreProcessor,
   EPreProcessorGroup,
-  Environment,
   IControlNet,
   IControlNetWithUUID,
   IEnhancedPrompt,
@@ -28,6 +27,7 @@ import {
   accessDeepObject,
   compact,
   delay,
+  evaluateNonTrue,
   fileToBase64,
   getIntervalWithPromise,
   getPreprocessorType,
@@ -229,6 +229,7 @@ export class RunwareBase {
     lowThresholdCanny,
     highThresholdCanny,
     includeHandsAndFaceOpenPose = true,
+    returnBase64Image,
   }: {
     file: File | string;
     preProcessorType: EPreProcessorGroup;
@@ -237,6 +238,7 @@ export class RunwareBase {
     lowThresholdCanny?: number;
     highThresholdCanny?: number;
     includeHandsAndFaceOpenPose?: boolean;
+    returnBase64Image?: boolean;
   }): Promise<UploadImageType | null> => {
     try {
       const image = await this.uploadImage(file);
@@ -249,6 +251,7 @@ export class RunwareBase {
           preProcessorType,
           guideImageUUID: image.newImageUUID,
           includeHandsAndFaceOpenPose,
+          ...(returnBase64Image ? { returnBase64Image } : {}),
           ...compact(lowThresholdCanny, { lowThresholdCanny }),
           ...compact(highThresholdCanny, { highThresholdCanny }),
           // width,
@@ -379,6 +382,10 @@ export class RunwareBase {
     onPartialImages,
     lora,
     seed,
+    gScale,
+    checkNsfw,
+    returnBase64Image,
+    scheduler,
   }: IRequestImage): Promise<IImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
@@ -417,6 +424,7 @@ export class RunwareBase {
             guideImage,
             guideImageUnprocessed,
             controlMode,
+            returnBase64Image,
           } = controlData;
 
           const getCannyObject = () => {
@@ -437,6 +445,7 @@ export class RunwareBase {
                 includeHandsAndFaceOpenPose:
                   anyControlData.includeHandsAndFaceOpenPose,
                 ...getCannyObject(),
+                returnBase64Image: returnBase64Image,
               })
             : this.uploadImage(guideImage as File | string));
 
@@ -457,6 +466,9 @@ export class RunwareBase {
       const prompt = `${positivePrompt} ${
         negativePrompt ? `-no ${negativePrompt}` : ""
       }`.trim();
+
+      gScale = gScale ?? 7;
+
       requestObject = {
         offset: 0,
         modelId: modelId,
@@ -470,9 +482,11 @@ export class RunwareBase {
           imageMaskInitiator,
         }),
         useCache: useCache,
-        schedulerId: 22,
-        gScale: 7,
-        ...(steps ? { steps } : {}),
+        ...(scheduler ? { scheduler } : {}),
+        ...(returnBase64Image ? { returnBase64Image } : {}),
+        ...evaluateNonTrue({ key: "checkNsfw", value: checkNsfw }),
+        ...evaluateNonTrue({ key: "gScale", value: gScale }),
+        ...evaluateNonTrue({ key: "steps", value: steps }),
         ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
         ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),

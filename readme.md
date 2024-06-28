@@ -57,6 +57,7 @@ const images = await runware.requestImages({
 	imageInitiator?: File | string;
 	imageMaskInitiator?: File | string;
 	steps?: number;
+	returnBase64Image?: boolean;
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
 })
 console.log(images)
@@ -66,6 +67,7 @@ return interface IImage {
 	imageUUID: string;
 	taskUUID: string;
 	bNSFWContent: boolean;
+	cost: string;
 }[]
 ```
 
@@ -116,7 +118,7 @@ return interface IImage {
 | controlNet         | IControlNet[]: `(Optional)`        | If provided, should be an array of objects. Each object must have five attributes:                                                                             |
 | imageInitiator     | string or File: `(Optional)`       | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file.                                             |
 | imageMaskInitiator | string or File: `(Optional)`       | The image to be used as the mask image. It can be the UUID of previously generated image, or an image from a file.                                             |
-| steps              | number: `(Optional)`               | The steps required to generate the image.                                                                                                                      |
+| returnBase64Image  | boolean: `(Optional)`              | Returns base64 image.                                                                                                                                          |
 | onPartialImages    | function: `(Optional)`             | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function. |
 
 ##### ControlNet Params
@@ -239,6 +241,13 @@ return interface IEnhancedPrompt {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.0.28
+
+**Added or Changed**
+
+- Added cost to response.
+- Added returnBase64Image as part of request object.
 
 ### - v1.0.27
 

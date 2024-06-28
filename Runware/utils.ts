@@ -292,3 +292,17 @@ export const removeAllKeyListener = ({
 export enum LISTEN_TO_IMAGES_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
 }
+
+export const evaluateNonTrue = ({
+  key,
+  value,
+}: {
+  key: string;
+  value: any;
+}) => {
+  if (!!value || value === 0 || value === false) {
+    return { [key]: value };
+  } else {
+    return {};
+  }
+};

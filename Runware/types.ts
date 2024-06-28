@@ -18,6 +18,8 @@ export interface IImage {
   imageUUID: string;
   taskUUID: string;
   bNSFWContent: boolean;
+  cost: number;
+  imageBase64Data?: string;
 }
 
 interface ILora {
@@ -39,6 +41,7 @@ export type IControlNetGeneral = {
   guideImage: string | File;
   guideImageUnprocessed: string | File;
   controlMode: EControlMode;
+  returnBase64Image?: boolean;
 };
 
 export type IControlNetA = RequireOnlyOne<
@@ -50,10 +53,13 @@ export type IControlNetCanny = IControlNetA & {
   preprocessor: "canny";
   lowThresholdCanny: Number;
   highThresholdCanny: Number;
+  returnBase64Image?: boolean;
 };
+
 export type IControlNetHandsAndFace = IControlNetA & {
   preprocessor: keyof typeof EOpenPosePreProcessor;
   includeHandsAndFaceOpenPose: boolean;
+  returnBase64Image?: boolean;
 };
 
 export type IControlNet =
@@ -85,6 +91,10 @@ export interface IRequestImage {
   steps?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   seed?: number;
+  gScale?: number;
+  checkNsfw?: boolean;
+  returnBase64Image?: boolean;
+  scheduler?: string;
 }
 export interface IRequestImageToText {
   imageInitiator?: File | string;
@@ -108,6 +118,7 @@ export interface IUpscaleGan {
   imageInitiator: File | string;
   upscaleFactor: number;
   isImageUUID?: boolean;
+  returnBase64Image?: boolean;
 }
 
 export type ReconnectingWebsocketProps = {
