@@ -221,7 +221,7 @@ console.log(enhancedPrompt)
 return interface IEnhancedPrompt {
 	taskUUID: string;
 	text: string;
-}[]
+}[git
 
 ```
 
@@ -241,6 +241,12 @@ return interface IEnhancedPrompt {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.0.29/v1.0.30
+
+**Added or Changed**
+
+- Added prompt weighting
 
 ### - v1.0.28
 

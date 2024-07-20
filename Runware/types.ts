@@ -95,6 +95,7 @@ export interface IRequestImage {
   checkNsfw?: boolean;
   returnBase64Image?: boolean;
   scheduler?: string;
+  usePromptWeighting?: boolean;
 }
 export interface IRequestImageToText {
   imageInitiator?: File | string;

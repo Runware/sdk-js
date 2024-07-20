@@ -386,6 +386,7 @@ export class RunwareBase {
     checkNsfw,
     returnBase64Image,
     scheduler,
+    usePromptWeighting,
   }: IRequestImage): Promise<IImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
@@ -487,6 +488,10 @@ export class RunwareBase {
         ...evaluateNonTrue({ key: "checkNsfw", value: checkNsfw }),
         ...evaluateNonTrue({ key: "gScale", value: gScale }),
         ...evaluateNonTrue({ key: "steps", value: steps }),
+        ...evaluateNonTrue({
+          key: "usePromptWeighting",
+          value: usePromptWeighting,
+        }),
         ...(imageInitiatorUUID ? { imageInitiatorUUID } : {}),
         ...(imageMaskInitiatorUUID ? { imageMaskInitiatorUUID } : {}),
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
