@@ -11,6 +11,7 @@ import {
   mockUploadFile,
 } from "../test-utils";
 import { startMockServer } from "../mockServer";
+import { ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -47,11 +48,9 @@ describe("When user uploads an image:", async () => {
     expect(fileToBase64).toHaveBeenCalled();
     expect(sendSpy).toBeCalledTimes(1);
     expect(sendSpy).toHaveBeenCalledWith({
-      newImageUpload: {
-        imageBase64: mockFileToBase64,
-        taskUUID: mockTaskUUID,
-        taskType: 7,
-      },
+      image: mockFileToBase64,
+      taskUUID: mockTaskUUID,
+      taskType: ETaskType.IMAGE_UPLOAD,
     });
   });
 
@@ -62,16 +61,12 @@ describe("When user uploads an image:", async () => {
 
     expect(fileToBase64).to.not.toHaveBeenCalled();
     expect(sendSpy).toHaveBeenCalledWith({
-      newImageUpload: {
-        imageBase64: mockTextImageUpload,
-        taskUUID: mockTaskUUID,
-        taskType: 7,
-      },
+      image: mockTextImageUpload,
+      taskUUID: mockTaskUUID,
+      taskType: ETaskType.IMAGE_UPLOAD,
     });
 
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newUploadedImageUUID",
-      taskKey: "newUploadedImageUUID",
       taskUUID: mockTaskUUID,
     });
     expect(getIntervalWithPromise).toHaveBeenCalledTimes(1);

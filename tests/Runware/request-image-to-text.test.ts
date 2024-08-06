@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
+import { ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -42,19 +43,16 @@ describe("When user request image to text", async () => {
     const globalListenerSpy = vi.spyOn(runware, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
-    await runware.requestImageToText({ imageInitiator: mockUploadFile });
+    await runware.requestImageToText({ inputImage: mockUploadFile });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newReverseImageClip: {
-        imageUUID: testExamples.imageUploadRes.newImageUUID,
-        taskUUID: mockTaskUUID,
-      },
+      inputImage: testExamples.imageUploadRes.imageUUID,
+      taskUUID: mockTaskUUID,
+      taskType: ETaskType.IMAGE_CAPTION,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newReverseClip",
-      taskKey: "newReverseClip.texts",
       taskUUID: mockTaskUUID,
     });
   });

@@ -3,7 +3,7 @@
 import WebSocket from "ws";
 
 import { RunwareBase } from "./Runware-base";
-import { RunwareBaseType, SdkType } from "./types";
+import { ETaskType, RunwareBaseType, SdkType } from "./types";
 import { delay } from "./utils";
 
 // let allImages: IImage[] = [];
@@ -69,44 +69,46 @@ export class RunwareServer extends RunwareBase {
       }
       if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
         this.send({
-          newConnection: {
-            apiKey: this._apiKey,
-            connectionSessionUUID: this._connectionSessionUUID,
-          },
+          taskType: ETaskType.AUTHENTICATION,
+          apiKey: this._apiKey,
+          connectionSessionUUID: this._connectionSessionUUID,
         });
       } else {
         if (this.isWebsocketReadyState()) {
-          this.send({ newConnection: { apiKey: this._apiKey } });
+          this.send({
+            apiKey: this._apiKey,
+            taskType: ETaskType.AUTHENTICATION,
+          });
         }
       }
 
-      this.addListener({
-        check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
-        lis: (m) => {
-          if (m?.error) {
-            if (m.errorId === 19) {
-              this._invalidAPIkey = "Invalid API key";
-            } else {
-              this._invalidAPIkey = "Error connection ";
-            }
-            return;
-          }
-          this._connectionSessionUUID =
-            m?.newConnectionSessionUUID?.connectionSessionUUID;
-          this._invalidAPIkey = undefined;
-          this.heartBeat();
-        },
-      });
-      this._pongListener?.destroy();
-      this._pongListener = this.addListener({
-        check: (m) => m?.pong,
-        lis: (m) => {
-          // console.log({ m });
-          if (m.pong) {
-            this.heartBeat();
-          }
-        },
-      });
+      // this.addListener({
+      //   check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
+      //   lis: (m) => {
+      //     if (m?.error) {
+      //       if (m.errorId === 19) {
+      //         this._invalidAPIkey = "Invalid API key";
+      //       } else {
+      //         this._invalidAPIkey = "Error connection ";
+      //       }
+      //       return;
+      //     }
+      //     this._connectionSessionUUID =
+      //       m?.newConnectionSessionUUID?.connectionSessionUUID;
+      //     this._invalidAPIkey = undefined;
+      //     this.heartBeat();
+      //   },
+      // });
+      // this._pongListener?.destroy();
+      // this._pongListener = this.addListener({
+      //   check: (m) => m?.pong,
+      //   lis: (m) => {
+      //     // console.log({ m });
+      //     if (m.pong) {
+      //       this.heartBeat();
+      //     }
+      //   },
+      // });
     });
 
     this._ws.on("message", (e: any, isBinary: any) => {
@@ -123,7 +125,7 @@ export class RunwareServer extends RunwareBase {
   }
 
   protected send = (msg: Object) => {
-    this._ws.send(JSON.stringify(msg));
+    this._ws.send(JSON.stringify([msg]));
   };
 
   protected handleClose() {

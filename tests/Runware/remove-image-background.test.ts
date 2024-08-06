@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
+import { ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -42,20 +43,16 @@ describe("When user request to remove image background", async () => {
     const globalListenerSpy = vi.spyOn(runware, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
-    await runware.removeImageBackground({ imageInitiator: mockUploadFile });
+    await runware.removeImageBackground({ inputImage: mockUploadFile });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newRemoveBackground: {
-        imageUUID: testExamples.imageUploadRes.newImageUUID,
-        taskUUID: mockTaskUUID,
-        taskType: 8,
-      },
+      inputImage: testExamples.imageUploadRes.imageUUID,
+      taskUUID: mockTaskUUID,
+      taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newRemoveBackground",
-      taskKey: "newRemoveBackground.images",
       taskUUID: mockTaskUUID,
     });
   });
