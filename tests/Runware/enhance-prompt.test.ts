@@ -46,7 +46,6 @@ describe("When user request to enhance prompt", async () => {
       prompt: "Mock prompt",
       promptMaxLength: 200,
       promptVersions: 4,
-      promptLanguageId: 2,
     });
 
     expect(sendSpy).toHaveBeenCalledWith({
@@ -54,7 +53,6 @@ describe("When user request to enhance prompt", async () => {
       taskUUID: mockTaskUUID,
       promptMaxLength: 200,
       promptVersions: 4,
-      promptLanguageId: 2,
       taskType: ETaskType.PROMPT_ENHANCE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
@@ -75,7 +73,6 @@ describe("When user request to enhance prompt", async () => {
       taskUUID: mockTaskUUID,
       promptMaxLength: 380,
       promptVersions: 1,
-      promptLanguageId: 1,
       taskType: ETaskType.PROMPT_ENHANCE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({

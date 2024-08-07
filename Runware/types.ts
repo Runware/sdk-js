@@ -28,7 +28,9 @@ export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 
 export interface IImage {
+  taskType: ETaskType;
   imageUUID: string;
+  inputImageUUID?: string;
   taskUUID: string;
   imageURL?: string;
   imageBase64Data?: string;
@@ -61,9 +63,9 @@ export type IControlNetGeneral = {
   model: string;
   guideImage: string | File;
   weight?: number;
-  startStep: number;
+  startStep?: number;
   startStepPercentage?: number;
-  endStep: number;
+  endStep?: number;
   endStepPercentage?: number;
   controlMode: EControlMode;
 };
@@ -140,19 +142,43 @@ export interface IRequestImage {
 }
 export interface IRequestImageToText {
   inputImage?: File | string;
+  includeCost?: boolean;
 }
 export interface IImageToText {
+  taskType: ETaskType;
   taskUUID: string;
   text: string;
   cost?: number;
 }
 
-export interface IRemoveImageBackground extends IRequestImageToText {}
+export interface IRemoveImageBackground extends IRequestImageToText {
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  rgba?: number[];
+  postProcessMask?: boolean;
+  returnOnlyMask?: boolean;
+  alphaMatting?: boolean;
+  alphaMattingForegroundThreshold?: number;
+  alphaMattingBackgroundThreshold?: number;
+  alphaMattingErodeSize?: number;
+}
+
+export interface IRemoveImage {
+  taskType: ETaskType;
+  taskUUID: string;
+  imageUUID: string;
+  inputImageUUID: string;
+  imageURL?: string;
+  imageBase64Data?: string;
+  imageDataURI?: string;
+  cost: number;
+}
+
 export interface IPromptEnhancer {
   promptMaxLength?: number;
-  promptLanguageId?: number;
   promptVersions?: number;
   prompt: string;
+  includeCost?: boolean;
 }
 
 export interface IEnhancedPrompt extends IImageToText {}
@@ -162,6 +188,7 @@ export interface IUpscaleGan {
   upscaleFactor: number;
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
+  includeCost?: boolean;
 }
 
 export type ReconnectingWebsocketProps = {

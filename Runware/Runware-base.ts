@@ -24,6 +24,7 @@ import {
   ETaskType,
   IControlNetPreprocess,
   IControlNetImage,
+  IRemoveImage,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -597,6 +598,7 @@ export class RunwareBase {
 
   requestImageToText = async ({
     inputImage,
+    includeCost,
   }: IRequestImageToText): Promise<IImageToText> => {
     try {
       await this.ensureConnection();
@@ -609,9 +611,10 @@ export class RunwareBase {
 
         const taskUUID = getUUID();
         this.send({
+          taskUUID,
           taskType: ETaskType.IMAGE_CAPTION,
           inputImage: imageUploaded.imageUUID,
-          taskUUID,
+          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         });
 
         const lis = this.globalListener({
@@ -651,7 +654,16 @@ export class RunwareBase {
 
   removeImageBackground = async ({
     inputImage,
-  }: IRemoveImageBackground): Promise<IImage[]> => {
+    outputType,
+    outputFormat,
+    rgba,
+    postProcessMask,
+    returnOnlyMask,
+    alphaMatting,
+    alphaMattingForegroundThreshold,
+    alphaMattingBackgroundThreshold,
+    alphaMattingErodeSize,
+  }: IRemoveImageBackground): Promise<IRemoveImage[]> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
@@ -664,9 +676,30 @@ export class RunwareBase {
         const taskUUID = getUUID();
 
         this.send({
-          inputImage: imageUploaded.imageUUID,
-          taskUUID,
           taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
+          taskUUID,
+          inputImage: imageUploaded.imageUUID,
+          ...evaluateNonTrue({ key: "rgba", value: rgba }),
+          ...evaluateNonTrue({
+            key: "postProcessMask",
+            value: postProcessMask,
+          }),
+          ...evaluateNonTrue({ key: "returnOnlyMask", value: returnOnlyMask }),
+          ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
+          ...evaluateNonTrue({
+            key: "alphaMattingForegroundThreshold",
+            value: alphaMattingForegroundThreshold,
+          }),
+          ...evaluateNonTrue({
+            key: "alphaMattingBackgroundThreshold",
+            value: alphaMattingBackgroundThreshold,
+          }),
+          ...evaluateNonTrue({
+            key: "alphaMattingErodeSize",
+            value: alphaMattingErodeSize,
+          }),
+          ...evaluateNonTrue({ key: "outputType", value: outputType }),
+          ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
         });
 
         const lis = this.globalListener({
@@ -707,6 +740,7 @@ export class RunwareBase {
     upscaleFactor,
     outputType,
     outputFormat,
+    includeCost,
   }: IUpscaleGan): Promise<IImage[]> => {
     try {
       await this.ensureConnection();
@@ -721,10 +755,11 @@ export class RunwareBase {
         this.send({
           taskUUID,
           inputImage: imageUploaded?.imageUUID,
+          taskType: ETaskType.IMAGE_UPSCALE,
           upscaleFactor,
+          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
           ...(outputType ? { outputType } : {}),
           ...(outputFormat ? { outputFormat } : {}),
-          taskType: ETaskType.IMAGE_UPSCALE,
         });
 
         const lis = this.globalListener({
@@ -762,8 +797,8 @@ export class RunwareBase {
   enhancePrompt = async ({
     prompt,
     promptMaxLength = 380,
-    promptLanguageId = 1,
     promptVersions = 1,
+    includeCost,
   }: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
     try {
       await this.ensureConnection();
@@ -775,14 +810,10 @@ export class RunwareBase {
           taskUUID,
           promptMaxLength,
           promptVersions,
-          promptLanguageId,
+          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
           taskType: ETaskType.PROMPT_ENHANCE,
         });
-        // const lis = this.globalListener({
-        //   responseKey: "newPromptEnhancer",
-        //   taskType: "newPromptEnhancer.texts",
-        //   taskUUID,
-        // });
+
         const lis = this.globalListener({
           taskUUID,
         });
