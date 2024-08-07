@@ -14,7 +14,7 @@
     "pkg": "npx pkgfiles",
     "dev:test": "vitest --reporter verbose",
     "test": "vitest run --reporter verbose",
-    "test:single": "vitest run --reporter verbose tests/Runware/request-images.test.ts"
+    "test:single": "vitest run --reporter verbose tests/Runware/upscale-gan.test.ts"
   },
   "keywords": [
     "runware",
