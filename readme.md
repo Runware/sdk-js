@@ -333,12 +333,12 @@ return interface IControlNetImage {
 ```
 
 | Parameter                   | Type                        | Use                                                                                   |
-| --------------------------- | --------------------------- | ------------------------------------------------------------------------------------- | --- |
-| inputImage                  | string or File              | Specifies the input image to be preprocessed to generate a guide image. .             |
+| --------------------------- | --------------------------- | ------------------------------------------------------------------------------------- |
+| inputImage                  | string or File              | Specifies the input image to be preprocessed to generate a guide image.               |
 | width                       | number                      | Controls the image width.                                                             |
 | height                      | number                      | Controls the image height.                                                            |
 | outputType                  | IOutputType: `(Optional)`   | Specifies the output type in which the image is returned.                             |
-| outputFormat                | IOutputFormat: `(Optional)` | Specifies the format of the output image.                                             |     |
+| outputFormat                | IOutputFormat: `(Optional)` | Specifies the format of the output image.                                             |
 | preProcessorType            | string: `(Optional)`        | Specifies the pre processor type to use.                                              |
 | includeCost                 | boolean: `Optional`         | If set to true, the cost to perform the task will be included in the response object. |
 | lowThresholdCanny           | number `Optional`           | Defines the lower threshold when using the Canny edge detection preprocessor.         |
