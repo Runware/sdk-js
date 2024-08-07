@@ -253,78 +253,6 @@ export class RunwareBase {
     }
   };
 
-  controlNetPreProcess = async ({
-    inputImage,
-    preProcessor,
-    height,
-    width,
-    outputType,
-    outputFormat,
-    highThresholdCanny,
-    lowThresholdCanny,
-    includeHandsAndFaceOpenPose,
-  }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
-    try {
-      const image = await this.uploadImage(inputImage);
-      if (!image?.imageUUID) return null;
-
-      const taskUUID = getUUID();
-      this.send({
-        inputImage: image.imageUUID,
-        taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
-        taskUUID,
-        preProcessor,
-        ...evaluateNonTrue({ key: "height", value: height }),
-        ...evaluateNonTrue({ key: "width", value: width }),
-        ...evaluateNonTrue({ key: "outputType", value: outputType }),
-        ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-        ...evaluateNonTrue({
-          key: "highThresholdCanny",
-          value: highThresholdCanny,
-        }),
-        ...evaluateNonTrue({
-          key: "lowThresholdCanny",
-          value: lowThresholdCanny,
-        }),
-        ...evaluateNonTrue({
-          key: "includeHandsAndFaceOpenPose",
-          value: includeHandsAndFaceOpenPose,
-        }),
-      });
-      const lis = this.globalListener({
-        taskUUID,
-      });
-
-      const guideImage = (await getIntervalWithPromise(
-        ({ resolve, reject }) => {
-          const uploadedImage = this.getSingleMessage({
-            taskUUID,
-          });
-
-          if (!uploadedImage) return;
-
-          if (uploadedImage?.error) {
-            reject(uploadedImage);
-            return true;
-          }
-
-          if (uploadedImage) {
-            // delete this._globalMessages[taskUUID];
-            resolve(uploadedImage);
-            return true;
-          }
-        },
-        { debugKey: "unprocessed-image" }
-      )) as IControlNetImage;
-
-      lis.destroy();
-
-      return guideImage;
-    } catch (e: any) {
-      throw e;
-    }
-  };
-
   listenToImages({
     onPartialImages,
     taskUUID,
@@ -419,14 +347,14 @@ export class RunwareBase {
     usePromptWeighting,
     numberResults = 1,
     controlNet,
-
-    imageSize,
     lora,
-
     useCache,
     onPartialImages,
-    gScale,
-  }: IRequestImage): Promise<IImage[] | undefined> {
+    includeCost,
+  }: // imageSize,
+
+  // gScale,
+  IRequestImage): Promise<IImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
@@ -515,10 +443,9 @@ export class RunwareBase {
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
         ...(seed ? { seed: seed } : {}),
         ...(scheduler ? { scheduler } : {}),
-        ...evaluateNonTrue({ key: "sizeId", value: imageSize }),
+        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
 
         ...evaluateNonTrue({ key: "useCache", value: useCache }),
-        ...evaluateNonTrue({ key: "gScale", value: gScale }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
       };
@@ -576,25 +503,79 @@ export class RunwareBase {
     // return res.the;
   }
 
-  handleIncompleteImages({
-    taskUUIDs,
-    error,
-  }: {
-    taskUUIDs: string[];
-    error: any;
-  }) {
-    const imagesWithSimilarTask = this._globalImages.filter((img) =>
-      taskUUIDs.includes(img.taskUUID)
-    );
-    if (imagesWithSimilarTask.length > 1) {
-      this._globalImages = this._globalImages.filter(
-        (img) => !taskUUIDs.includes(img.taskUUID)
-      );
-      return imagesWithSimilarTask;
-    } else {
-      throw error;
+  controlNetPreProcess = async ({
+    inputImage,
+    preProcessor,
+    height,
+    width,
+    outputType,
+    outputFormat,
+    highThresholdCanny,
+    lowThresholdCanny,
+    includeHandsAndFaceOpenPose,
+    includeCost,
+  }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
+    try {
+      const image = await this.uploadImage(inputImage);
+      if (!image?.imageUUID) return null;
+
+      const taskUUID = getUUID();
+      this.send({
+        inputImage: image.imageUUID,
+        taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
+        taskUUID,
+        preProcessor,
+        ...evaluateNonTrue({ key: "height", value: height }),
+        ...evaluateNonTrue({ key: "width", value: width }),
+        ...evaluateNonTrue({ key: "outputType", value: outputType }),
+        ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
+        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+        ...evaluateNonTrue({
+          key: "highThresholdCanny",
+          value: highThresholdCanny,
+        }),
+        ...evaluateNonTrue({
+          key: "lowThresholdCanny",
+          value: lowThresholdCanny,
+        }),
+        ...evaluateNonTrue({
+          key: "includeHandsAndFaceOpenPose",
+          value: includeHandsAndFaceOpenPose,
+        }),
+      });
+      const lis = this.globalListener({
+        taskUUID,
+      });
+
+      const guideImage = (await getIntervalWithPromise(
+        ({ resolve, reject }) => {
+          const uploadedImage = this.getSingleMessage({
+            taskUUID,
+          });
+
+          if (!uploadedImage) return;
+
+          if (uploadedImage?.error) {
+            reject(uploadedImage);
+            return true;
+          }
+
+          if (uploadedImage) {
+            // delete this._globalMessages[taskUUID];
+            resolve(uploadedImage);
+            return true;
+          }
+        },
+        { debugKey: "unprocessed-image" }
+      )) as IControlNetImage;
+
+      lis.destroy();
+
+      return guideImage;
+    } catch (e: any) {
+      throw e;
     }
-  }
+  };
 
   requestImageToText = async ({
     inputImage,
@@ -663,6 +644,7 @@ export class RunwareBase {
     alphaMattingForegroundThreshold,
     alphaMattingBackgroundThreshold,
     alphaMattingErodeSize,
+    includeCost,
   }: IRemoveImageBackground): Promise<IRemoveImage[]> => {
     try {
       await this.ensureConnection();
@@ -686,6 +668,7 @@ export class RunwareBase {
           }),
           ...evaluateNonTrue({ key: "returnOnlyMask", value: returnOnlyMask }),
           ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
+          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
           ...evaluateNonTrue({
             key: "alphaMattingForegroundThreshold",
             value: alphaMattingForegroundThreshold,
@@ -942,6 +925,26 @@ export class RunwareBase {
 
     return this._globalMessages[taskUUID]?.[0];
   };
+
+  handleIncompleteImages({
+    taskUUIDs,
+    error,
+  }: {
+    taskUUIDs: string[];
+    error: any;
+  }) {
+    const imagesWithSimilarTask = this._globalImages.filter((img) =>
+      taskUUIDs.includes(img.taskUUID)
+    );
+    if (imagesWithSimilarTask.length > 1) {
+      this._globalImages = this._globalImages.filter(
+        (img) => !taskUUIDs.includes(img.taskUUID)
+      );
+      return imagesWithSimilarTask;
+    } else {
+      throw error;
+    }
+  }
 
   connected = () =>
     this.isWebsocketReadyState() && !!this._connectionSessionUUID;

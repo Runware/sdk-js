@@ -36,7 +36,7 @@ export interface IImage {
   imageBase64Data?: string;
   imageDataURI?: string;
   NSFWContent?: boolean;
-  cost: number;
+  cost?: number;
 }
 export interface IControlNetImage {
   taskUUID: string;
@@ -45,7 +45,7 @@ export interface IControlNetImage {
   guideImageURL?: string;
   guideImageBase64Data?: string;
   guideImageDataURI?: string;
-  cost: number;
+  cost?: number;
 }
 
 interface ILora {
@@ -79,6 +79,7 @@ export type IControlNetPreprocess = {
   highThresholdCanny?: number;
   lowThresholdCanny?: number;
   includeHandsAndFaceOpenPose?: boolean;
+  includeCost?: boolean;
 };
 
 // export type IControlNetA = RequireOnlyOne<
@@ -132,13 +133,13 @@ export interface IRequestImage {
   usePromptWeighting?: boolean;
   numberResults?: number; // default to 1
   controlNet?: IControlNet[];
-
-  imageSize?: number;
   lora?: ILora[];
+  includeCost?: boolean;
 
+  // imageSize?: number;
   useCache?: boolean;
   onPartialImages?: (images: IImage[], error?: IError) => void;
-  gScale?: number;
+  // gScale?: number;
 }
 export interface IRequestImageToText {
   inputImage?: File | string;
@@ -161,6 +162,7 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   alphaMattingForegroundThreshold?: number;
   alphaMattingBackgroundThreshold?: number;
   alphaMattingErodeSize?: number;
+  includeCost?: boolean;
 }
 
 export interface IRemoveImage {
@@ -171,7 +173,7 @@ export interface IRemoveImage {
   imageURL?: string;
   imageBase64Data?: string;
   imageDataURI?: string;
-  cost: number;
+  cost?: number;
 }
 
 export interface IPromptEnhancer {

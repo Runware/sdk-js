@@ -18,18 +18,20 @@ export const testExamples = {
   imageReq: {
     numberResults: 8,
     positivePrompt: promptText,
-    imageSize: 2,
     model: 13,
     steps: 30,
+    width: 512,
+    height: 512,
   },
   imageRes: {
     model: 13,
     numberResults: 8,
     positivePrompt: promptText,
-    sizeId: 2,
     steps: 30,
     taskType: ETaskType.IMAGE_INFERENCE,
     taskUUID: mockTaskUUID,
+    width: 512,
+    height: 512,
   },
   imageUploadRes: {
     imageUUID: mockNewImageUID,
