@@ -151,6 +151,7 @@ return interface IImage {
 | lora               | ILora[]: `(Optional)`              | With LoRA (Low-Rank Adaptation), you can adapt a model to specific styles or features by emphasizing particular aspects of the data.                                                                                                                                          |
 | controlNet         | IControlNet[]: `(Optional)`        | With ControlNet, you can provide a guide image to help the model generate images that align with the desired structure.                                                                                                                                                       |
 | onPartialImages    | function: `(Optional)`             | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function.                                                                                                                |
+| includeCost        | boolean `(Optional)`               | If set to true, the cost to perform the task will be included in the response object.                                                                                                                                                                                         |
 
 ##### ControlNet Params
 
@@ -355,7 +356,19 @@ return interface IControlNetImage {
 
 ## Changelog
 
-### - v2.0.0
+### - v1.1.2
+
+**Added or Changed**
+
+- Retry connection for server side
+
+### - v1.1.1
+
+**Added or Changed**
+
+- Fix delay time
+
+### - v1.1.0
 
 **Added or Changed**
 

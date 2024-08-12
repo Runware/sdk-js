@@ -100,7 +100,7 @@ export class RunwareBase {
   }) {
     const listener = (msg: {
       data: any[];
-      errors?: { taskUUID: string; code: string }[];
+      errors?: { taskUUID: string; code: string; taskType?: string }[];
       errorMessage?: string;
     }) => {
       const arrayMessage = Array.isArray(msg?.data) ? msg.data : [msg.data];
@@ -114,11 +114,11 @@ export class RunwareBase {
       // );
 
       const filteredMessage = arrayMessage.filter(
-        (v) => v?.taskUUID === taskUUID
+        (v) => (v?.taskUUID || v?.taskType) === taskUUID
       );
 
       const filteredErrors = arrayErrors.filter(
-        (v) => v?.taskUUID === taskUUID
+        (v) => (v?.taskUUID || v?.taskType) === taskUUID
       );
 
       if (filteredErrors.length) {
@@ -362,6 +362,7 @@ export class RunwareBase {
 
     try {
       await this.ensureConnection();
+
       let seedImageUUID: string | null = null;
       let maskImageUUID: string | null = null;
       let controlNetData: IControlNetWithUUID[] = [];
@@ -831,8 +832,37 @@ export class RunwareBase {
   async ensureConnection() {
     let isConnected = this.connected();
 
+    if (isConnected) return;
+
+    const interval = 2000;
+
     try {
       if (this._invalidAPIkey) throw this._invalidAPIkey;
+
+      return new Promise((resolve, reject) => {
+        //  const isConnected =
+        let retry = 0;
+        const MAX_RETRY = 2;
+
+        const intervalId = setInterval(async () => {
+          try {
+            const hasConnected = this.connected();
+            if (hasConnected) {
+              clearInterval(intervalId);
+              resolve(true);
+            } else if (retry >= MAX_RETRY) {
+              clearInterval(intervalId);
+              reject(new Error("Polling timed out"));
+            } else {
+              this.connect();
+              retry++;
+            }
+          } catch (error) {
+            clearInterval(intervalId);
+            reject(error);
+          }
+        }, interval);
+      });
 
       if (!isConnected) {
         this.connect();
