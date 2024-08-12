@@ -366,6 +366,7 @@ return interface IControlNetImage {
 
 **Added or Changed**
 
+- Upgraded WS
 - Fix delay time
 
 ### - v1.1.0

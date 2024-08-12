@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "uuid": "^9.0.1",
-    "ws": "^8.14.2"
+    "ws": "^8.18.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
