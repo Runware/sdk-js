@@ -7,10 +7,9 @@ import {
   afterEach,
   beforeEach,
 } from "vitest";
-import { getTaskType } from "../../Runware/utils";
 import { mockTextImageUpload, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
-import { EControlMode } from "../../Runware";
+import { EControlMode, ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -42,75 +41,49 @@ describe("When user request an image", async () => {
   test("it should request image without an image initiator", async () => {
     const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
     const sendSpy = vi.spyOn(runware as any, "send");
-    const uploadUnprocessedImageSpy = vi.spyOn(
-      runware as any,
-      "uploadUnprocessedImage"
-    );
 
     await runware.requestImages(testExamples.imageReq);
 
     expect(imageUploadSpy).not.toHaveBeenCalled();
-    expect(uploadUnprocessedImageSpy).not.toHaveBeenCalled();
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: testExamples.imageRes,
+      ...testExamples.imageRes,
     });
   });
 
   test("it should request image with an image initiator", async () => {
     const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
     const sendSpy = vi.spyOn(runware as any, "send");
-    const uploadUnprocessedImageSpy = vi.spyOn(
-      runware as any,
-      "uploadUnprocessedImage"
-    );
 
     await runware.requestImages({
       ...testExamples.imageReq,
-      imageInitiator: mockTextImageUpload,
+      seedImage: mockTextImageUpload,
     });
 
     expect(imageUploadSpy).toHaveBeenCalled();
     expect(imageUploadSpy).toHaveBeenCalledTimes(1);
-    expect(uploadUnprocessedImageSpy).not.toHaveBeenCalled();
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: {
-        ...testExamples.imageRes,
-        imageInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
-        taskType: getTaskType({
-          prompt: testExamples.imageReq.positivePrompt,
-          imageInitiator: mockTextImageUpload,
-        }),
-      },
+      ...testExamples.imageRes,
+      seedImage: testExamples.imageUploadRes.imageUUID,
+      taskType: ETaskType.IMAGE_INFERENCE,
     });
   });
 
   test("it should request image with an image initiator and image mask initiator", async () => {
     const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
     const sendSpy = vi.spyOn(runware as any, "send");
-    const uploadUnprocessedImageSpy = vi.spyOn(
-      runware as any,
-      "uploadUnprocessedImage"
-    );
 
     await runware.requestImages({
       ...testExamples.imageReq,
-      imageInitiator: mockTextImageUpload,
-      imageMaskInitiator: mockTextImageUpload,
+      seedImage: mockTextImageUpload,
+      maskImage: mockTextImageUpload,
     });
 
     expect(imageUploadSpy).toHaveBeenCalledTimes(2);
-    expect(uploadUnprocessedImageSpy).not.toHaveBeenCalled();
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: {
-        ...testExamples.imageRes,
-        imageInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
-        imageMaskInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
-        taskType: getTaskType({
-          prompt: testExamples.imageReq.positivePrompt,
-          imageInitiator: mockTextImageUpload,
-          imageMaskInitiator: mockTextImageUpload,
-        }),
-      },
+      ...testExamples.imageRes,
+      seedImage: testExamples.imageUploadRes.imageUUID,
+      maskImage: testExamples.imageUploadRes.imageUUID,
+      taskType: ETaskType.IMAGE_INFERENCE,
     });
   });
 
@@ -120,36 +93,27 @@ describe("When user request an image", async () => {
 
     await runware.requestImages({
       ...testExamples.imageReq,
-      imageInitiator: mockTextImageUpload,
-      imageMaskInitiator: mockTextImageUpload,
-      controlNet: [{ ...testExamples.controlNet }],
+      seedImage: mockTextImageUpload,
+      maskImage: mockTextImageUpload,
+      controlNet: [{ ...testExamples.controlNet, model: "control_net_model" }],
     });
 
     expect(imageUploadSpy).toHaveBeenCalledTimes(3);
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: {
-        ...testExamples.imageRes,
-        imageInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
-        imageMaskInitiatorUUID: testExamples.imageUploadRes.newImageUUID,
-        controlNet: [
-          {
-            controlMode: EControlMode.CONTROL_NET,
-            endStep: 20,
-            guideImageUUID: "NEW_IMAGE_UID",
-            highThresholdCanny: undefined,
-            lowThresholdCanny: undefined,
-            preprocessor: "canny",
-            startStep: 0,
-            weight: 1,
-          },
-        ],
-        taskType: getTaskType({
-          prompt: testExamples.imageReq.positivePrompt,
-          imageInitiator: mockTextImageUpload,
-          imageMaskInitiator: mockTextImageUpload,
-          controlNet: [testExamples.controlNet],
-        }),
-      },
+      ...testExamples.imageRes,
+      seedImage: testExamples.imageUploadRes.imageUUID,
+      maskImage: testExamples.imageUploadRes.imageUUID,
+      controlNet: [
+        {
+          controlMode: EControlMode.CONTROL_NET,
+          endStep: 20,
+          guideImage: "NEW_IMAGE_UID",
+          model: "control_net_model",
+          startStep: 0,
+          weight: 1,
+        },
+      ],
+      taskType: ETaskType.IMAGE_INFERENCE,
     });
   });
   test("it should request multiple images in parallel", async () => {
@@ -169,21 +133,13 @@ describe("When user request an image", async () => {
     expect(sendSpy).toHaveBeenCalledTimes(2);
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: {
-        ...testExamples.imageRes,
-        taskType: getTaskType({
-          prompt: testExamples.imageReq.positivePrompt,
-        }),
-      },
+      ...testExamples.imageRes,
+      taskType: ETaskType.IMAGE_INFERENCE,
     });
     expect(sendSpy).toHaveBeenCalledWith({
-      newTask: {
-        ...testExamples.imageRes,
-        promptText: "cat",
-        taskType: getTaskType({
-          prompt: "cat",
-        }),
-      },
+      ...testExamples.imageRes,
+      positivePrompt: "cat",
+      taskType: ETaskType.IMAGE_INFERENCE,
     });
 
     expect(listenToImages).toHaveBeenCalledTimes(2);

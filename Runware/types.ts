@@ -8,20 +8,48 @@ export enum SdkType {
   SERVER = "SERVER",
 }
 
+export enum ETaskType {
+  IMAGE_INFERENCE = "imageInference",
+  IMAGE_UPLOAD = "imageUpload",
+  IMAGE_UPSCALE = "imageUpscale",
+  IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
+  IMAGE_CAPTION = "imageCaption",
+  IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
+  PROMPT_ENHANCE = "promptEnhance",
+  AUTHENTICATION = "authentication",
+}
+
 export type RunwareBaseType = {
   apiKey: string;
   url?: string;
 };
 
+export type IOutputType = "base64Data" | "dataURI" | "URL";
+export type IOutputFormat = "JPG" | "PNG" | "WEBP";
+
 export interface IImage {
-  imageSrc: string;
+  taskType: ETaskType;
   imageUUID: string;
+  inputImageUUID?: string;
   taskUUID: string;
-  bNSFWContent: boolean;
+  imageURL?: string;
+  imageBase64Data?: string;
+  imageDataURI?: string;
+  NSFWContent?: boolean;
+  cost?: number;
+}
+export interface IControlNetImage {
+  taskUUID: string;
+  inputImageUUID: string;
+  guideImageUUID: string;
+  guideImageURL?: string;
+  guideImageBase64Data?: string;
+  guideImageDataURI?: string;
+  cost?: number;
 }
 
 interface ILora {
-  modelId: string | number;
+  model: string | number;
   weight: number;
 }
 
@@ -32,37 +60,50 @@ export enum EControlMode {
 }
 
 export type IControlNetGeneral = {
-  preprocessor: keyof typeof EPreProcessor;
-  weight: number;
-  startStep: number;
-  endStep: number;
+  model: string;
   guideImage: string | File;
-  guideImageUnprocessed: string | File;
+  weight?: number;
+  startStep?: number;
+  startStepPercentage?: number;
+  endStep?: number;
+  endStepPercentage?: number;
   controlMode: EControlMode;
 };
-
-export type IControlNetA = RequireOnlyOne<
-  IControlNetGeneral,
-  "guideImage" | "guideImageUnprocessed"
->;
-
-export type IControlNetCanny = IControlNetA & {
-  preprocessor: "canny";
-  lowThresholdCanny: Number;
-  highThresholdCanny: Number;
-};
-export type IControlNetHandsAndFace = IControlNetA & {
-  preprocessor: keyof typeof EOpenPosePreProcessor;
-  includeHandsAndFaceOpenPose: boolean;
+export type IControlNetPreprocess = {
+  inputImage: string | File;
+  preProcessor: EPreProcessor;
+  height?: number;
+  width?: number;
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  highThresholdCanny?: number;
+  lowThresholdCanny?: number;
+  includeHandsAndFaceOpenPose?: boolean;
+  includeCost?: boolean;
 };
 
-export type IControlNet =
-  | IControlNetCanny
-  | IControlNetA
-  | IControlNetHandsAndFace;
+// export type IControlNetA = RequireOnlyOne<
+//   IControlNetGeneral,
+//   "guideImage" | "guideImageUnprocessed"
+// >;
+
+// export type IControlNetCanny = IControlNetA & {
+//   preprocessor: "canny";
+//   lowThresholdCanny: Number;
+//   highThresholdCanny: Number;
+//   outputType?: IOutputType;
+// };
+
+// export type IControlNetHandsAndFace = IControlNetA & {
+//   preprocessor: keyof typeof EOpenPosePreProcessor;
+//   includeHandsAndFaceOpenPose: boolean;
+//   outputType?: IOutputType;
+// };
+
+export type IControlNet = IControlNetGeneral;
 
 export type IControlNetWithUUID = Omit<IControlNet, "guideImage"> & {
-  guideImageUUID: string;
+  guideImage: string;
 };
 
 export interface IError {
@@ -72,42 +113,84 @@ export interface IError {
 }
 
 export interface IRequestImage {
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  uploadEndpoint?: string;
+  checkNsfw?: boolean;
   positivePrompt: string;
-  imageSize: number;
-  modelId: number | string;
-  numberOfImages?: number; // default to 1
   negativePrompt?: string;
-  useCache?: boolean;
-  lora?: ILora[];
-  controlNet?: IControlNet[];
-  imageInitiator?: File | string;
-  imageMaskInitiator?: File | string;
+  seedImage?: File | string;
+  maskImage?: File | string;
+  strength?: number;
+  height?: number;
+  width?: number;
+  model: number | string;
   steps?: number;
-  onPartialImages?: (images: IImage[], error?: IError) => void;
+  scheduler?: string;
   seed?: number;
+  CFGScale?: number;
+  clipSkip?: number;
+  usePromptWeighting?: boolean;
+  numberResults?: number; // default to 1
+  controlNet?: IControlNet[];
+  lora?: ILora[];
+  includeCost?: boolean;
+
+  // imageSize?: number;
+  useCache?: boolean;
+  onPartialImages?: (images: IImage[], error?: IError) => void;
+  // gScale?: number;
 }
 export interface IRequestImageToText {
-  imageInitiator?: File | string;
+  inputImage?: File | string;
+  includeCost?: boolean;
 }
 export interface IImageToText {
+  taskType: ETaskType;
   taskUUID: string;
   text: string;
+  cost?: number;
 }
 
-export interface IRemoveImageBackground extends IRequestImageToText {}
+export interface IRemoveImageBackground extends IRequestImageToText {
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  rgba?: number[];
+  postProcessMask?: boolean;
+  returnOnlyMask?: boolean;
+  alphaMatting?: boolean;
+  alphaMattingForegroundThreshold?: number;
+  alphaMattingBackgroundThreshold?: number;
+  alphaMattingErodeSize?: number;
+  includeCost?: boolean;
+}
+
+export interface IRemoveImage {
+  taskType: ETaskType;
+  taskUUID: string;
+  imageUUID: string;
+  inputImageUUID: string;
+  imageURL?: string;
+  imageBase64Data?: string;
+  imageDataURI?: string;
+  cost?: number;
+}
+
 export interface IPromptEnhancer {
   promptMaxLength?: number;
-  promptLanguageId?: number;
   promptVersions?: number;
   prompt: string;
+  includeCost?: boolean;
 }
 
 export interface IEnhancedPrompt extends IImageToText {}
 
 export interface IUpscaleGan {
-  imageInitiator: File | string;
+  inputImage: File | string;
   upscaleFactor: number;
-  isImageUUID?: boolean;
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  includeCost?: boolean;
 }
 
 export type ReconnectingWebsocketProps = {
@@ -120,9 +203,10 @@ export type ReconnectingWebsocketProps = {
 } & WebSocket;
 
 export type UploadImageType = {
-  newImageUUID: string;
-  newImageSrc: string;
+  imageURL: string;
+  imageUUID: string;
   taskUUID: string;
+  taskType: ETaskType;
 };
 
 export type GetWithPromiseCallBackType = ({

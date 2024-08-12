@@ -76,54 +76,6 @@ export const getUUID = () => uuidv4();
 
 export const isValidUUID = (uuid: string) => validateUUID(uuid);
 
-export const getTaskType = ({
-  prompt,
-  controlNet,
-  imageMaskInitiator,
-  imageInitiator,
-}: Pick<
-  IRequestImage,
-  "controlNet" | "imageInitiator" | "imageMaskInitiator"
-> & { prompt: string }) => {
-  // + prompt, - controlnet, - imagemask, - imageinitatior => 1
-  // let taskType = 1;
-  if (
-    evaluateToBoolean(prompt, !controlNet, !imageMaskInitiator, !imageInitiator)
-  ) {
-    return 1;
-  }
-  // + prompt, - controlnet, - imagemask, + imageinitiator => 2
-  if (
-    evaluateToBoolean(prompt, !controlNet, !imageMaskInitiator, imageInitiator)
-  ) {
-    return 2;
-  }
-  // + prompt, - controlnet, + imagemask, + imageinitiator => 3
-  if (
-    evaluateToBoolean(prompt, !controlNet, imageMaskInitiator, imageInitiator)
-  ) {
-    return 3;
-  }
-  // + prompt, + controlnet, - imagemask, - imageinitiator => 9
-  if (
-    evaluateToBoolean(prompt, controlNet, !imageMaskInitiator, !imageInitiator)
-  ) {
-    return 9;
-  }
-  // + prompt, + controlnet, - imagemask, + imageinitiator => 10
-  if (
-    evaluateToBoolean(prompt, controlNet, !imageMaskInitiator, imageInitiator)
-  ) {
-    return 10;
-  }
-  // + prompt, + controlnet, + imagemask, + imageinitiator => 11
-  if (
-    evaluateToBoolean(prompt, controlNet, imageMaskInitiator, imageInitiator)
-  ) {
-    return 10;
-  }
-};
-
 const evaluateToBoolean = (...args: any) => [...args].every((e) => !!e);
 
 export const compact = (value: any, data: any) => (!!value ? data : {});
@@ -292,3 +244,17 @@ export const removeAllKeyListener = ({
 export enum LISTEN_TO_IMAGES_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
 }
+
+export const evaluateNonTrue = ({
+  key,
+  value,
+}: {
+  key: string;
+  value: any;
+}) => {
+  if (!!value || value === 0 || value === false) {
+    return { [key]: value };
+  } else {
+    return {};
+  }
+};

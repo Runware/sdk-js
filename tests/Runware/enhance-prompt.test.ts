@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
+import { ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -45,21 +46,16 @@ describe("When user request to enhance prompt", async () => {
       prompt: "Mock prompt",
       promptMaxLength: 200,
       promptVersions: 4,
-      promptLanguageId: 2,
     });
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newPromptEnhance: {
-        prompt: "Mock prompt",
-        taskUUID: mockTaskUUID,
-        promptMaxLength: 200,
-        promptVersions: 4,
-        promptLanguageId: 2,
-      },
+      prompt: "Mock prompt",
+      taskUUID: mockTaskUUID,
+      promptMaxLength: 200,
+      promptVersions: 4,
+      taskType: ETaskType.PROMPT_ENHANCE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newPromptEnhancer",
-      taskKey: "newPromptEnhancer.texts",
       taskUUID: mockTaskUUID,
     });
   });
@@ -73,17 +69,13 @@ describe("When user request to enhance prompt", async () => {
     });
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newPromptEnhance: {
-        prompt: "Mock prompt",
-        taskUUID: mockTaskUUID,
-        promptMaxLength: 380,
-        promptVersions: 1,
-        promptLanguageId: 1,
-      },
+      prompt: "Mock prompt",
+      taskUUID: mockTaskUUID,
+      promptMaxLength: 380,
+      promptVersions: 1,
+      taskType: ETaskType.PROMPT_ENHANCE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newPromptEnhancer",
-      taskKey: "newPromptEnhancer.texts",
       taskUUID: mockTaskUUID,
     });
   });

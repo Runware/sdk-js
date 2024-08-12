@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
 import { startMockServer } from "../mockServer";
+import { ETaskType } from "../../Runware";
 
 vi.mock("../../Runware/utils", async () => {
   const actual = await vi.importActual("../../Runware/utils");
@@ -43,22 +44,19 @@ describe("When user request to upscale gan", async () => {
     const sendSpy = vi.spyOn(runware as any, "send");
 
     await runware.upscaleGan({
-      imageInitiator: mockUploadFile,
+      inputImage: mockUploadFile,
       upscaleFactor: 2,
     });
 
     expect(imageUploadSpy).toHaveBeenCalled();
 
     expect(sendSpy).toHaveBeenCalledWith({
-      newUpscaleGan: {
-        imageUUID: testExamples.imageUploadRes.newImageUUID,
-        taskUUID: mockTaskUUID,
-        upscaleFactor: 2,
-      },
+      inputImage: testExamples.imageUploadRes.imageUUID,
+      taskUUID: mockTaskUUID,
+      upscaleFactor: 2,
+      taskType: ETaskType.IMAGE_UPSCALE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
-      responseKey: "newUpscaleGan",
-      taskKey: "newUpscaleGan.images",
       taskUUID: mockTaskUUID,
     });
   });

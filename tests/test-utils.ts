@@ -1,4 +1,4 @@
-import { EControlMode } from "../Runware";
+import { EControlMode, ETaskType } from "../Runware";
 import { MockFile } from "../Runware/utils";
 
 const promptText = "A beautiful runware";
@@ -16,28 +16,26 @@ export const mockUploadFile = new MockFile().create(
 
 export const testExamples = {
   imageReq: {
-    numberOfImages: 8,
+    numberResults: 8,
     positivePrompt: promptText,
-    imageSize: 2,
-    modelId: 13,
+    model: 13,
     steps: 30,
+    width: 512,
+    height: 512,
   },
   imageRes: {
-    gScale: 7,
-    modelId: 13,
+    model: 13,
     numberResults: 8,
-    offset: 0,
-    promptText: promptText,
-    schedulerId: 22,
-    sizeId: 2,
+    positivePrompt: promptText,
     steps: 30,
-    taskType: 1,
+    taskType: ETaskType.IMAGE_INFERENCE,
     taskUUID: mockTaskUUID,
-    useCache: false,
+    width: 512,
+    height: 512,
   },
   imageUploadRes: {
-    newImageUUID: mockNewImageUID,
-    imageBase64: "data:image/png;base64,iVBORw0KGgoAAAA...",
+    imageUUID: mockNewImageUID,
+    imageURL: "data:image/png;base64,iVBORw0KGgoAAAA...",
     taskUUID: "50836053-a0ee-4cf5-b9d6-ae7c5d140ada",
   },
   controlNet: {
