@@ -832,7 +832,7 @@ export class RunwareBase {
   async ensureConnection() {
     let isConnected = this.connected();
 
-    if (isConnected) return;
+    if (isConnected || this._url === BASE_RUNWARE_URLS.TEST) return;
 
     const interval = 2000;
 
