@@ -82,6 +82,21 @@ export class RunwareServer extends RunwareBase {
         }
       }
 
+      this.addListener({
+        taskUUID: ETaskType.AUTHENTICATION,
+        lis: (m) => {
+          if (m?.error) {
+            if (m.errorId === 19) {
+              this._invalidAPIkey = "Invalid API key";
+            }
+            return;
+          }
+          this._connectionSessionUUID =
+            m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
+          this._invalidAPIkey = undefined;
+        },
+      });
+
       // this.addListener({
       //   check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
       //   lis: (m) => {
