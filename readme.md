@@ -13,13 +13,13 @@ For an API Key and free trial credits, [create a free account](https://my.runwar
 To install and set up the library, run:
 
 ```sh
-$  npm  install  runware-sdk
+$  npm  install  @runware/sdk-js
 ```
 
 Or if you prefer using Yarn:
 
 ```sh
-$  yarn  add  runware-sdk
+$  yarn  add  @runware/sdk-js
 ```
 
 ## Instantiating the SDK
@@ -44,6 +44,8 @@ const  runware  =  new RunwareServer({ apiKey: "API_KEY" });
 NB: All errors can be caught in the catch block of each request
 
 ```js
+import { Runware } from "@runware/sdk-js";
+
 const  runware  =  new  Runware({ apiKey: "API_KEY" });
 const images = await runware.requestImages({
 	positivePrompt: string;
@@ -67,13 +69,15 @@ const images = await runware.requestImages({
 	usePromptWeighting?: number;
 	controlNet?: IControlNet[];
 	lora?: ILora[];
+  	retry?: number;
+
 
 	useCache?: boolean;
 	returnBase64Image?: boolean;
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
 })
 
-return interface IImage {
+return interface ITextToImage {
 	taskType: ETaskType;
 	imageUUID: string;
 	inputImageUUID?: string;
@@ -83,6 +87,8 @@ return interface IImage {
 	imageDataURI?: string;
 	NSFWContent?: boolean;
 	cost: number;
+	positivePrompt?: string;
+  	negativePrompt?: string;
 }[]
 ```
 
@@ -113,7 +119,7 @@ const [firstImagesRequest, secondImagesRequest] = await Promise.all([
 
 console.log({firstImagesRequest, secondImagesRequest})
 
-return interface IImage {
+return interface ITextToImage {
 	taskType: ETaskType;
 	imageUUID: string;
 	inputImageUUID?: string;
@@ -123,6 +129,8 @@ return interface IImage {
 	imageDataURI?: string;
 	NSFWContent?: boolean;
 	cost: number;
+	positivePrompt?: string;
+  	negativePrompt?: string;
 }[]
 ```
 
@@ -355,6 +363,50 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.10
+
+**Added or Changed**
+
+- Add disconnect method
+
+### - v1.1.9
+
+**Added or Changed**
+
+- Fix partial images not including prompt
+
+### - v1.1.8
+
+**Added or Changed**
+
+- Fix image generation error
+
+### - v1.1.7
+
+**Added or Changed**
+
+- Fix slow connection time
+- Fix invalid api key error message
+- Return prompt for images generated
+
+### - v1.1.6
+
+**Added or Changed**
+
+- Add connection retry to runware server
+
+### - v1.1.5
+
+**Added or Changed**
+
+- Added Custom UUID
+
+### - v1.1.3/4
+
+**Added or Changed**
+
+- Reduce connection time
 
 ### - v1.1.2
 

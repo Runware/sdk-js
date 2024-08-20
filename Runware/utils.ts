@@ -39,15 +39,6 @@ export const getIntervalWithPromise = (
   }
 ) => {
   return new Promise((resolve, reject) => {
-    let intervalId = setInterval(async () => {
-      const shouldClear = callback({ resolve, reject, intervalId });
-      if (shouldClear) {
-        clearInterval(intervalId);
-        (intervalId as any) = 0;
-      }
-      // resolve(imagesWithSimilarTask); // Resolve the promise with the data
-    }, POLLING_INTERVAL); // Check every 1 second (adjust the interval as needed)
-
     const timeoutId = setTimeout(() => {
       if (intervalId) {
         clearInterval(intervalId);
@@ -59,6 +50,15 @@ export const getIntervalWithPromise = (
       clearTimeout(timeoutId);
       // reject();
     }, timeOutDuration);
+
+    let intervalId = setInterval(async () => {
+      const shouldClear = callback({ resolve, reject, intervalId });
+      if (shouldClear) {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+      }
+      // resolve(imagesWithSimilarTask); // Resolve the promise with the data
+    }, POLLING_INTERVAL); // Check every 1 second (adjust the interval as needed)
   });
 };
 

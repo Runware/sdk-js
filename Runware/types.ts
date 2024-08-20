@@ -38,6 +38,11 @@ export interface IImage {
   NSFWContent?: boolean;
   cost?: number;
 }
+
+export interface ITextToImage extends IImage {
+  positivePrompt?: string;
+  negativePrompt?: string;
+}
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -80,6 +85,7 @@ export type IControlNetPreprocess = {
   lowThresholdCanny?: number;
   includeHandsAndFaceOpenPose?: boolean;
   includeCost?: boolean;
+  customTaskUUID?: string;
 };
 
 // export type IControlNetA = RequireOnlyOne<
@@ -135,15 +141,18 @@ export interface IRequestImage {
   controlNet?: IControlNet[];
   lora?: ILora[];
   includeCost?: boolean;
+  customTaskUUID?: string;
 
   // imageSize?: number;
   useCache?: boolean;
   onPartialImages?: (images: IImage[], error?: IError) => void;
+  retry?: number;
   // gScale?: number;
 }
 export interface IRequestImageToText {
   inputImage?: File | string;
   includeCost?: boolean;
+  customTaskUUID?: string;
 }
 export interface IImageToText {
   taskType: ETaskType;
@@ -181,6 +190,7 @@ export interface IPromptEnhancer {
   promptVersions?: number;
   prompt: string;
   includeCost?: boolean;
+  customTaskUUID?: string;
 }
 
 export interface IEnhancedPrompt extends IImageToText {}
@@ -191,6 +201,7 @@ export interface IUpscaleGan {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
   includeCost?: boolean;
+  customTaskUUID?: string;
 }
 
 export type ReconnectingWebsocketProps = {

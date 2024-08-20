@@ -25,6 +25,7 @@ import {
   IControlNetPreprocess,
   IControlNetImage,
   IRemoveImage,
+  ITextToImage,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -158,9 +159,7 @@ export class RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            if (m.errorId === 19) {
-              this._invalidAPIkey = "Invalid API key";
-            }
+            this._invalidAPIkey = "Invalid API key";
             return;
           }
           this._connectionSessionUUID =
@@ -257,27 +256,42 @@ export class RunwareBase {
     onPartialImages,
     taskUUID,
     groupKey,
+    positivePrompt,
+    negativePrompt,
   }: {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
     groupKey: LISTEN_TO_IMAGES_KEY;
+    positivePrompt?: string;
+    negativePrompt?: string;
   }) {
     return this.addListener({
       taskUUID: taskUUID,
       lis: (m) => {
-        const images = (m?.[taskUUID] as IImage[])?.filter(
+        let images = (m?.[taskUUID] as IImage[])?.filter(
           (img) => img.taskUUID === taskUUID
         );
-        onPartialImages?.(images, m?.error && m);
 
         if (m.error) {
+          onPartialImages?.(images, m?.error && m);
           this._globalError = m;
         } else {
+          images = images.map((image) => ({
+            ...image,
+            positivePrompt,
+            negativePrompt,
+          }));
+          onPartialImages?.(images, m?.error && m);
+
           if (this._sdkType === SdkType.CLIENT) {
             // this._globalImages = [...this._globalImages, ...m.images];
             this._globalImages = [
               ...this._globalImages,
-              ...(m?.[taskUUID] ?? []),
+              ...(m?.[taskUUID] ?? []).map((image: IImage) => ({
+                ...image,
+                positivePrompt,
+                negativePrompt,
+              })),
             ];
           } else {
             this._globalImages = [...this._globalImages, ...images];
@@ -351,10 +365,14 @@ export class RunwareBase {
     useCache,
     onPartialImages,
     includeCost,
+    customTaskUUID,
+    retry = 2,
   }: // imageSize,
 
   // gScale,
-  IRequestImage): Promise<IImage[] | undefined> {
+  IRequestImage): Promise<ITextToImage[] | undefined> {
+    await this.ensureConnection();
+
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
@@ -459,7 +477,7 @@ export class RunwareBase {
             taskUUIDs.includes(img.taskUUID)
           );
 
-          const taskUUID = getUUID();
+          const taskUUID = customTaskUUID || getUUID();
 
           taskUUIDs.push(taskUUID);
 
@@ -476,6 +494,8 @@ export class RunwareBase {
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            positivePrompt,
+            negativePrompt,
           });
 
           const promise = await this.getSimilarImages({
@@ -484,24 +504,25 @@ export class RunwareBase {
             lis,
           });
 
-          // lis.destroy();
+          lis.destroy();
+
           return promise;
         },
         {
-          maxRetries: 2,
+          maxRetries: retry,
           callback: () => {
             lis?.destroy();
           },
         }
       );
     } catch (e) {
-      if (retryCount >= 2) {
+      if ((e as any).taskUUID) {
+        throw e;
+      }
+      if (retryCount >= retry) {
         return this.handleIncompleteImages({ taskUUIDs, error: e });
       }
     }
-
-    // console.log({ res });
-    // return res.the;
   }
 
   controlNetPreProcess = async ({
@@ -515,12 +536,13 @@ export class RunwareBase {
     lowThresholdCanny,
     includeHandsAndFaceOpenPose,
     includeCost,
+    customTaskUUID,
   }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
     try {
       const image = await this.uploadImage(inputImage);
       if (!image?.imageUUID) return null;
 
-      const taskUUID = getUUID();
+      const taskUUID = customTaskUUID || getUUID();
       this.send({
         inputImage: image.imageUUID,
         taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
@@ -581,6 +603,7 @@ export class RunwareBase {
   requestImageToText = async ({
     inputImage,
     includeCost,
+    customTaskUUID,
   }: IRequestImageToText): Promise<IImageToText> => {
     try {
       await this.ensureConnection();
@@ -591,7 +614,7 @@ export class RunwareBase {
 
         if (!imageUploaded?.imageUUID) return null;
 
-        const taskUUID = getUUID();
+        const taskUUID = customTaskUUID || getUUID();
         this.send({
           taskUUID,
           taskType: ETaskType.IMAGE_CAPTION,
@@ -646,6 +669,7 @@ export class RunwareBase {
     alphaMattingBackgroundThreshold,
     alphaMattingErodeSize,
     includeCost,
+    customTaskUUID,
   }: IRemoveImageBackground): Promise<IRemoveImage[]> => {
     try {
       await this.ensureConnection();
@@ -656,7 +680,7 @@ export class RunwareBase {
 
         if (!imageUploaded?.imageUUID) return null;
 
-        const taskUUID = getUUID();
+        const taskUUID = customTaskUUID || getUUID();
 
         this.send({
           taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
@@ -725,6 +749,7 @@ export class RunwareBase {
     outputType,
     outputFormat,
     includeCost,
+    customTaskUUID,
   }: IUpscaleGan): Promise<IImage[]> => {
     try {
       await this.ensureConnection();
@@ -734,7 +759,7 @@ export class RunwareBase {
         imageUploaded = await this.uploadImage(inputImage as File | string);
         if (!imageUploaded?.imageUUID) return null;
 
-        const taskUUID = getUUID();
+        const taskUUID = customTaskUUID || getUUID();
 
         this.send({
           taskUUID,
@@ -783,11 +808,12 @@ export class RunwareBase {
     promptMaxLength = 380,
     promptVersions = 1,
     includeCost,
+    customTaskUUID,
   }: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
-        const taskUUID = getUUID();
+        const taskUUID = customTaskUUID || getUUID();
 
         this.send({
           prompt,
@@ -834,7 +860,9 @@ export class RunwareBase {
 
     if (isConnected || this._url === BASE_RUNWARE_URLS.TEST) return;
 
-    const interval = 2000;
+    const retryInterval = 2000;
+    const pollingInterval = 200;
+    // const pollingInterval = this._sdkType === SdkType.CLIENT ? 200 : 2000;
 
     try {
       if (this._invalidAPIkey) throw this._invalidAPIkey;
@@ -842,26 +870,51 @@ export class RunwareBase {
       return new Promise((resolve, reject) => {
         //  const isConnected =
         let retry = 0;
-        const MAX_RETRY = 2;
+        const MAX_RETRY = 10;
 
-        const intervalId = setInterval(async () => {
-          try {
-            const hasConnected = this.connected();
-            if (hasConnected) {
-              clearInterval(intervalId);
-              resolve(true);
-            } else if (retry >= MAX_RETRY) {
-              clearInterval(intervalId);
-              reject(new Error("Polling timed out"));
-            } else {
-              this.connect();
-              retry++;
+        let retryIntervalId: any;
+        let pollingIntervalId: any;
+
+        const clearAllIntervals = () => {
+          clearInterval(retryIntervalId);
+          clearInterval(pollingIntervalId);
+        };
+
+        if (this._sdkType === SdkType.SERVER) {
+          retryIntervalId = setInterval(async () => {
+            try {
+              const hasConnected = this.connected();
+
+              if (hasConnected) {
+                clearAllIntervals();
+                resolve(true);
+              } else if (retry >= MAX_RETRY) {
+                clearAllIntervals();
+                reject(new Error("Retry timed out"));
+              } else {
+                this.connect();
+                retry++;
+              }
+            } catch (error) {
+              clearAllIntervals();
+              reject(error);
             }
-          } catch (error) {
-            clearInterval(intervalId);
-            reject(error);
+          }, retryInterval);
+        }
+
+        pollingIntervalId = setInterval(async () => {
+          const hasConnected = this.connected();
+
+          if (hasConnected) {
+            clearAllIntervals();
+            resolve(true);
           }
-        }, interval);
+          if (!!this._invalidAPIkey) {
+            clearAllIntervals();
+            reject(new Error("Invalid API key"));
+            return;
+          }
+        }, pollingInterval);
       });
 
       if (!isConnected) {
@@ -975,6 +1028,11 @@ export class RunwareBase {
       throw error;
     }
   }
+
+  disconnect = () => {
+    this._ws?.terminate?.();
+    this._ws?.close?.();
+  };
 
   connected = () =>
     this.isWebsocketReadyState() && !!this._connectionSessionUUID;

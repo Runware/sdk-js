@@ -56,15 +56,15 @@ export class RunwareServer extends RunwareBase {
     this._ws = new WebSocket(this._url, {
       perMessageDeflate: false,
     });
-    delay(1);
+    // delay(1);
 
     this._ws.on("error", () => {});
-    this._ws.on("close", () => this.handleClose());
+    this._ws.on("close", () => {
+      this.handleClose();
+    });
 
     this._ws.on("open", () => {
-      // console.log("open");
       if (this._reconnectingIntervalId) {
-        // console.log("clearing");
         clearInterval(this._reconnectingIntervalId);
       }
       if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
@@ -86,9 +86,7 @@ export class RunwareServer extends RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            if (m.errorId === 19) {
-              this._invalidAPIkey = "Invalid API key";
-            }
+            this._invalidAPIkey = "Invalid API key";
             return;
           }
           this._connectionSessionUUID =
@@ -144,8 +142,6 @@ export class RunwareServer extends RunwareBase {
   };
 
   protected handleClose() {
-    // console.log("closing");
-    // console.log("ivanlid", this._invalidAPIkey);
     if (this._invalidAPIkey) {
       console.error(this._invalidAPIkey);
       return;
@@ -153,7 +149,7 @@ export class RunwareServer extends RunwareBase {
     if (this._reconnectingIntervalId) {
       clearInterval(this._reconnectingIntervalId);
     }
-    this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
+    // this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
   }
 
   protected heartBeat() {
