@@ -109,7 +109,7 @@ export type IControlNetPreprocess = {
 export type IControlNet = IControlNetGeneral;
 
 export type IControlNetWithUUID = Omit<IControlNet, "guideImage"> & {
-  guideImage: string;
+  guideImage?: string;
 };
 
 export interface IError {
@@ -144,7 +144,6 @@ export interface IRequestImage {
   customTaskUUID?: string;
 
   // imageSize?: number;
-  useCache?: boolean;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
   // gScale?: number;

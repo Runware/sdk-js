@@ -62,7 +62,7 @@ const images = await runware.requestImages({
 	maskImage?: File | string;
 	strength?: number;
 	steps?: number;
-	schedular?: string;
+	scheduler?: string;
 	seed?: number;
 	CFGScale?: number;
 	clipSkip?: number;
@@ -70,10 +70,6 @@ const images = await runware.requestImages({
 	controlNet?: IControlNet[];
 	lora?: ILora[];
   	retry?: number;
-
-
-	useCache?: boolean;
-	returnBase64Image?: boolean;
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
 })
 
@@ -363,6 +359,19 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.12
+
+**Added or Changed**
+
+- Fix imageUpscale and backgroundRemoval wrong response
+
+### - v1.1.11
+
+**Added or Changed**
+
+- Automatically detect environment with Runware class
+- Fix invalid input image not returning server errors
 
 ### - v1.1.10
 

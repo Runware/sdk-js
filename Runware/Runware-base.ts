@@ -188,7 +188,9 @@ export class RunwareBase {
   }
 
   // We moving to an array format, it make sense to consolidate all request to an array here
-  protected send = (msg: Object) => this._ws.send(JSON.stringify([msg]));
+  protected send = (msg: Object) => {
+    this._ws.send(JSON.stringify([msg]));
+  };
 
   private destroy(lis: any) {
     removeFromAray(this._listeners, lis);
@@ -252,7 +254,7 @@ export class RunwareBase {
     }
   };
 
-  listenToImages({
+  private listenToImages({
     onPartialImages,
     taskUUID,
     groupKey,
@@ -302,7 +304,7 @@ export class RunwareBase {
     });
   }
 
-  globalListener({ taskUUID }: { taskUUID: string }) {
+  private globalListener({ taskUUID }: { taskUUID: string }) {
     return this.addListener({
       // check: (m) => {
       //   const value = accessDeepObject({
@@ -362,7 +364,6 @@ export class RunwareBase {
     numberResults = 1,
     controlNet,
     lora,
-    useCache,
     onPartialImages,
     includeCost,
     customTaskUUID,
@@ -411,16 +412,12 @@ export class RunwareBase {
             model: controlNetModel,
           } = controlData;
 
-          if (!guideImage) return;
-
-          const imageUploaded = await this.uploadImage(
-            guideImage as File | string
-          );
-
-          if (!imageUploaded) return;
+          const imageUploaded = guideImage
+            ? await this.uploadImage(guideImage as File | string)
+            : null;
 
           controlNetData.push({
-            guideImage: imageUploaded.imageUUID,
+            guideImage: imageUploaded?.imageUUID,
             model: controlNetModel,
             endStep,
             startStep,
@@ -463,8 +460,6 @@ export class RunwareBase {
         ...(seed ? { seed: seed } : {}),
         ...(scheduler ? { scheduler } : {}),
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-
-        ...evaluateNonTrue({ key: "useCache", value: useCache }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
       };
@@ -608,17 +603,15 @@ export class RunwareBase {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
-        const imageUploaded = await this.uploadImage(
-          inputImage as File | string
-        );
-
-        if (!imageUploaded?.imageUUID) return null;
+        const imageUploaded = inputImage
+          ? await this.uploadImage(inputImage as File | string)
+          : null;
 
         const taskUUID = customTaskUUID || getUUID();
         this.send({
           taskUUID,
           taskType: ETaskType.IMAGE_CAPTION,
-          inputImage: imageUploaded.imageUUID,
+          inputImage: imageUploaded?.imageUUID,
           ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         });
 
@@ -674,18 +667,16 @@ export class RunwareBase {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
-        const imageUploaded = await this.uploadImage(
-          inputImage as File | string
-        );
-
-        if (!imageUploaded?.imageUUID) return null;
+        const imageUploaded = inputImage
+          ? await this.uploadImage(inputImage as File | string)
+          : null;
 
         const taskUUID = customTaskUUID || getUUID();
 
         this.send({
           taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
           taskUUID,
-          inputImage: imageUploaded.imageUUID,
+          inputImage: imageUploaded?.imageUUID,
           ...evaluateNonTrue({ key: "rgba", value: rgba }),
           ...evaluateNonTrue({
             key: "postProcessMask",
@@ -727,7 +718,7 @@ export class RunwareBase {
 
             if (newRemoveBackground) {
               delete this._globalMessages[taskUUID];
-              resolve([newRemoveBackground]);
+              resolve(newRemoveBackground);
               return true;
             }
           },
@@ -757,7 +748,6 @@ export class RunwareBase {
         let imageUploaded;
 
         imageUploaded = await this.uploadImage(inputImage as File | string);
-        if (!imageUploaded?.imageUUID) return null;
 
         const taskUUID = customTaskUUID || getUUID();
 
@@ -787,7 +777,7 @@ export class RunwareBase {
 
             if (newUpscaleGan) {
               delete this._globalMessages[taskUUID];
-              resolve([newUpscaleGan]);
+              resolve(newUpscaleGan);
               return true;
             }
           },
@@ -870,7 +860,7 @@ export class RunwareBase {
       return new Promise((resolve, reject) => {
         //  const isConnected =
         let retry = 0;
-        const MAX_RETRY = 10;
+        const MAX_RETRY = 30;
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
@@ -961,7 +951,7 @@ export class RunwareBase {
     }
   }
 
-  async getSimilarImages({
+  private async getSimilarImages({
     taskUUID,
     numberResults,
     shouldThrowError,
@@ -1003,13 +993,15 @@ export class RunwareBase {
     )) as IImage[];
   }
 
-  getSingleMessage = ({ taskUUID }: { taskUUID: string }) => {
-    if (!this._globalMessages[taskUUID]?.[0]) return null;
+  private getSingleMessage = ({ taskUUID }: { taskUUID: string }) => {
+    const value =
+      this._globalMessages[taskUUID] || this._globalMessages[taskUUID]?.[0];
+    if (!value) return null;
 
-    return this._globalMessages[taskUUID]?.[0];
+    return value;
   };
 
-  handleIncompleteImages({
+  private handleIncompleteImages({
     taskUUIDs,
     error,
   }: {
@@ -1029,12 +1021,12 @@ export class RunwareBase {
     }
   }
 
-  disconnect = () => {
+  disconnect = async () => {
     this._ws?.terminate?.();
     this._ws?.close?.();
   };
 
-  connected = () =>
+  private connected = () =>
     this.isWebsocketReadyState() && !!this._connectionSessionUUID;
   //end of data
 }

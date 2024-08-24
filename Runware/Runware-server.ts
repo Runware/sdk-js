@@ -56,6 +56,7 @@ export class RunwareServer extends RunwareBase {
     this._ws = new WebSocket(this._url, {
       perMessageDeflate: false,
     });
+
     // delay(1);
 
     this._ws.on("error", () => {});
