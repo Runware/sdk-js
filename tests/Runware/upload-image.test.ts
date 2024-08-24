@@ -35,10 +35,8 @@ describe("When user uploads an image:", async () => {
   });
 
   test("it should accept string during image upload", async () => {
-    const sendSpy = vi.spyOn(runware as any, "send");
     await runware["uploadImage"]("IMAGE_UPLOAD");
     expect(fileToBase64).to.not.toHaveBeenCalled();
-    expect(sendSpy).toBeCalledTimes(1);
   });
 
   test("it should accept file during image upload", async () => {
@@ -46,29 +44,5 @@ describe("When user uploads an image:", async () => {
     await runware["uploadImage"](mockUploadFile);
 
     expect(fileToBase64).toHaveBeenCalled();
-    expect(sendSpy).toBeCalledTimes(1);
-    expect(sendSpy).toHaveBeenCalledWith({
-      image: mockFileToBase64,
-      taskUUID: mockTaskUUID,
-      taskType: ETaskType.IMAGE_UPLOAD,
-    });
-  });
-
-  test("it should upload image successfully", async () => {
-    const sendSpy = vi.spyOn(runware as any, "send");
-    const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
-    await runware["uploadImage"](mockTextImageUpload);
-
-    expect(fileToBase64).to.not.toHaveBeenCalled();
-    expect(sendSpy).toHaveBeenCalledWith({
-      image: mockTextImageUpload,
-      taskUUID: mockTaskUUID,
-      taskType: ETaskType.IMAGE_UPLOAD,
-    });
-
-    expect(globalListenerSpy).toHaveBeenCalledWith({
-      taskUUID: mockTaskUUID,
-    });
-    expect(getIntervalWithPromise).toHaveBeenCalledTimes(1);
   });
 });

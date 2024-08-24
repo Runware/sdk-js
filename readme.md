@@ -360,6 +360,12 @@ return interface IControlNetImage {
 
 ## Changelog
 
+### - v1.1.13
+
+**Added or Changed**
+
+- Fix image upload
+
 ### - v1.1.12
 
 **Added or Changed**

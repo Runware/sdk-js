@@ -215,39 +215,12 @@ export class RunwareBase {
         const imageBase64 =
           typeof file === "string" ? file : await fileToBase64(file);
 
-        this.send({
+        return {
+          imageURL: imageBase64,
+          imageUUID: imageBase64,
+          taskUUID,
           taskType: ETaskType.IMAGE_UPLOAD,
-          image: imageBase64,
-          taskUUID,
-        });
-        const lis = this.globalListener({
-          taskUUID,
-        });
-
-        const image = (await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const uploadedImage = this.getSingleMessage({
-              taskUUID,
-            });
-            if (!uploadedImage) return;
-
-            if (uploadedImage?.error) {
-              reject(uploadedImage);
-              return true;
-            }
-
-            if (uploadedImage) {
-              delete this._globalMessages[taskUUID];
-              resolve(uploadedImage);
-              return true;
-            }
-          },
-          { debugKey: "upload-image" }
-        )) as UploadImageType;
-
-        lis.destroy();
-
-        return image;
+        };
       });
     } catch (e) {
       throw e;
@@ -861,6 +834,7 @@ export class RunwareBase {
         //  const isConnected =
         let retry = 0;
         const MAX_RETRY = 30;
+        const SHOULD_RETRY = 30 / 2 === retry;
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
@@ -882,7 +856,9 @@ export class RunwareBase {
                 clearAllIntervals();
                 reject(new Error("Retry timed out"));
               } else {
-                this.connect();
+                if (SHOULD_RETRY) {
+                  this.connect();
+                }
                 retry++;
               }
             } catch (error) {
@@ -997,7 +973,6 @@ export class RunwareBase {
     const value =
       this._globalMessages[taskUUID] || this._globalMessages[taskUUID]?.[0];
     if (!value) return null;
-
     return value;
   };
 
