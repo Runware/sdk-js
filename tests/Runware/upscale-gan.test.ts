@@ -40,7 +40,7 @@ describe("When user request to upscale gan", async () => {
 
   test("it should upscale gan", async () => {
     const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
-    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
     await runware.upscaleGan({

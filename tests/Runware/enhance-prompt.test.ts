@@ -39,7 +39,7 @@ describe("When user request to enhance prompt", async () => {
   });
 
   test("it should give an enhanced prompt", async () => {
-    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
     await runware.enhancePrompt({
@@ -61,7 +61,7 @@ describe("When user request to enhance prompt", async () => {
   });
 
   test("it should give an enhanced prompt with default config", async () => {
-    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
     await runware.enhancePrompt({

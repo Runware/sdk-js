@@ -56,7 +56,7 @@ describe("When user uploads an image:", async () => {
 
   test("it should upload image successfully", async () => {
     const sendSpy = vi.spyOn(runware as any, "send");
-    const globalListenerSpy = vi.spyOn(runware, "globalListener");
+    const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     await runware["uploadImage"](mockTextImageUpload);
 
     expect(fileToBase64).to.not.toHaveBeenCalled();
