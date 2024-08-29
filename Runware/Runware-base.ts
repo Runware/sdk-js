@@ -636,7 +636,7 @@ export class RunwareBase {
     alphaMattingErodeSize,
     includeCost,
     customTaskUUID,
-  }: IRemoveImageBackground): Promise<IRemoveImage[]> => {
+  }: IRemoveImageBackground): Promise<IRemoveImage> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
@@ -700,7 +700,7 @@ export class RunwareBase {
 
         lis.destroy();
 
-        return response as IImage[];
+        return response as IImage;
       });
     } catch (e) {
       throw e;
@@ -714,7 +714,7 @@ export class RunwareBase {
     outputFormat,
     includeCost,
     customTaskUUID,
-  }: IUpscaleGan): Promise<IImage[]> => {
+  }: IUpscaleGan): Promise<IImage> => {
     try {
       await this.ensureConnection();
       return await asyncRetry(async () => {
@@ -759,7 +759,7 @@ export class RunwareBase {
 
         lis.destroy();
 
-        return response as IImage[];
+        return response as IImage;
       });
     } catch (e) {
       throw e;
@@ -970,10 +970,10 @@ export class RunwareBase {
   }
 
   private getSingleMessage = ({ taskUUID }: { taskUUID: string }) => {
-    const value =
-      this._globalMessages[taskUUID] || this._globalMessages[taskUUID]?.[0];
-    if (!value) return null;
-    return value;
+    const value = this._globalMessages[taskUUID]?.[0];
+    const errorValue = this._globalMessages[taskUUID];
+    if (!value && !errorValue) return null;
+    return errorValue?.error ? errorValue : value;
   };
 
   private handleIncompleteImages({

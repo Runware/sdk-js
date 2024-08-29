@@ -224,7 +224,7 @@ return interface IImage {
 	imageBase64Data?: string;
 	imageDataURI?: string;
 	cost: number;
-}[]
+}
 ```
 
 | Parameter                       | Type                        | Use                                                                                                                                                                                  |
@@ -266,7 +266,7 @@ return interface IImage {
 	imageDataURI?: string;
 	NSFWContent?: boolean;
 	cost: number;
-}[]
+}
 
 ```
 
@@ -359,6 +359,12 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.14/v1.1.15
+
+**Added or Changed**
+
+- Fix incorrect response
 
 ### - v1.1.13
 
