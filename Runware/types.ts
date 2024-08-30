@@ -22,6 +22,7 @@ export enum ETaskType {
 export type RunwareBaseType = {
   apiKey: string;
   url?: string;
+  shouldReconnect?: boolean;
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";

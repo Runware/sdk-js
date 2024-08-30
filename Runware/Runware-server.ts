@@ -15,8 +15,8 @@ export class RunwareServer extends RunwareBase {
   _pingTimeout: any;
   _pongListener: any;
 
-  constructor({ apiKey, url }: RunwareBaseType) {
-    super({ apiKey, url });
+  constructor({ apiKey, url, shouldReconnect }: RunwareBaseType) {
+    super({ apiKey, url, shouldReconnect });
 
     this._sdkType = SdkType.SERVER;
     if (apiKey) {
@@ -154,7 +154,12 @@ export class RunwareServer extends RunwareBase {
       clearInterval(this._reconnectingIntervalId);
     }
 
-    this.connect();
+    console.log("should reconnect", this._shouldReconnect);
+    if (this._shouldReconnect) {
+      console.log("reconnecting");
+
+      setTimeout(() => this.connect(), 1000);
+    }
     // this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
   }
 

@@ -56,11 +56,17 @@ export class RunwareBase {
   _connectionSessionUUID: string | undefined;
   _invalidAPIkey: string | undefined;
   _sdkType: SdkType;
+  _shouldReconnect: boolean;
 
-  constructor({ apiKey, url = BASE_RUNWARE_URLS.PRODUCTION }: RunwareBaseType) {
+  constructor({
+    apiKey,
+    url = BASE_RUNWARE_URLS.PRODUCTION,
+    shouldReconnect = true,
+  }: RunwareBaseType) {
     this._apiKey = apiKey;
     this._url = url;
     this._sdkType = SdkType.CLIENT;
+    this._shouldReconnect = shouldReconnect;
   }
 
   protected isWebsocketReadyState = () => this._ws?.readyState === 1;
