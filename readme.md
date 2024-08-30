@@ -360,6 +360,12 @@ return interface IControlNetImage {
 
 ## Changelog
 
+### - v1.1.16
+
+**Added or Changed**
+
+- Add reconnection to server on close
+
 ### - v1.1.14/v1.1.15
 
 **Added or Changed**

@@ -53,6 +53,9 @@ export class RunwareServer extends RunwareBase {
 
   protected async connect() {
     if (!this._url) return;
+
+    this.resetConnection();
+
     this._ws = new WebSocket(this._url, {
       perMessageDeflate: false,
     });
@@ -150,8 +153,23 @@ export class RunwareServer extends RunwareBase {
     if (this._reconnectingIntervalId) {
       clearInterval(this._reconnectingIntervalId);
     }
+
+    this.connect();
     // this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
   }
+
+  protected resetConnection = () => {
+    if (this._ws) {
+      this._listeners.forEach((list) => {
+        list?.destroy?.();
+      });
+      this._ws.removeAllListeners(); // Remove all listeners
+      this._ws.terminate();
+      this._ws.close(); // Attempt to close gracefully
+      this._ws = null;
+      this._listeners = [];
+    }
+  };
 
   protected heartBeat() {
     clearTimeout(this._pingTimeout);
