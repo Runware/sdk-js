@@ -154,10 +154,7 @@ export class RunwareServer extends RunwareBase {
       clearInterval(this._reconnectingIntervalId);
     }
 
-    console.log("should reconnect", this._shouldReconnect);
     if (this._shouldReconnect) {
-      console.log("reconnecting");
-
       setTimeout(() => this.connect(), 1000);
     }
     // this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);

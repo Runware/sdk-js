@@ -360,7 +360,7 @@ return interface IControlNetImage {
 
 ## Changelog
 
-### - v1.1.16
+### - v1.1.16/v1.1.17
 
 **Added or Changed**
 
