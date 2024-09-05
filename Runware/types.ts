@@ -23,6 +23,8 @@ export type RunwareBaseType = {
   apiKey: string;
   url?: string;
   shouldReconnect?: boolean;
+  globalMaxRetries?: number;
+  timeoutDuration?: number;
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";
@@ -87,6 +89,7 @@ export type IControlNetPreprocess = {
   includeHandsAndFaceOpenPose?: boolean;
   includeCost?: boolean;
   customTaskUUID?: string;
+  retry?: number;
 };
 
 // export type IControlNetA = RequireOnlyOne<
@@ -153,6 +156,7 @@ export interface IRequestImageToText {
   inputImage?: File | string;
   includeCost?: boolean;
   customTaskUUID?: string;
+  retry?: number;
 }
 export interface IImageToText {
   taskType: ETaskType;
@@ -172,6 +176,7 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   alphaMattingBackgroundThreshold?: number;
   alphaMattingErodeSize?: number;
   includeCost?: boolean;
+  retry?: number;
 }
 
 export interface IRemoveImage {
@@ -191,6 +196,7 @@ export interface IPromptEnhancer {
   prompt: string;
   includeCost?: boolean;
   customTaskUUID?: string;
+  retry?: number;
 }
 
 export interface IEnhancedPrompt extends IImageToText {}
@@ -202,6 +208,7 @@ export interface IUpscaleGan {
   outputFormat?: IOutputFormat;
   includeCost?: boolean;
   customTaskUUID?: string;
+  retry?: number;
 }
 
 export type ReconnectingWebsocketProps = {

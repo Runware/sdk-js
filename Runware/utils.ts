@@ -7,7 +7,8 @@ import {
 } from "./types";
 import { v4 as uuidv4, validate as validateUUID } from "uuid";
 
-const TIMEOUT_DURATION = 60000; // 120S;
+export const TIMEOUT_DURATION = 60000; // 120S;
+export const MINIMUM_TIMEOUT_DURATION = 1000; // 120S;
 const POLLING_INTERVAL = 100; // 1s;
 
 export const BASE_RUNWARE_URLS = {
@@ -30,26 +31,30 @@ export const getIntervalWithPromise = (
   callback: GetWithPromiseCallBackType,
   {
     debugKey = "debugKey",
-    timeOutDuration = TIMEOUT_DURATION,
+    timeoutDuration = TIMEOUT_DURATION,
     shouldThrowError = true,
   }: {
     debugKey?: string;
-    timeOutDuration?: number;
+    timeoutDuration?: number;
     shouldThrowError?: boolean;
   }
 ) => {
+  timeoutDuration =
+    timeoutDuration < MINIMUM_TIMEOUT_DURATION
+      ? MINIMUM_TIMEOUT_DURATION
+      : timeoutDuration;
+
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       if (intervalId) {
         clearInterval(intervalId);
         if (shouldThrowError) {
-          reject(`Message could not be received for ${debugKey}`);
-          console.error("Message could not be received for ", debugKey);
+          reject(`Response could not be received from server for ${debugKey}`);
         }
       }
       clearTimeout(timeoutId);
       // reject();
-    }, timeOutDuration);
+    }, timeoutDuration);
 
     let intervalId = setInterval(async () => {
       const shouldClear = callback({ resolve, reject, intervalId });

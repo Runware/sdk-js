@@ -2,8 +2,6 @@
 import { asyncRetry } from "./async-retry";
 import {
   EControlMode,
-  EPreProcessor,
-  EPreProcessorGroup,
   IControlNet,
   IControlNetWithUUID,
   IEnhancedPrompt,
@@ -14,7 +12,6 @@ import {
   IRemoveImageBackground,
   IRequestImage,
   IRequestImageToText,
-  IOutputType,
   IUpscaleGan,
   ListenerType,
   ReconnectingWebsocketProps,
@@ -30,8 +27,8 @@ import {
 import {
   BASE_RUNWARE_URLS,
   LISTEN_TO_IMAGES_KEY,
+  TIMEOUT_DURATION,
   accessDeepObject,
-  compact,
   delay,
   evaluateNonTrue,
   fileToBase64,
@@ -57,16 +54,22 @@ export class RunwareBase {
   _invalidAPIkey: string | undefined;
   _sdkType: SdkType;
   _shouldReconnect: boolean;
+  _globalMaxRetries: number;
+  _timeoutDuration: number;
 
   constructor({
     apiKey,
     url = BASE_RUNWARE_URLS.PRODUCTION,
     shouldReconnect = true,
+    globalMaxRetries = 2,
+    timeoutDuration = TIMEOUT_DURATION,
   }: RunwareBaseType) {
     this._apiKey = apiKey;
     this._url = url;
     this._sdkType = SdkType.CLIENT;
     this._shouldReconnect = shouldReconnect;
+    this._globalMaxRetries = globalMaxRetries;
+    this._timeoutDuration = timeoutDuration;
   }
 
   protected isWebsocketReadyState = () => this._ws?.readyState === 1;
@@ -165,7 +168,7 @@ export class RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            this._invalidAPIkey = "Invalid API key";
+            this._invalidAPIkey = m;
             return;
           }
           this._connectionSessionUUID =
@@ -346,17 +349,17 @@ export class RunwareBase {
     onPartialImages,
     includeCost,
     customTaskUUID,
-    retry = 2,
+    retry,
   }: // imageSize,
 
   // gScale,
   IRequestImage): Promise<ITextToImage[] | undefined> {
-    await this.ensureConnection();
-
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
     let retryCount = 0;
+
+    const totalRetry = retry || this._globalMaxRetries;
 
     try {
       await this.ensureConnection();
@@ -483,7 +486,7 @@ export class RunwareBase {
           return promise;
         },
         {
-          maxRetries: retry,
+          maxRetries: totalRetry,
           callback: () => {
             lis?.destroy();
           },
@@ -493,7 +496,7 @@ export class RunwareBase {
       if ((e as any).taskUUID) {
         throw e;
       }
-      if (retryCount >= retry) {
+      if (retryCount >= totalRetry) {
         return this.handleIncompleteImages({ taskUUIDs, error: e });
       }
     }
@@ -511,64 +514,82 @@ export class RunwareBase {
     includeHandsAndFaceOpenPose,
     includeCost,
     customTaskUUID,
+    retry,
   }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
     try {
-      const image = await this.uploadImage(inputImage);
-      if (!image?.imageUUID) return null;
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const image = await this.uploadImage(inputImage);
+          if (!image?.imageUUID) return null;
 
-      const taskUUID = customTaskUUID || getUUID();
-      this.send({
-        inputImage: image.imageUUID,
-        taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
-        taskUUID,
-        preProcessor,
-        ...evaluateNonTrue({ key: "height", value: height }),
-        ...evaluateNonTrue({ key: "width", value: width }),
-        ...evaluateNonTrue({ key: "outputType", value: outputType }),
-        ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-        ...evaluateNonTrue({
-          key: "highThresholdCanny",
-          value: highThresholdCanny,
-        }),
-        ...evaluateNonTrue({
-          key: "lowThresholdCanny",
-          value: lowThresholdCanny,
-        }),
-        ...evaluateNonTrue({
-          key: "includeHandsAndFaceOpenPose",
-          value: includeHandsAndFaceOpenPose,
-        }),
-      });
-      const lis = this.globalListener({
-        taskUUID,
-      });
-
-      const guideImage = (await getIntervalWithPromise(
-        ({ resolve, reject }) => {
-          const uploadedImage = this.getSingleMessage({
+          const taskUUID = customTaskUUID || getUUID();
+          this.send({
+            inputImage: image.imageUUID,
+            taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
+            taskUUID,
+            preProcessor,
+            ...evaluateNonTrue({ key: "height", value: height }),
+            ...evaluateNonTrue({ key: "width", value: width }),
+            ...evaluateNonTrue({ key: "outputType", value: outputType }),
+            ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
+            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+            ...evaluateNonTrue({
+              key: "highThresholdCanny",
+              value: highThresholdCanny,
+            }),
+            ...evaluateNonTrue({
+              key: "lowThresholdCanny",
+              value: lowThresholdCanny,
+            }),
+            ...evaluateNonTrue({
+              key: "includeHandsAndFaceOpenPose",
+              value: includeHandsAndFaceOpenPose,
+            }),
+          });
+          lis = this.globalListener({
             taskUUID,
           });
 
-          if (!uploadedImage) return;
+          const guideImage = (await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const uploadedImage = this.getSingleMessage({
+                taskUUID,
+              });
 
-          if (uploadedImage?.error) {
-            reject(uploadedImage);
-            return true;
-          }
+              if (!uploadedImage) return;
 
-          if (uploadedImage) {
-            // delete this._globalMessages[taskUUID];
-            resolve(uploadedImage);
-            return true;
-          }
+              if (uploadedImage?.error) {
+                reject(uploadedImage);
+                return true;
+              }
+
+              if (uploadedImage) {
+                // delete this._globalMessages[taskUUID];
+                resolve(uploadedImage);
+                return true;
+              }
+            },
+            {
+              debugKey: "unprocessed-image",
+              timeoutDuration: this._timeoutDuration,
+            }
+          )) as IControlNetImage;
+
+          lis.destroy();
+
+          return guideImage;
         },
-        { debugKey: "unprocessed-image" }
-      )) as IControlNetImage;
-
-      lis.destroy();
-
-      return guideImage;
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
     } catch (e: any) {
       throw e;
     }
@@ -578,52 +599,67 @@ export class RunwareBase {
     inputImage,
     includeCost,
     customTaskUUID,
+    retry,
   }: IRequestImageToText): Promise<IImageToText> => {
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
     try {
-      await this.ensureConnection();
-      return await asyncRetry(async () => {
-        const imageUploaded = inputImage
-          ? await this.uploadImage(inputImage as File | string)
-          : null;
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const imageUploaded = inputImage
+            ? await this.uploadImage(inputImage as File | string)
+            : null;
 
-        const taskUUID = customTaskUUID || getUUID();
-        this.send({
-          taskUUID,
-          taskType: ETaskType.IMAGE_CAPTION,
-          inputImage: imageUploaded?.imageUUID,
-          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-        });
+          const taskUUID = customTaskUUID || getUUID();
+          this.send({
+            taskUUID,
+            taskType: ETaskType.IMAGE_CAPTION,
+            inputImage: imageUploaded?.imageUUID,
+            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+          });
 
-        const lis = this.globalListener({
-          taskUUID,
-        });
+          lis = this.globalListener({
+            taskUUID,
+          });
 
-        const response = await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const newReverseClip = this.getSingleMessage({
-              taskUUID,
-            });
+          const response = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const newReverseClip = this.getSingleMessage({
+                taskUUID,
+              });
 
-            if (!newReverseClip) return;
+              if (!newReverseClip) return;
 
-            if (newReverseClip?.error) {
-              reject(newReverseClip);
-              return true;
+              if (newReverseClip?.error) {
+                reject(newReverseClip);
+                return true;
+              }
+
+              if (newReverseClip) {
+                delete this._globalMessages[taskUUID];
+                resolve(newReverseClip);
+                return true;
+              }
+            },
+            {
+              debugKey: "remove-image-background",
+              timeoutDuration: this._timeoutDuration,
             }
+          );
 
-            if (newReverseClip) {
-              delete this._globalMessages[taskUUID];
-              resolve(newReverseClip);
-              return true;
-            }
+          lis.destroy();
+
+          return response as IImageToText;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
           },
-          { debugKey: "remove-image-background" }
-        );
-
-        lis.destroy();
-
-        return response as IImageToText;
-      });
+        }
+      );
     } catch (e) {
       throw e;
     }
@@ -642,72 +678,90 @@ export class RunwareBase {
     alphaMattingErodeSize,
     includeCost,
     customTaskUUID,
+    retry,
   }: IRemoveImageBackground): Promise<IRemoveImage> => {
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
     try {
-      await this.ensureConnection();
-      return await asyncRetry(async () => {
-        const imageUploaded = inputImage
-          ? await this.uploadImage(inputImage as File | string)
-          : null;
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const imageUploaded = inputImage
+            ? await this.uploadImage(inputImage as File | string)
+            : null;
 
-        const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = customTaskUUID || getUUID();
 
-        this.send({
-          taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
-          taskUUID,
-          inputImage: imageUploaded?.imageUUID,
-          ...evaluateNonTrue({ key: "rgba", value: rgba }),
-          ...evaluateNonTrue({
-            key: "postProcessMask",
-            value: postProcessMask,
-          }),
-          ...evaluateNonTrue({ key: "returnOnlyMask", value: returnOnlyMask }),
-          ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
-          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-          ...evaluateNonTrue({
-            key: "alphaMattingForegroundThreshold",
-            value: alphaMattingForegroundThreshold,
-          }),
-          ...evaluateNonTrue({
-            key: "alphaMattingBackgroundThreshold",
-            value: alphaMattingBackgroundThreshold,
-          }),
-          ...evaluateNonTrue({
-            key: "alphaMattingErodeSize",
-            value: alphaMattingErodeSize,
-          }),
-          ...evaluateNonTrue({ key: "outputType", value: outputType }),
-          ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-        });
+          this.send({
+            taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
+            taskUUID,
+            inputImage: imageUploaded?.imageUUID,
+            ...evaluateNonTrue({ key: "rgba", value: rgba }),
+            ...evaluateNonTrue({
+              key: "postProcessMask",
+              value: postProcessMask,
+            }),
+            ...evaluateNonTrue({
+              key: "returnOnlyMask",
+              value: returnOnlyMask,
+            }),
+            ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
+            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+            ...evaluateNonTrue({
+              key: "alphaMattingForegroundThreshold",
+              value: alphaMattingForegroundThreshold,
+            }),
+            ...evaluateNonTrue({
+              key: "alphaMattingBackgroundThreshold",
+              value: alphaMattingBackgroundThreshold,
+            }),
+            ...evaluateNonTrue({
+              key: "alphaMattingErodeSize",
+              value: alphaMattingErodeSize,
+            }),
+            ...evaluateNonTrue({ key: "outputType", value: outputType }),
+            ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
+          });
 
-        const lis = this.globalListener({
-          taskUUID,
-        });
+          lis = this.globalListener({
+            taskUUID,
+          });
 
-        const response = await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const newRemoveBackground = this.getSingleMessage({ taskUUID });
+          const response = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const newRemoveBackground = this.getSingleMessage({ taskUUID });
 
-            if (!newRemoveBackground) return;
+              if (!newRemoveBackground) return;
 
-            if (newRemoveBackground?.error) {
-              reject(newRemoveBackground);
-              return true;
+              if (newRemoveBackground?.error) {
+                reject(newRemoveBackground);
+                return true;
+              }
+
+              if (newRemoveBackground) {
+                delete this._globalMessages[taskUUID];
+                resolve(newRemoveBackground);
+                return true;
+              }
+            },
+            {
+              debugKey: "remove-image-background",
+              timeoutDuration: this._timeoutDuration,
             }
+          );
 
-            if (newRemoveBackground) {
-              delete this._globalMessages[taskUUID];
-              resolve(newRemoveBackground);
-              return true;
-            }
+          lis.destroy();
+
+          return response as IImage;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
           },
-          { debugKey: "remove-image-background" }
-        );
-
-        lis.destroy();
-
-        return response as IImage;
-      });
+        }
+      );
     } catch (e) {
       throw e;
     }
@@ -720,53 +774,65 @@ export class RunwareBase {
     outputFormat,
     includeCost,
     customTaskUUID,
+    retry,
   }: IUpscaleGan): Promise<IImage> => {
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
     try {
-      await this.ensureConnection();
-      return await asyncRetry(async () => {
-        let imageUploaded;
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          let imageUploaded;
 
-        imageUploaded = await this.uploadImage(inputImage as File | string);
+          imageUploaded = await this.uploadImage(inputImage as File | string);
 
-        const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = customTaskUUID || getUUID();
 
-        this.send({
-          taskUUID,
-          inputImage: imageUploaded?.imageUUID,
-          taskType: ETaskType.IMAGE_UPSCALE,
-          upscaleFactor,
-          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-          ...(outputType ? { outputType } : {}),
-          ...(outputFormat ? { outputFormat } : {}),
-        });
+          this.send({
+            taskUUID,
+            inputImage: imageUploaded?.imageUUID,
+            taskType: ETaskType.IMAGE_UPSCALE,
+            upscaleFactor,
+            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+            ...(outputType ? { outputType } : {}),
+            ...(outputFormat ? { outputFormat } : {}),
+          });
 
-        const lis = this.globalListener({
-          taskUUID,
-        });
+          lis = this.globalListener({
+            taskUUID,
+          });
 
-        const response = await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const newUpscaleGan = this.getSingleMessage({ taskUUID });
-            if (!newUpscaleGan) return;
+          const response = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const newUpscaleGan = this.getSingleMessage({ taskUUID });
+              if (!newUpscaleGan) return;
 
-            if (newUpscaleGan?.error) {
-              reject(newUpscaleGan);
-              return true;
-            }
+              if (newUpscaleGan?.error) {
+                reject(newUpscaleGan);
+                return true;
+              }
 
-            if (newUpscaleGan) {
-              delete this._globalMessages[taskUUID];
-              resolve(newUpscaleGan);
-              return true;
-            }
+              if (newUpscaleGan) {
+                delete this._globalMessages[taskUUID];
+                resolve(newUpscaleGan);
+                return true;
+              }
+            },
+            { debugKey: "upscale-gan", timeoutDuration: this._timeoutDuration }
+          );
+
+          lis.destroy();
+
+          return response as IImage;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
           },
-          { debugKey: "upscale-gan" }
-        );
-
-        lis.destroy();
-
-        return response as IImage;
-      });
+        }
+      );
     } catch (e) {
       throw e;
     }
@@ -778,47 +844,62 @@ export class RunwareBase {
     promptVersions = 1,
     includeCost,
     customTaskUUID,
+    retry,
   }: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
     try {
-      await this.ensureConnection();
-      return await asyncRetry(async () => {
-        const taskUUID = customTaskUUID || getUUID();
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const taskUUID = customTaskUUID || getUUID();
 
-        this.send({
-          prompt,
-          taskUUID,
-          promptMaxLength,
-          promptVersions,
-          ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-          taskType: ETaskType.PROMPT_ENHANCE,
-        });
+          this.send({
+            prompt,
+            taskUUID,
+            promptMaxLength,
+            promptVersions,
+            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+            taskType: ETaskType.PROMPT_ENHANCE,
+          });
 
-        const lis = this.globalListener({
-          taskUUID,
-        });
+          lis = this.globalListener({
+            taskUUID,
+          });
 
-        const response = await getIntervalWithPromise(
-          ({ resolve, reject }) => {
-            const reducedPrompt: IEnhancedPrompt[] =
-              this._globalMessages[taskUUID];
+          const response = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const reducedPrompt: IEnhancedPrompt[] =
+                this._globalMessages[taskUUID];
 
-            if ((reducedPrompt as any)?.error) {
-              reject(reducedPrompt as any);
-              return true;
+              if ((reducedPrompt as any)?.error) {
+                reject(reducedPrompt as any);
+                return true;
+              }
+
+              if (reducedPrompt?.length >= promptVersions) {
+                delete this._globalMessages[taskUUID];
+                resolve(reducedPrompt);
+                return true;
+              }
+            },
+            {
+              debugKey: "enhance-prompt",
+              timeoutDuration: this._timeoutDuration,
             }
+          );
 
-            if (reducedPrompt?.length >= promptVersions) {
-              delete this._globalMessages[taskUUID];
-              resolve(reducedPrompt);
-              return true;
-            }
+          lis.destroy();
+          return response as IEnhancedPrompt[];
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
           },
-          { debugKey: "enhance-prompt" }
-        );
-
-        lis.destroy();
-        return response as IEnhancedPrompt[];
-      });
+        }
+      );
     } catch (e) {
       throw e;
     }
@@ -869,6 +950,7 @@ export class RunwareBase {
               }
             } catch (error) {
               clearAllIntervals();
+              console.log("afaf");
               reject(error);
             }
           }, retryInterval);
@@ -880,52 +962,17 @@ export class RunwareBase {
           if (hasConnected) {
             clearAllIntervals();
             resolve(true);
+            return;
           }
           if (!!this._invalidAPIkey) {
             clearAllIntervals();
-            reject(new Error("Invalid API key"));
+            reject(this._invalidAPIkey);
             return;
           }
         }, pollingInterval);
       });
-
-      if (!isConnected) {
-        this.connect();
-        await delay(2);
-        // const listenerTaskUID = getUUID();
-        // if (this._ws.readyState === 1) {
-        //   this.send({
-        //     newConnection: { apiKey: this._apiKey, taskUUID: listenerTaskUID },
-        //   });
-        // }
-        // const lis = this.globalListener({
-        //   responseKey: "newConnectionSessionUUID",
-        //   taskType: "newConnectionSessionUUID.connectionSessionUUID",
-        //   taskUUID: listenerTaskUID,
-        // });
-
-        // await getIntervalWithPromise(
-        //   ({ resolve, reject }) => {
-        //     const connectionId: string = this._globalMessages[listenerTaskUID];
-
-        //     if ((connectionId as any)?.error) {
-        //       reject(connectionId);
-        //       return true;
-        //     }
-
-        //     if (connectionId) {
-        //       delete this._globalMessages[listenerTaskUID];
-        //       this._connectionSessionUUID = connectionId;
-        //       resolve(connectionId);
-        //       return true;
-        //     }
-        //   },
-        //   { debugKey: "listen-to-connection" }
-        // );
-
-        // lis.destroy();
-      }
     } catch (e) {
+      console.log("e", e);
       throw (
         this._invalidAPIkey ??
         "Could not connect to server. Ensure your API key is correct"
@@ -971,7 +1018,11 @@ export class RunwareBase {
           // Resolve the promise with the data
         }
       },
-      { debugKey: "getting images", shouldThrowError }
+      {
+        debugKey: "getting images",
+        shouldThrowError,
+        timeoutDuration: this._timeoutDuration,
+      }
     )) as IImage[];
   }
 

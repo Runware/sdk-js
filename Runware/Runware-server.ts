@@ -15,13 +15,11 @@ export class RunwareServer extends RunwareBase {
   _pingTimeout: any;
   _pongListener: any;
 
-  constructor({ apiKey, url, shouldReconnect }: RunwareBaseType) {
-    super({ apiKey, url, shouldReconnect });
+  constructor(props: RunwareBaseType) {
+    super(props);
 
     this._sdkType = SdkType.SERVER;
-    if (apiKey) {
-      this.connect();
-    }
+    this.connect();
   }
 
   // protected addListener({
@@ -90,7 +88,7 @@ export class RunwareServer extends RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            this._invalidAPIkey = "Invalid API key";
+            this._invalidAPIkey = m;
             return;
           }
           this._connectionSessionUUID =
@@ -98,34 +96,6 @@ export class RunwareServer extends RunwareBase {
           this._invalidAPIkey = undefined;
         },
       });
-
-      // this.addListener({
-      //   check: (m) => m?.newConnectionSessionUUID?.connectionSessionUUID,
-      //   lis: (m) => {
-      //     if (m?.error) {
-      //       if (m.errorId === 19) {
-      //         this._invalidAPIkey = "Invalid API key";
-      //       } else {
-      //         this._invalidAPIkey = "Error connection ";
-      //       }
-      //       return;
-      //     }
-      //     this._connectionSessionUUID =
-      //       m?.newConnectionSessionUUID?.connectionSessionUUID;
-      //     this._invalidAPIkey = undefined;
-      //     this.heartBeat();
-      //   },
-      // });
-      // this._pongListener?.destroy();
-      // this._pongListener = this.addListener({
-      //   check: (m) => m?.pong,
-      //   lis: (m) => {
-      //     // console.log({ m });
-      //     if (m.pong) {
-      //       this.heartBeat();
-      //     }
-      //   },
-      // });
     });
 
     this._ws.on("message", (e: any, isBinary: any) => {
@@ -147,8 +117,7 @@ export class RunwareServer extends RunwareBase {
 
   protected handleClose() {
     if (this._invalidAPIkey) {
-      console.error(this._invalidAPIkey);
-      return;
+      throw this._invalidAPIkey;
     }
     if (this._reconnectingIntervalId) {
       clearInterval(this._reconnectingIntervalId);

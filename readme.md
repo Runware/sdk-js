@@ -32,10 +32,31 @@ const  runware  =  new Runware({ apiKey: "API_KEY" });
 const  runware  =  new RunwareServer({ apiKey: "API_KEY" });
 ```
 
-| Parameter | Type   | Use                               |
-| --------- | ------ | --------------------------------- |
-| url       | string | Url to get images from (optional) |
-| apiKey    | string | The environment api key           |
+| Parameter        | Type                                         | Use                                                                                                                                                        |
+| ---------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| url              | string                                       | Url to get images from (optional)                                                                                                                          |
+| apiKey           | string                                       | The environment api key                                                                                                                                    |
+| shouldReconnect  | boolean `(default = true)`                   | This handles reconnection when there is websocket inactivity                                                                                               |
+| globalMaxRetries | number `(default = 2)`                       | The number of retries it should make before throwing an error `(NB: you can specify a retry parameters for every request that overrides the global retry)` |
+| timeoutDuration  | number (in milliseconds) `(default = 60000)` | The timeout span per retry before timing out                                                                                                               |
+
+## Methods
+
+### Ensure connection is established before making request
+
+```js
+const runware = new RunwareServer({ apiKey: "API_KEY" });
+
+await runware.ensureConnection();
+```
+
+### Manually disconnect
+
+```js
+const runware = new RunwareServer({ apiKey: "API_KEY" });
+
+await runware.disconnect();
+```
 
 ## API
 
@@ -130,45 +151,47 @@ return interface ITextToImage {
 }[]
 ```
 
-| Parameter          | Type                               | Use                                                                                                                                                                                                                                                                           |
-| ------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| positivePrompt     | string                             | Defines the positive prompt description of the image.                                                                                                                                                                                                                         |
-| negativePrompt     | string                             | Defines the negative prompt description of the image.                                                                                                                                                                                                                         |
-| width              | number                             | Controls the image width.                                                                                                                                                                                                                                                     |
-| height             | number                             | Controls the image height.                                                                                                                                                                                                                                                    |
-| model              | string                             | The AIR system ID of the image to be requested.                                                                                                                                                                                                                               |
-| numberResults      | number: `(Optional)` (default = 1) | `(Optional)` The number of images to be generated.                                                                                                                                                                                                                            |
-| outputType         | IOutputType: `(Optional)`          | Specifies the output type in which the image is returned.                                                                                                                                                                                                                     |
-| outputFormat       | IOutputFormat: `(Optional)`        | Specifies the format of the output image.                                                                                                                                                                                                                                     |
-| uploadEndpoint     | string: `(Optional)`               | This parameter allows you to specify a URL to which the generated image will be uploaded as binary image data using the HTTP PUT method. For example, an S3 bucket URL can be used as the upload endpoint.                                                                    |
-| checkNSFW          | boolean: `(Optional)`              | This parameter is used to enable or disable the NSFW check. When enabled, the API will check if the image contains NSFW (not safe for work) content. This check is done using a pre-trained model that detects adult content in images.                                       |
-| seedImage          | string or File: `(Optional)`       | When doing Image-to-Image, Inpainting or Outpainting, this parameter is required.Specifies the seed image to be used for the diffusion process.                                                                                                                               |
-| maskImage          | string or File: `(Optional)`       | The image to be used as the mask image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                            |
-| strength           | number: `(Optional)`               | When doing Image-to-Image, Inpainting or Outpainting, this parameter is used to determine the influence of the seedImage image in the generated output. A higher value results in more influence from the original image, while a lower value allows more creative deviation. |
-| steps              | number: `(Optional)`               | The number of steps is the number of iterations the model will perform to generate the image. The higher the number of steps, the more detailed the image will be.                                                                                                            |
-| scheduler          | string: `(Optional)`               | An scheduler is a component that manages the inference process. Different schedulers can be used to achieve different results like more detailed images, faster inference, or more accurate results.                                                                          |
-| seed               | number: `(Optional)`               | A seed is a value used to randomize the image generation. If you want to make images reproducible (generate the same image multiple times), you can use the same seed value.                                                                                                  |
-| CFGScale           | number: `(Optional)`               | Guidance scale represents how closely the images will resemble the prompt or how much freedom the AI model has. Higher values are closer to the prompt. Low values may reduce the quality of the results.                                                                     |
-| clipSkip           | number: `(Optional)`               | CLIP Skip is a feature that enables skipping layers of the CLIP embedding process, leading to quicker and more varied image generation.                                                                                                                                       |
-| usePromptWeighting | boolean: `(Optional)`              | Allow setting different weights per words or expressions in prompts.                                                                                                                                                                                                          |
-| clipSkip           | number: `(Optional)`               | CLIP Skip is a feature that enables skipping layers of the CLIP embedding process, leading to quicker and more varied image generation.                                                                                                                                       |
-| lora               | ILora[]: `(Optional)`              | With LoRA (Low-Rank Adaptation), you can adapt a model to specific styles or features by emphasizing particular aspects of the data.                                                                                                                                          |
-| controlNet         | IControlNet[]: `(Optional)`        | With ControlNet, you can provide a guide image to help the model generate images that align with the desired structure.                                                                                                                                                       |
-| onPartialImages    | function: `(Optional)`             | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function.                                                                                                                |
-| includeCost        | boolean `(Optional)`               | If set to true, the cost to perform the task will be included in the response object.                                                                                                                                                                                         |
+| Parameter          | Type                                  | Use                                                                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| positivePrompt     | string                                | Defines the positive prompt description of the image.                                                                                                                                                                                                                         |
+| negativePrompt     | string                                | Defines the negative prompt description of the image.                                                                                                                                                                                                                         |
+| width              | number                                | Controls the image width.                                                                                                                                                                                                                                                     |
+| height             | number                                | Controls the image height.                                                                                                                                                                                                                                                    |
+| model              | string                                | The AIR system ID of the image to be requested.                                                                                                                                                                                                                               |
+| numberResults      | number: `(Optional)` (default = 1)    | `(Optional)` The number of images to be generated.                                                                                                                                                                                                                            |
+| outputType         | IOutputType: `(Optional)`             | Specifies the output type in which the image is returned.                                                                                                                                                                                                                     |
+| outputFormat       | IOutputFormat: `(Optional)`           | Specifies the format of the output image.                                                                                                                                                                                                                                     |
+| uploadEndpoint     | string: `(Optional)`                  | This parameter allows you to specify a URL to which the generated image will be uploaded as binary image data using the HTTP PUT method. For example, an S3 bucket URL can be used as the upload endpoint.                                                                    |
+| checkNSFW          | boolean: `(Optional)`                 | This parameter is used to enable or disable the NSFW check. When enabled, the API will check if the image contains NSFW (not safe for work) content. This check is done using a pre-trained model that detects adult content in images.                                       |
+| seedImage          | string or File: `(Optional)`          | When doing Image-to-Image, Inpainting or Outpainting, this parameter is required.Specifies the seed image to be used for the diffusion process.                                                                                                                               |
+| maskImage          | string or File: `(Optional)`          | The image to be used as the mask image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                            |
+| strength           | number: `(Optional)`                  | When doing Image-to-Image, Inpainting or Outpainting, this parameter is used to determine the influence of the seedImage image in the generated output. A higher value results in more influence from the original image, while a lower value allows more creative deviation. |
+| steps              | number: `(Optional)`                  | The number of steps is the number of iterations the model will perform to generate the image. The higher the number of steps, the more detailed the image will be.                                                                                                            |
+| scheduler          | string: `(Optional)`                  | An scheduler is a component that manages the inference process. Different schedulers can be used to achieve different results like more detailed images, faster inference, or more accurate results.                                                                          |
+| seed               | number: `(Optional)`                  | A seed is a value used to randomize the image generation. If you want to make images reproducible (generate the same image multiple times), you can use the same seed value.                                                                                                  |
+| CFGScale           | number: `(Optional)`                  | Guidance scale represents how closely the images will resemble the prompt or how much freedom the AI model has. Higher values are closer to the prompt. Low values may reduce the quality of the results.                                                                     |
+| clipSkip           | number: `(Optional)`                  | CLIP Skip is a feature that enables skipping layers of the CLIP embedding process, leading to quicker and more varied image generation.                                                                                                                                       |
+| usePromptWeighting | boolean: `(Optional)`                 | Allow setting different weights per words or expressions in prompts.                                                                                                                                                                                                          |
+| clipSkip           | number: `(Optional)`                  | CLIP Skip is a feature that enables skipping layers of the CLIP embedding process, leading to quicker and more varied image generation.                                                                                                                                       |
+| lora               | ILora[]: `(Optional)`                 | With LoRA (Low-Rank Adaptation), you can adapt a model to specific styles or features by emphasizing particular aspects of the data.                                                                                                                                          |
+| controlNet         | IControlNet[]: `(Optional)`           | With ControlNet, you can provide a guide image to help the model generate images that align with the desired structure.                                                                                                                                                       |
+| onPartialImages    | function: `(Optional)`                | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function.                                                                                                                |
+| includeCost        | boolean `(Optional)`                  | If set to true, the cost to perform the task will be included in the response object.                                                                                                                                                                                         |
+| retry              | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                                                                                                                                                                                |
 
 ##### ControlNet Params
 
-| Parameter           | Type                        | Use                                                                                                                                                                                                                                                                                                                               |
-| ------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| model               | string                      | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
-| guideImage          | file or string `(Optional)` | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
-| weight              | number `(Optional)`         | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
-| startStep           | number `(Optional)`         | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
-| startStepPercentage | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
-| endStep             | number `(Optional)`         | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
-| endStepPercentage   | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
-| controlMode         | string `(Optional)`         | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
+| Parameter           | Type                                  | Use                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| model               | string                                | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
+| guideImage          | file or string `(Optional)`           | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
+| weight              | number `(Optional)`                   | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
+| startStep           | number `(Optional)`                   | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
+| startStepPercentage | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
+| endStep             | number `(Optional)`                   | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
+| endStepPercentage   | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
+| controlMode         | string `(Optional)`                   | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
+| retry               | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                                                                                                                                                                                                                                    |
 
 &nbsp;
 
@@ -190,10 +213,11 @@ return interface IImageToText {
 }
 ```
 
-| Parameter   | Type                 | Use                                                                                                                |
-| ----------- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| inputImage  | string or File       | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
-| includeCost | boolean `(Optional)` | If set to true, the cost to perform the task will be included in the response object.                              |
+| Parameter   | Type                                  | Use                                                                                                                |
+| ----------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| inputImage  | string or File                        | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
+| includeCost | boolean `(Optional)`                  | If set to true, the cost to perform the task will be included in the response object.                              |
+| retry       | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                     |
 
 &nbsp;
 
@@ -227,19 +251,20 @@ return interface IImage {
 }
 ```
 
-| Parameter                       | Type                        | Use                                                                                                                                                                                  |
-| ------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| inputImage                      | string or File              | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file.                                                                   |
-| outputType                      | IOutputType: `(Optional)`   | Specifies the output type in which the image is returned.                                                                                                                            |
-| outputFormat                    | IOutputFormat: `(Optional)` | Specifies the format of the output image.                                                                                                                                            |
-| includeCost                     | boolean `(Optional)`        | If set to true, the cost to perform the task will be included in the response object.                                                                                                |
-| rgba                            | number[] `(Optional)`       | An array representing the [red, green, blue, alpha] values that define the color of the removed background. The alpha channel controls transparency.                                 |
-| postProcessMask                 | boolean `(Optional)`        | Flag indicating whether to post-process the mask. Controls whether the mask should undergo additional post-processing.                                                               |
-| returnOnlyMask                  | boolean `(Optional)`        | Flag indicating whether to return only the mask. The mask is the opposite of the image background removal.                                                                           |
-| alphaMatting                    | boolean `(Optional)`        | Flag indicating whether to use alpha matting. Alpha matting is a post-processing technique that enhances the quality of the output by refining the edges of the foreground object.   |
-| alphaMattingForegroundThreshold | number `(Optional)`         | Threshold value used in alpha matting to distinguish the foreground from the background. Adjusting this parameter affects the sharpness and accuracy of the foreground object edges. |
-| alphaMattingBackgroundThreshold | number `(Optional)`         | Threshold value used in alpha matting to refine the background areas. It influences how aggressively the algorithm removes the background while preserving image details.            |
-| alphaMattingErodeSize           | number `(Optional)`         | Specifies the size of the erosion operation used in alpha matting. Erosion helps in smoothing the edges of the foreground object for a cleaner removal of the background.            |
+| Parameter                       | Type                                  | Use                                                                                                                                                                                  |
+| ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| inputImage                      | string or File                        | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file.                                                                   |
+| outputType                      | IOutputType: `(Optional)`             | Specifies the output type in which the image is returned.                                                                                                                            |
+| outputFormat                    | IOutputFormat: `(Optional)`           | Specifies the format of the output image.                                                                                                                                            |
+| includeCost                     | boolean `(Optional)`                  | If set to true, the cost to perform the task will be included in the response object.                                                                                                |
+| rgba                            | number[] `(Optional)`                 | An array representing the [red, green, blue, alpha] values that define the color of the removed background. The alpha channel controls transparency.                                 |
+| postProcessMask                 | boolean `(Optional)`                  | Flag indicating whether to post-process the mask. Controls whether the mask should undergo additional post-processing.                                                               |
+| returnOnlyMask                  | boolean `(Optional)`                  | Flag indicating whether to return only the mask. The mask is the opposite of the image background removal.                                                                           |
+| alphaMatting                    | boolean `(Optional)`                  | Flag indicating whether to use alpha matting. Alpha matting is a post-processing technique that enhances the quality of the output by refining the edges of the foreground object.   |
+| alphaMattingForegroundThreshold | number `(Optional)`                   | Threshold value used in alpha matting to distinguish the foreground from the background. Adjusting this parameter affects the sharpness and accuracy of the foreground object edges. |
+| alphaMattingBackgroundThreshold | number `(Optional)`                   | Threshold value used in alpha matting to refine the background areas. It influences how aggressively the algorithm removes the background while preserving image details.            |
+| alphaMattingErodeSize           | number `(Optional)`                   | Specifies the size of the erosion operation used in alpha matting. Erosion helps in smoothing the edges of the foreground object for a cleaner removal of the background.            |
+| retry                           | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                                                                                       |
 
 &nbsp;
 
@@ -270,13 +295,14 @@ return interface IImage {
 
 ```
 
-| Parameter     | Type                        | Use                                                                                                                |
-| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| inputImage    | string or File              | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
-| upscaleFactor | number                      | The number of times to upscale;                                                                                    |
-| outputType    | IOutputType: `(Optional)`   | Specifies the output type in which the image is returned.                                                          |
-| outputFormat  | IOutputFormat: `(Optional)` | Specifies the format of the output image.                                                                          |
-| includeCost   | boolean `(Optional)`        | If set to true, the cost to perform the task will be included in the response object.                              |
+| Parameter     | Type                                  | Use                                                                                                                |
+| ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| inputImage    | string or File                        | The image to be used as the seed image. It can be the UUID of previously generated image, or an image from a file. |
+| upscaleFactor | number                                | The number of times to upscale;                                                                                    |
+| outputType    | IOutputType: `(Optional)`             | Specifies the output type in which the image is returned.                                                          |
+| outputFormat  | IOutputFormat: `(Optional)`           | Specifies the format of the output image.                                                                          |
+| includeCost   | boolean `(Optional)`                  | If set to true, the cost to perform the task will be included in the response object.                              |
+| retry         | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                     |
 
 &nbsp;
 
@@ -299,12 +325,13 @@ return interface IEnhancedPrompt {
 
 ```
 
-| Parameter       | Type                | Use                                                                                                                         |
-| --------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| prompt          | string              | The prompt that you intend to enhance.                                                                                      |
-| promptMaxLength | number: `Optional`  | Character count. Represents the maximum length of the prompt that you intend to receive. Can take values between 1 and 380. |
-| promptVersions  | number: `Optional`  | The number of prompt versions that will be received. Can take values between 1 and 5.                                       |
-| includeCost     | boolean: `Optional` | If set to true, the cost to perform the task will be included in the response object.                                       |
+| Parameter       | Type                                  | Use                                                                                                                         |
+| --------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| prompt          | string                                | The prompt that you intend to enhance.                                                                                      |
+| promptMaxLength | number: `Optional`                    | Character count. Represents the maximum length of the prompt that you intend to receive. Can take values between 1 and 380. |
+| promptVersions  | number: `Optional`                    | The number of prompt versions that will be received. Can take values between 1 and 5.                                       |
+| includeCost     | boolean: `Optional`                   | If set to true, the cost to perform the task will be included in the response object.                                       |
+| retry           | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                              |
 
 &nbsp;
 
@@ -337,18 +364,19 @@ return interface IControlNetImage {
 
 ```
 
-| Parameter                   | Type                        | Use                                                                                   |
-| --------------------------- | --------------------------- | ------------------------------------------------------------------------------------- |
-| inputImage                  | string or File              | Specifies the input image to be preprocessed to generate a guide image.               |
-| width                       | number                      | Controls the image width.                                                             |
-| height                      | number                      | Controls the image height.                                                            |
-| outputType                  | IOutputType: `(Optional)`   | Specifies the output type in which the image is returned.                             |
-| outputFormat                | IOutputFormat: `(Optional)` | Specifies the format of the output image.                                             |
-| preProcessorType            | string: `(Optional)`        | Specifies the pre processor type to use.                                              |
-| includeCost                 | boolean: `Optional`         | If set to true, the cost to perform the task will be included in the response object. |
-| lowThresholdCanny           | number `Optional`           | Defines the lower threshold when using the Canny edge detection preprocessor.         |
-| highThresholdCanny          | number `Optional`           | Defines the high threshold when using the Canny edge detection preprocessor.          |
-| includeHandsAndFaceOpenPose | boolean `Optional`          | Include the hands and face in the pose outline when using the OpenPose preprocessor.  |
+| Parameter                   | Type                                  | Use                                                                                   |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------- |
+| inputImage                  | string or File                        | Specifies the input image to be preprocessed to generate a guide image.               |
+| width                       | number                                | Controls the image width.                                                             |
+| height                      | number                                | Controls the image height.                                                            |
+| outputType                  | IOutputType: `(Optional)`             | Specifies the output type in which the image is returned.                             |
+| outputFormat                | IOutputFormat: `(Optional)`           | Specifies the format of the output image.                                             |
+| preProcessorType            | string: `(Optional)`                  | Specifies the pre processor type to use.                                              |
+| includeCost                 | boolean: `Optional`                   | If set to true, the cost to perform the task will be included in the response object. |
+| lowThresholdCanny           | number `Optional`                     | Defines the lower threshold when using the Canny edge detection preprocessor.         |
+| highThresholdCanny          | number `Optional`                     | Defines the high threshold when using the Canny edge detection preprocessor.          |
+| includeHandsAndFaceOpenPose | boolean `Optional`                    | Include the hands and face in the pose outline when using the OpenPose preprocessor.  |
+| retry                       | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                        |
 
 &nbsp;
 
@@ -359,6 +387,13 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.18
+
+**Added or Changed**
+
+- Add Global Max Retry and Retry count per request
+- Add Global timeout duration
 
 ### - v1.1.16/v1.1.17
 
