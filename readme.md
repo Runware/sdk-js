@@ -24,12 +24,16 @@ $  yarn  add  @runware/sdk-js
 
 ## Instantiating the SDK
 
-```js
-# For  Client (Javascript, React, Vue  etc) Use
-const  runware  =  new Runware({ apiKey: "API_KEY" });
+### Instantiating Synchronously
 
-# For  Server (Nodejs) Use
-const  runware  =  new RunwareServer({ apiKey: "API_KEY" });
+```js
+const runware = new Runware({ apiKey: "API_KEY" });
+```
+
+### Instantiating Asynchronously
+
+```js
+const runware = await Runware.initialize({ apiKey: "API_KEY" });
 ```
 
 | Parameter        | Type                                         | Use                                                                                                                                                        |
@@ -394,6 +398,7 @@ return interface IControlNetImage {
 
 - Add Global Max Retry and Retry count per request
 - Add Global timeout duration
+- Introduce asynchronous instantiation
 
 ### - v1.1.16/v1.1.17
 

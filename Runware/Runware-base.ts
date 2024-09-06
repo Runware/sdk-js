@@ -72,6 +72,16 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
+  static async initialize(props: RunwareBaseType) {
+    try {
+      const instance = new this(props);
+      await instance.ensureConnection();
+      return instance;
+    } catch (e) {
+      throw e;
+    }
+  }
+
   protected isWebsocketReadyState = () => this._ws?.readyState === 1;
 
   // protected addListener({
@@ -190,7 +200,6 @@ export class RunwareBase {
       // console.log("closing");
       // console.log("invalid", this._invalidAPIkey);
       if (this._invalidAPIkey) {
-        console.error(this._invalidAPIkey);
         return;
       }
     };
@@ -950,7 +959,6 @@ export class RunwareBase {
               }
             } catch (error) {
               clearAllIntervals();
-              console.log("afaf");
               reject(error);
             }
           }, retryInterval);
@@ -972,7 +980,6 @@ export class RunwareBase {
         }, pollingInterval);
       });
     } catch (e) {
-      console.log("e", e);
       throw (
         this._invalidAPIkey ??
         "Could not connect to server. Ensure your API key is correct"

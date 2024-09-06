@@ -117,7 +117,7 @@ export class RunwareServer extends RunwareBase {
 
   protected handleClose() {
     if (this._invalidAPIkey) {
-      throw this._invalidAPIkey;
+      return;
     }
     if (this._reconnectingIntervalId) {
       clearInterval(this._reconnectingIntervalId);
