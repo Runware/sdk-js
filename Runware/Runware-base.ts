@@ -513,7 +513,7 @@ export class RunwareBase {
 
   controlNetPreProcess = async ({
     inputImage,
-    preProcessor,
+    preProcessorType,
     height,
     width,
     outputType,
@@ -540,7 +540,7 @@ export class RunwareBase {
             inputImage: image.imageUUID,
             taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
             taskUUID,
-            preProcessorType: preProcessor,
+            preProcessorType,
             ...evaluateNonTrue({ key: "height", value: height }),
             ...evaluateNonTrue({ key: "width", value: width }),
             ...evaluateNonTrue({ key: "outputType", value: outputType }),

@@ -79,7 +79,7 @@ export type IControlNetGeneral = {
 };
 export type IControlNetPreprocess = {
   inputImage: string | File;
-  preProcessor: EPreProcessorGroup;
+  preProcessorType: EPreProcessorGroup;
   height?: number;
   width?: number;
   outputType?: IOutputType;

@@ -346,7 +346,7 @@ return interface IEnhancedPrompt {
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 const controlNetPreProcessed = await runware.controlNetPreProcess({
 	inputImage: string | File;
-	preProcessor: EPreProcessor;
+	preProcessorType: EPreProcessor;
 	height?: number;
 	width?: number;
 	outputType?: IOutputType;
@@ -391,6 +391,12 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.19
+
+**Added or Changed**
+
+- Fix Preprocessor type bug for controlnet
 
 ### - v1.1.18
 
