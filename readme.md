@@ -231,7 +231,7 @@ return interface IImageToText {
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 const image = await runware.removeImageBackground({
-	imageInitiator: string | File
+	inputImage: string | File
 	outputType?: IOutputType;
 	outputFormat?: IOutputFormat;
 	rgba?: number[];
@@ -397,6 +397,7 @@ return interface IControlNetImage {
 **Added or Changed**
 
 - Fix Preprocessor type bug for controlnet
+- Update readme
 
 ### - v1.1.18
 
