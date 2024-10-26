@@ -132,11 +132,15 @@ export class RunwareServer extends RunwareBase {
   protected resetConnection = () => {
     if (this._ws) {
       this._listeners.forEach((list) => {
-        list?.destroy?.();
+        let _a;
+        (_a = list == null ? void 0 : list.destroy) == null ? void 0 : _a.call(list);
       });
       this._ws.removeAllListeners(); // Remove all listeners
-      this._ws.terminate();
-      this._ws.close(); // Attempt to close gracefully
+      if (this._ws.readyState === 1) {
+        this._ws.terminate();
+        this._ws.close(); // Attempt to close gracefully
+      }
+
       this._ws = null;
       this._listeners = [];
     }
