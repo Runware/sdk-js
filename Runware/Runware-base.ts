@@ -930,7 +930,6 @@ export class RunwareBase {
         //  const isConnected =
         let retry = 0;
         const MAX_RETRY = 30;
-        const SHOULD_RETRY = 30 / 2 === retry;
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
@@ -952,9 +951,7 @@ export class RunwareBase {
                 clearAllIntervals();
                 reject(new Error("Retry timed out"));
               } else {
-                if (SHOULD_RETRY) {
-                  this.connect();
-                }
+                this.connect();
                 retry++;
               }
             } catch (error) {
