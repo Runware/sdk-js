@@ -41,6 +41,16 @@ import {
 
 // let allImages: IImage[] = [];
 
+class ValidationError extends Error {
+  constructor(public message: string, public field?: string) {
+    super(message);
+    this.name = "ValidationError";
+    if (field) {
+      this.message = `${field} is required: ${message}`;
+    }
+  }
+}
+
 export class RunwareBase {
   _ws: ReconnectingWebsocketProps | any;
   _listeners: ListenerType[] = [];
@@ -363,6 +373,11 @@ export class RunwareBase {
 
   // gScale,
   IRequestImage): Promise<ITextToImage[] | undefined> {
+
+    if (!positivePrompt) {
+      throw new ValidationError("The field is mandatory for image generation", "positivePrompt");
+    }
+
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
