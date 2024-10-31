@@ -17,6 +17,7 @@ export enum ETaskType {
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
   PROMPT_ENHANCE = "promptEnhance",
   AUTHENTICATION = "authentication",
+  MODEL_UPLOAD = "modelUpload",
 }
 
 export type RunwareBaseType = {
@@ -314,3 +315,70 @@ export type ListenerType = {
   listener: (msg: any) => void;
   groupKey?: string;
 };
+
+export interface IAddModelResponse {
+  statusId: number;
+  message: "Processing - validation. Next step: download from provider";
+  taskUUID: string;
+  modelAIR: string;
+  taskType: string;
+}
+
+export interface IErrorResponse {
+  code: string;
+  message: string;
+  parameter: string;
+  type: string;
+  documentation: string;
+  taskUUID: string;
+}
+
+type TAddModelBaseType = {
+  modelAIR: string;
+  modelName: string;
+  modelDownloadUrl: string;
+  modelUniqueIdentifier: string;
+  modelVersion: string;
+  modelFormatId: number;
+  modelTypeId: number;
+  modelHeroImageUrl?: string;
+  modelTags?: string[];
+  modelShortDescription?: string;
+  modelComment?: string;
+  privateModel: boolean;
+
+  // Custom models
+  customTaskUUID?: string;
+  retry?: number;
+  onUploadStream?: (
+    response?: IAddModelResponse,
+    error?: IErrorResponse
+  ) => void;
+};
+
+type TAddModelControlNet = {
+  modelType: "controlnet";
+} & TAddModelBaseType;
+
+type TAddModelCheckPoint = {
+  modelType: "checkpoint";
+  modelPositiveTriggerWords?: string;
+  modelDefaultGuidanceScale?: number;
+  modelDefaultWeight: number;
+  modelDefaultNumberOfSteps?: number;
+  modelDefaultSchedulerId?: number;
+  modelNegativeTriggerWords?: string;
+  modelBaseTypeId?: number;
+} & TAddModelBaseType;
+
+type TAddModelLora = {
+  modelType: "lora";
+
+  modelDefaultWeight: number;
+  modelPositiveTriggerWords?: string;
+} & TAddModelBaseType;
+
+export type TAddModel =
+  | TAddModelCheckPoint
+  | TAddModelControlNet
+  | TAddModelLora;

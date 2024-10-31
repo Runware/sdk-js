@@ -1,10 +1,11 @@
 {
   "name": "@runware/sdk-js",
-  "version": "1.1.19",
+  "version": "1.1.20-beta.2",
   "description": "The SDK is used to run image inference with the Runware API, powered by the RunWare inference platform. It can be used to generate imaged with text-to-image and image-to-image. It also allows the use of an existing gallery of models or selecting any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting and outpainting, and a series of other ControlNet models.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "type": "module",
   "files": [
     "dist/"
   ],
@@ -14,7 +15,8 @@
     "pkg": "npx pkgfiles",
     "dev:test": "vitest --reporter verbose",
     "test": "vitest run --reporter verbose",
-    "test:single": "vitest run --reporter verbose tests/Runware/upscale-gan.test.ts"
+    "test:single": "vitest run --reporter verbose tests/Runware/upscale-gan.test.ts",
+    "debug": "tsx tests/script.ts"
   },
   "keywords": [
     "runware",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@types/uuid": "^9.0.6",
     "@types/ws": "^8.5.8",
+    "dotenv": "^16.4.5",
     "mock-socket": "^9.3.1",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2",
