@@ -318,7 +318,7 @@ export type ListenerType = {
 
 export interface IAddModelResponse {
   statusId: number;
-  message: "Processing - validation. Next step: download from provider";
+  message: string;
   taskUUID: string;
   modelAIR: string;
   taskType: string;
@@ -347,7 +347,7 @@ type TAddModelBaseType = {
   modelComment?: string;
   privateModel: boolean;
 
-  // Custom models
+  // Custom parameters
   customTaskUUID?: string;
   retry?: number;
   onUploadStream?: (
@@ -373,7 +373,6 @@ type TAddModelCheckPoint = {
 
 type TAddModelLora = {
   modelType: "lora";
-
   modelDefaultWeight: number;
   modelPositiveTriggerWords?: string;
 } & TAddModelBaseType;

@@ -961,7 +961,6 @@ export class RunwareBase {
           });
 
           let result: IAddModelResponse;
-
           let errorResult: IErrorResponse;
 
           lis = this.listenToUpload({
