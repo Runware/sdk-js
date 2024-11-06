@@ -153,12 +153,14 @@ export interface IRequestImage {
   // imageSize?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
-  refiner?: {
-    model: string;
-    startStep?: number;
-    startStepPercentage?: number;
-  };
+  refiner?: IRefiner;
   // gScale?: number;
+}
+
+export interface IRefiner {
+  model: string;
+  startStep?: number;
+  startStepPercentage?: number;
 }
 export interface IRequestImageToText {
   inputImage?: File | string;

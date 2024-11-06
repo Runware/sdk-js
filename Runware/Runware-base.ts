@@ -1096,7 +1096,9 @@ export class RunwareBase {
         let retry = 0;
         const MAX_RETRY = 30;
 
-        const SHOULD_RETRY = 30 / 2 === retry;
+        // Retry every (retryInterval % retry) => 60s
+        // every 20 seconds (ie. => retry is 10 (20s), retry is 20 (40s))
+        const SHOULD_RETRY = retry % 10 === 0;
 
         let retryIntervalId: any;
         let pollingIntervalId: any;

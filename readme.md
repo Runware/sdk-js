@@ -66,6 +66,8 @@ await runware.disconnect();
 
 ### Request Image
 
+[Read Documentation](https://docs.runware.ai/en/image-inference/api-reference)
+
 NB: All errors can be caught in the catch block of each request
 
 ```js
@@ -91,6 +93,7 @@ const images = await runware.requestImages({
 	seed?: number;
 	CFGScale?: number;
 	clipSkip?: number;
+	refiner?: IRefiner;
 	usePromptWeighting?: number;
 	controlNet?: IControlNet[];
 	lora?: ILora[];
@@ -201,6 +204,8 @@ return interface ITextToImage {
 
 ### Request Image To Text
 
+[Read Documentation](https://docs.runware.ai/en/utilities/image-to-text)
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
@@ -226,6 +231,8 @@ return interface IImageToText {
 &nbsp;
 
 ### Remove Image Background
+
+[Read Documentation](https://docs.runware.ai/en/image-editing/background-removal)
 
 ```js
 
@@ -274,6 +281,8 @@ return interface IImage {
 
 ### Upscale Image
 
+[Read Documentation](https://docs.runware.ai/en/image-editing/upscaling)
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
@@ -312,6 +321,8 @@ return interface IImage {
 
 ### Enhance Prompt
 
+[Read Documentation](https://docs.runware.ai/en/utilities/prompt-enhancer)
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
@@ -340,6 +351,8 @@ return interface IEnhancedPrompt {
 &nbsp;
 
 ### ControlNet Preprocess
+
+[Read Documentation](https://docs.runware.ai/en/image-editing/controlnet-tools)
 
 ```js
 
@@ -384,6 +397,135 @@ return interface IControlNetImage {
 
 &nbsp;
 
+### Model Upload
+
+[Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const basePayload = {
+	air: string;
+	name: string;
+	downloadUrl: string;
+	uniqueIdentifier: string;
+	version: string;
+	format: EModelFormat;
+	architecture: EModelArchitecture;
+	heroImageUrl?: string;
+	tags?: string[];
+	shortDescription?: string;
+	comment?: string;
+	private: boolean;
+	customTaskUUID?: string;
+	retry?: number;
+}
+
+const controlNetUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "controlnet";
+ 	conditioning: EModelConditioning;
+	onUploadStream?: (
+		response?: IAddModelResponse,
+		error?: IErrorResponse
+	) => void;
+})
+console.log(controlNetUpload)
+
+const checkpointUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "checkpoint";
+ 	positiveTriggerWords?: string;
+	defaultCFGScale?: number;
+	defaultStrength: number;
+	defaultSteps?: number;
+	defaultScheduler?: number;
+	negativeTriggerWords?: string;
+	type?: EModelType;
+	onUploadStream?: (
+		response?: IAddModelResponse,
+		error?: IErrorResponse
+	) => void;
+})
+console.log(checkpointUpload)
+
+const loraUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "lora";
+ 	defaultWeight: number;
+  	positiveTriggerWords?: string;
+	onUploadStream?: (
+		response?: IAddModelResponse,
+		error?: IErrorResponse
+	) => void;
+})
+console.log(loraUpload)
+
+return interface IAddModelResponse {
+  status: string;
+  message: string;
+  taskUUID: string;
+  air: string;
+  taskType: string;
+}
+
+export interface IErrorResponse {
+  code: string;
+  message: string;
+  parameter: string;
+  type: string;
+  documentation: string;
+  taskUUID: string;
+}
+
+```
+
+&nbsp;
+
+### Photo Maker
+
+[Read Documentation](https://docs.runware.ai/en/image-inference/photomaker)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const photoMaker = await runware.modelUpload({
+	positivePrompt: string;
+	height: number;
+	width: number;
+	numberResults: number;
+	steps?: number;
+	inputImages: string[];
+	style: EPhotoMakerEnum;
+	strength?: number;
+	outputFormat?: string;
+	includeCost?: boolean;
+
+	customTaskUUID?: string;
+	retry?: number;
+	onPartialImages?: (images: IImage[], error?: IError) => void
+})
+console.log(photoMaker)
+
+export interface IImage {
+	taskType: ETaskType;
+	imageUUID: string;
+	inputImageUUID?: string;
+	taskUUID: string;
+	imageURL?: string;
+	imageBase64Data?: string;
+	imageDataURI?: string;
+	NSFWContent?: boolean;
+	cost?: number;
+	seed?: number;
+}
+
+```
+
+&nbsp;
+
 ## Demo
 
 <!-- To be changed to another example -->
@@ -398,6 +540,7 @@ return interface IControlNetImage {
 
 - Add Model Upload
 - Add Photo Maker
+- Add Refiner
 
 ### - v1.1.19
 
