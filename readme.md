@@ -392,6 +392,13 @@ return interface IControlNetImage {
 
 ## Changelog
 
+### - v1.1.20
+
+**Added or Changed**
+
+- Add Model Upload
+- Add Photo Maker
+
 ### - v1.1.19
 
 **Added or Changed**

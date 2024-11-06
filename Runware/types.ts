@@ -18,6 +18,7 @@ export enum ETaskType {
   PROMPT_ENHANCE = "promptEnhance",
   AUTHENTICATION = "authentication",
   MODEL_UPLOAD = "modelUpload",
+  PHOTO_MAKER = "photoMaker",
 }
 
 export type RunwareBaseType = {
@@ -41,6 +42,7 @@ export interface IImage {
   imageDataURI?: string;
   NSFWContent?: boolean;
   cost?: number;
+  seed?: number;
 }
 
 export interface ITextToImage extends IImage {
@@ -151,6 +153,11 @@ export interface IRequestImage {
   // imageSize?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
+  refiner?: {
+    model: string;
+    startStep?: number;
+    startStepPercentage?: number;
+  };
   // gScale?: number;
 }
 export interface IRequestImageToText {
@@ -317,10 +324,10 @@ export type ListenerType = {
 };
 
 export interface IAddModelResponse {
-  statusId: number;
+  status: string;
   message: string;
   taskUUID: string;
-  modelAIR: string;
+  air: string;
   taskType: string;
 }
 
@@ -333,19 +340,20 @@ export interface IErrorResponse {
   taskUUID: string;
 }
 
-type TAddModelBaseType = {
-  modelAIR: string;
-  modelName: string;
-  modelDownloadUrl: string;
-  modelUniqueIdentifier: string;
-  modelVersion: string;
-  modelFormatId: number;
-  modelTypeId: number;
-  modelHeroImageUrl?: string;
-  modelTags?: string[];
-  modelShortDescription?: string;
-  modelComment?: string;
-  privateModel: boolean;
+export type TAddModelBaseType = {
+  air: string;
+  name: string;
+  downloadUrl: string;
+  uniqueIdentifier: string;
+
+  version: string;
+  format: EModelFormat;
+  architecture: EModelArchitecture;
+  heroImageUrl?: string;
+  tags?: string[];
+  shortDescription?: string;
+  comment?: string;
+  private: boolean;
 
   // Custom parameters
   customTaskUUID?: string;
@@ -356,28 +364,113 @@ type TAddModelBaseType = {
   ) => void;
 };
 
-type TAddModelControlNet = {
-  modelType: "controlnet";
+export type TAddModelControlNet = {
+  category: "controlnet";
+  conditioning: EModelConditioning;
 } & TAddModelBaseType;
 
-type TAddModelCheckPoint = {
-  modelType: "checkpoint";
-  modelPositiveTriggerWords?: string;
-  modelDefaultGuidanceScale?: number;
-  modelDefaultWeight: number;
-  modelDefaultNumberOfSteps?: number;
-  modelDefaultSchedulerId?: number;
-  modelNegativeTriggerWords?: string;
-  modelBaseTypeId?: number;
+export type TAddModelCheckPoint = {
+  category: "checkpoint";
+  positiveTriggerWords?: string;
+  defaultCFGScale?: number;
+  defaultStrength: number;
+  defaultSteps?: number;
+  defaultScheduler?: number;
+  negativeTriggerWords?: string;
+  type?: EModelType;
 } & TAddModelBaseType;
 
-type TAddModelLora = {
-  modelType: "lora";
-  modelDefaultWeight: number;
-  modelPositiveTriggerWords?: string;
+export type TAddModelLora = {
+  category: "lora";
+  defaultWeight: number;
+  positiveTriggerWords?: string;
 } & TAddModelBaseType;
 
 export type TAddModel =
   | TAddModelCheckPoint
   | TAddModelControlNet
   | TAddModelLora;
+
+export type TPhotoMaker = {
+  model?: string; // this should be hidden for now cause we have a single model
+  positivePrompt: string; //we are automatically adding the "img" trigger word to the prompt
+  height: number;
+  width: number;
+  numberResults: number;
+  steps?: number;
+  inputImages: string[];
+  style: EPhotoMakerEnum;
+  strength?: number;
+  outputFormat?: string;
+  includeCost?: boolean;
+
+  // other options
+  customTaskUUID?: string;
+  retry?: number;
+  onPartialImages?: (images: IImage[], error?: IError) => void;
+};
+
+export enum EModelFormat {
+  safetensors = "safetensors",
+  pickletensor = "pickletensor",
+}
+
+export enum EModelArchitecture {
+  flux1d = "flux1d",
+  flux1s = "flux1s",
+  pony = "pony",
+  sdhyper = "sdhyper",
+  sd1x = "sd1x",
+  sd1xlcm = "sd1xlcm",
+  sd3 = "sd3",
+  sdxl = "sdxl",
+  sdxllcm = "sdxllcm",
+  sdxldistilled = "sdxldistilled",
+  sdxlhyper = "sdxlhyper",
+  sdxllightning = "sdxllightning",
+  sdxlturbo = "sdxlturbo",
+}
+
+export enum EModelType {
+  base = "base",
+  inpainting = "inpainting",
+  pix2pix = "pix2pix",
+}
+
+export enum EModelConditioning {
+  canny = "canny",
+  depth = "depth",
+  qrcode = "qrcode",
+  hed = "hed",
+  scrible = "scrible",
+  openpose = "openpose",
+  seg = "segmentation",
+  openmlsd = "openmlsd",
+  softedge = "softedge",
+  normal = "normal bae",
+  shuffle = "shuffle",
+  pix2pix = "pix2pix",
+  inpaint = "inpaint",
+  lineart = "line art",
+  sketch = "sketch",
+  inpaintdepth = "inpaint depth",
+  tile = "tile",
+  outfit = "outfit",
+  blur = "blur",
+  gray = "gray",
+  lowquality = "low quality",
+}
+
+export enum EPhotoMakerEnum {
+  NoStyle = "No style",
+  Cinematic = "Cinematic",
+  DisneyCharacter = "Disney Character",
+  DigitalArt = "Digital Art",
+  Photographic = "Photographic",
+  FantasyArt = "Fantasy art",
+  Neonpunk = "Neonpunk",
+  Enhance = "Enhance",
+  ComicBook = "Comic book",
+  Lowpoly = "Lowpoly",
+  LineArt = "Line art",
+}

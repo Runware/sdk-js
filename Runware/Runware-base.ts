@@ -26,6 +26,7 @@ import {
   TAddModel,
   IAddModelResponse,
   IErrorResponse,
+  TPhotoMaker,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -385,6 +386,7 @@ export class RunwareBase {
     includeCost,
     customTaskUUID,
     retry,
+    refiner,
   }: // imageSize,
 
   // gScale,
@@ -476,6 +478,7 @@ export class RunwareBase {
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
         ...(seed ? { seed: seed } : {}),
         ...(scheduler ? { scheduler } : {}),
+        ...(refiner ? { refiner } : {}),
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
@@ -967,7 +970,7 @@ export class RunwareBase {
             taskUUID,
             onUploadStream: (response, error) => {
               onUploadStream?.(response, error);
-              if (response?.statusId === 1) {
+              if (response?.status === "ready") {
                 result = response;
               } else if (error) {
                 errorResult = error;
@@ -1002,6 +1005,77 @@ export class RunwareBase {
       );
     } catch (e) {
       throw e;
+    }
+  };
+
+  photoMaker = async (payload: TPhotoMaker) => {
+    // This is written to destructure the payload from the additional parameters
+    const {
+      onPartialImages,
+      retry,
+      customTaskUUID,
+      numberResults,
+      ...photoMakerPayload
+    } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+    let taskUUIDs: string[] = [];
+    let retryCount = 0;
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          retryCount++;
+          const imagesWithSimilarTask = this._globalImages.filter((img) =>
+            taskUUIDs.includes(img.taskUUID)
+          );
+
+          const taskUUID = customTaskUUID || getUUID();
+          taskUUIDs.push(taskUUID);
+
+          const imageRemaining = numberResults - imagesWithSimilarTask.length;
+
+          this.send({
+            ...photoMakerPayload,
+            numberResults: imageRemaining,
+            taskUUID,
+            taskType: ETaskType.PHOTO_MAKER,
+          });
+
+          lis = this.listenToImages({
+            onPartialImages,
+            taskUUID: taskUUID,
+            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            positivePrompt: photoMakerPayload.positivePrompt,
+            // negativePrompt: payload.ne,
+          });
+
+          const promise = await this.getSimilarImages({
+            taskUUID: taskUUIDs,
+            numberResults,
+            lis,
+          });
+
+          lis.destroy();
+
+          return promise;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      if ((e as any).taskUUID) {
+        throw e;
+      }
+      if (retryCount >= totalRetry) {
+        return this.handleIncompleteImages({ taskUUIDs, error: e });
+      }
     }
   };
 
@@ -1153,6 +1227,7 @@ export class RunwareBase {
   }
 
   disconnect = async () => {
+    this._shouldReconnect = false;
     this._ws?.terminate?.();
     this._ws?.close?.();
   };
