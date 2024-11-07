@@ -188,17 +188,16 @@ return interface ITextToImage {
 
 ##### ControlNet Params
 
-| Parameter           | Type                                  | Use                                                                                                                                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| model               | string                                | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
-| guideImage          | file or string `(Optional)`           | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
-| weight              | number `(Optional)`                   | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
-| startStep           | number `(Optional)`                   | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
-| startStepPercentage | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
-| endStep             | number `(Optional)`                   | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
-| endStepPercentage   | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
-| controlMode         | string `(Optional)`                   | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
-| retry               | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                                                                                                                                                                                                                                    |
+| Parameter           | Type                        | Use                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| model               | string                      | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
+| guideImage          | file or string `(Optional)` | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
+| weight              | number `(Optional)`         | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
+| startStep           | number `(Optional)`         | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
+| startStepPercentage | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
+| endStep             | number `(Optional)`         | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
+| endStepPercentage   | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
+| controlMode         | string `(Optional)`         | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
 
 &nbsp;
 
@@ -420,16 +419,16 @@ const basePayload = {
 	private: boolean;
 	customTaskUUID?: string;
 	retry?: number;
+	onUploadStream?: (
+		response?: IAddModelResponse,
+		error?: IErrorResponse
+	) => void;
 }
 
 const controlNetUpload = await runware.modelUpload({
 	...basePayload,
   	category: "controlnet";
  	conditioning: EModelConditioning;
-	onUploadStream?: (
-		response?: IAddModelResponse,
-		error?: IErrorResponse
-	) => void;
 })
 console.log(controlNetUpload)
 
@@ -441,12 +440,7 @@ const checkpointUpload = await runware.modelUpload({
 	defaultStrength: number;
 	defaultSteps?: number;
 	defaultScheduler?: number;
-	negativeTriggerWords?: string;
 	type?: EModelType;
-	onUploadStream?: (
-		response?: IAddModelResponse,
-		error?: IErrorResponse
-	) => void;
 })
 console.log(checkpointUpload)
 
@@ -455,11 +449,8 @@ const loraUpload = await runware.modelUpload({
   	category: "lora";
  	defaultWeight: number;
   	positiveTriggerWords?: string;
-	onUploadStream?: (
-		response?: IAddModelResponse,
-		error?: IErrorResponse
-	) => void;
 })
+
 console.log(loraUpload)
 
 return interface IAddModelResponse {

@@ -27,6 +27,7 @@ import {
   IAddModelResponse,
   IErrorResponse,
   TPhotoMaker,
+  TPhotoMakerResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -1008,7 +1009,9 @@ export class RunwareBase {
     }
   };
 
-  photoMaker = async (payload: TPhotoMaker) => {
+  photoMaker = async (
+    payload: TPhotoMaker
+  ): Promise<TPhotoMakerResponse[] | undefined> => {
     // This is written to destructure the payload from the additional parameters
     const {
       onPartialImages,
@@ -1060,7 +1063,7 @@ export class RunwareBase {
 
           lis.destroy();
 
-          return promise;
+          return promise as TPhotoMakerResponse[];
         },
         {
           maxRetries: totalRetry,
@@ -1074,7 +1077,10 @@ export class RunwareBase {
         throw e;
       }
       if (retryCount >= totalRetry) {
-        return this.handleIncompleteImages({ taskUUIDs, error: e });
+        return this.handleIncompleteImages({
+          taskUUIDs,
+          error: e,
+        }) as TPhotoMakerResponse[];
       }
     }
   };

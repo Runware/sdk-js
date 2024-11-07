@@ -340,6 +340,9 @@ export interface IErrorResponse {
   type: string;
   documentation: string;
   taskUUID: string;
+  min?: number;
+  max?: number;
+  default?: string | number;
 }
 
 export type TAddModelBaseType = {
@@ -373,12 +376,10 @@ export type TAddModelControlNet = {
 
 export type TAddModelCheckPoint = {
   category: "checkpoint";
-  positiveTriggerWords?: string;
   defaultCFGScale?: number;
   defaultStrength: number;
   defaultSteps?: number;
   defaultScheduler?: number;
-  negativeTriggerWords?: string;
   type?: EModelType;
 } & TAddModelBaseType;
 
@@ -395,21 +396,36 @@ export type TAddModel =
 
 export type TPhotoMaker = {
   model?: string; // this should be hidden for now cause we have a single model
-  positivePrompt: string; //we are automatically adding the "img" trigger word to the prompt
-  height: number;
-  width: number;
-  numberResults: number;
-  steps?: number;
   inputImages: string[];
   style: EPhotoMakerEnum;
   strength?: number;
+  positivePrompt: string; //we are automatically adding the "img" trigger word to the prompt
+  height: number;
+  width: number;
+  scheduler?: string;
+  steps?: number;
+  CFGScale?: number;
   outputFormat?: string;
   includeCost?: boolean;
+  numberResults: number;
+  seed?: number;
 
   // other options
   customTaskUUID?: string;
   retry?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
+};
+
+export type TPhotoMakerResponse = {
+  taskType: string;
+  taskUUID: string;
+  imageUUID: string;
+  NSFWContent: boolean;
+  cost: number;
+  seed: number;
+  imageURL: string;
+  positivePrompt: string;
+  negativePrompt?: string;
 };
 
 export enum EModelFormat {
