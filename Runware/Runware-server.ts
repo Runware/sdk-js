@@ -102,6 +102,9 @@ export class RunwareServer extends RunwareBase {
       const data = isBinary ? e : e?.toString();
       if (!data) return;
       const m = JSON.parse(data);
+
+      // console.log("response", JSON.stringify(m, null, 4));
+
       this._listeners.forEach((lis) => {
         const result = lis.listener(m);
         if (result) {

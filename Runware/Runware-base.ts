@@ -23,6 +23,11 @@ import {
   IControlNetImage,
   IRemoveImage,
   ITextToImage,
+  TAddModel,
+  IAddModelResponse,
+  IErrorResponse,
+  TPhotoMaker,
+  TPhotoMakerResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -125,20 +130,18 @@ export class RunwareBase {
     }) => {
       const arrayMessage = Array.isArray(msg?.data) ? msg.data : [msg.data];
 
-      const arrayErrors = Array.isArray(msg?.errors)
+      const arrayErrors = (msg as any)?.[0]?.errors
+        ? (msg as any)?.[0]?.errors
+        : Array.isArray(msg?.errors)
         ? msg.errors
         : [msg.errors];
-
-      // const filteredMessage = arrayMessage.filter(
-      //   (v) => v?.taskType === check
-      // );
 
       const filteredMessage = arrayMessage.filter(
         (v) => (v?.taskUUID || v?.taskType) === taskUUID
       );
 
       const filteredErrors = arrayErrors.filter(
-        (v) => (v?.taskUUID || v?.taskType) === taskUUID
+        (v: any) => (v?.taskUUID || v?.taskType) === taskUUID
       );
 
       if (filteredErrors.length) {
@@ -151,7 +154,7 @@ export class RunwareBase {
         return;
       }
     };
-    const groupListener = { key: getUUID(), listener, groupKey };
+    const groupListener = { key: taskUUID || getUUID(), listener, groupKey };
     this._listeners.push(groupListener);
     const destroy = () => {
       this._listeners = removeListener(this._listeners, groupListener);
@@ -295,6 +298,31 @@ export class RunwareBase {
     });
   }
 
+  private listenToUpload({
+    onUploadStream,
+    taskUUID,
+  }: {
+    taskUUID: string;
+    onUploadStream?: (
+      addModelResponse?: IAddModelResponse,
+      error?: IErrorResponse
+    ) => void;
+  }) {
+    return this.addListener({
+      taskUUID: taskUUID,
+      lis: (m) => {
+        const error = m?.error;
+
+        const result = m?.[taskUUID]?.[0] as IAddModelResponse;
+        let response = result?.taskUUID === taskUUID ? result : null;
+
+        if (response || error) {
+          onUploadStream?.(response || undefined, error);
+        }
+      },
+    });
+  }
+
   private globalListener({ taskUUID }: { taskUUID: string }) {
     return this.addListener({
       // check: (m) => {
@@ -359,6 +387,7 @@ export class RunwareBase {
     includeCost,
     customTaskUUID,
     retry,
+    refiner,
   }: // imageSize,
 
   // gScale,
@@ -450,6 +479,7 @@ export class RunwareBase {
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
         ...(seed ? { seed: seed } : {}),
         ...(scheduler ? { scheduler } : {}),
+        ...(refiner ? { refiner } : {}),
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
@@ -914,6 +944,147 @@ export class RunwareBase {
     }
   };
 
+  modelUpload = async (payload: TAddModel) => {
+    // This is written to destructure the payload from the additional parameters
+    const { onUploadStream, retry, customTaskUUID, ...addModelPayload } =
+      payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const taskUUID = customTaskUUID || getUUID();
+
+          this.send({
+            ...addModelPayload,
+            taskUUID,
+            taskType: ETaskType.MODEL_UPLOAD,
+          });
+
+          let result: IAddModelResponse;
+          let errorResult: IErrorResponse;
+
+          lis = this.listenToUpload({
+            taskUUID,
+            onUploadStream: (response, error) => {
+              onUploadStream?.(response, error);
+              if (response?.status === "ready") {
+                result = response;
+              } else if (error) {
+                errorResult = error;
+              }
+            },
+          });
+
+          const modelUploadResponse = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              if (result) {
+                resolve(result);
+                return true;
+              } else if (errorResult) {
+                reject(errorResult);
+                return false;
+              }
+            },
+            {
+              shouldThrowError: false,
+              timeoutDuration: 60 * 60 * 1000,
+            }
+          );
+
+          return modelUploadResponse as IAddModelResponse | IErrorResponse;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  photoMaker = async (
+    payload: TPhotoMaker
+  ): Promise<TPhotoMakerResponse[] | undefined> => {
+    // This is written to destructure the payload from the additional parameters
+    const {
+      onPartialImages,
+      retry,
+      customTaskUUID,
+      numberResults,
+      ...photoMakerPayload
+    } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+    let taskUUIDs: string[] = [];
+    let retryCount = 0;
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          retryCount++;
+          const imagesWithSimilarTask = this._globalImages.filter((img) =>
+            taskUUIDs.includes(img.taskUUID)
+          );
+
+          const taskUUID = customTaskUUID || getUUID();
+          taskUUIDs.push(taskUUID);
+
+          const imageRemaining = numberResults - imagesWithSimilarTask.length;
+
+          this.send({
+            ...photoMakerPayload,
+            numberResults: imageRemaining,
+            taskUUID,
+            taskType: ETaskType.PHOTO_MAKER,
+          });
+
+          lis = this.listenToImages({
+            onPartialImages,
+            taskUUID: taskUUID,
+            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            positivePrompt: photoMakerPayload.positivePrompt,
+            // negativePrompt: payload.ne,
+          });
+
+          const promise = await this.getSimilarImages({
+            taskUUID: taskUUIDs,
+            numberResults,
+            lis,
+          });
+
+          lis.destroy();
+
+          return promise as TPhotoMakerResponse[];
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      if ((e as any).taskUUID) {
+        throw e;
+      }
+      if (retryCount >= totalRetry) {
+        return this.handleIncompleteImages({
+          taskUUIDs,
+          error: e,
+        }) as TPhotoMakerResponse[];
+      }
+    }
+  };
+
   async ensureConnection() {
     let isConnected = this.connected();
 
@@ -930,6 +1101,10 @@ export class RunwareBase {
         //  const isConnected =
         let retry = 0;
         const MAX_RETRY = 30;
+
+        // Retry every (retryInterval % retry) => 60s
+        // every 20 seconds (ie. => retry is 10 (20s), retry is 20 (40s))
+        const SHOULD_RETRY = retry % 10 === 0;
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
@@ -951,7 +1126,9 @@ export class RunwareBase {
                 clearAllIntervals();
                 reject(new Error("Retry timed out"));
               } else {
-                this.connect();
+                if (SHOULD_RETRY) {
+                  this.connect();
+                }
                 retry++;
               }
             } catch (error) {
@@ -1058,6 +1235,7 @@ export class RunwareBase {
   }
 
   disconnect = async () => {
+    this._shouldReconnect = false;
     this._ws?.terminate?.();
     this._ws?.close?.();
   };

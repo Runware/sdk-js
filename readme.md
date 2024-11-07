@@ -66,6 +66,8 @@ await runware.disconnect();
 
 ### Request Image
 
+[Read Documentation](https://docs.runware.ai/en/image-inference/api-reference)
+
 NB: All errors can be caught in the catch block of each request
 
 ```js
@@ -91,6 +93,7 @@ const images = await runware.requestImages({
 	seed?: number;
 	CFGScale?: number;
 	clipSkip?: number;
+	refiner?: IRefiner;
 	usePromptWeighting?: number;
 	controlNet?: IControlNet[];
 	lora?: ILora[];
@@ -185,21 +188,22 @@ return interface ITextToImage {
 
 ##### ControlNet Params
 
-| Parameter           | Type                                  | Use                                                                                                                                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| model               | string                                | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
-| guideImage          | file or string `(Optional)`           | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
-| weight              | number `(Optional)`                   | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
-| startStep           | number `(Optional)`                   | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
-| startStepPercentage | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
-| endStep             | number `(Optional)`                   | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
-| endStepPercentage   | number `(Optional)`                   | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
-| controlMode         | string `(Optional)`                   | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
-| retry               | number `(default = globalMaxRetries)` | The number of retries it should make before throwing an error.                                                                                                                                                                                                                                                                    |
+| Parameter           | Type                        | Use                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| model               | string                      | Defines the model to use for the control net.                                                                                                                                                                                                                                                                                     |
+| guideImage          | file or string `(Optional)` | The image requires for the guide image. It can be the UUID of previously generated image, or an image from a file.                                                                                                                                                                                                                |
+| weight              | number `(Optional)`         | an have values between 0 and 1 and represent the weight of the ControlNet preprocessor in the image.                                                                                                                                                                                                                              |
+| startStep           | number `(Optional)`         | represents the moment in which the ControlNet preprocessor starts to control the inference. It can take values from 0 to the maximum number of `steps` in the image create request. This can also be replaced with `startStepPercentage` (float) which represents the same value but in percentages. It takes values from 0 to 1. |
+| startStepPercentage | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model starts to control the inference process.                                                                                                                                                                                                                         |
+| endStep             | number `(Optional)`         | similar with `startStep` but represents the end of the preprocessor control of the image inference. The equivalent of the percentage option is `endStepPercentage` (float).                                                                                                                                                       |
+| endStepPercentage   | number `(Optional)`         | Represents the percentage of steps in which the ControlNet model ends to control the inference process.                                                                                                                                                                                                                           |
+| controlMode         | string `(Optional)`         | This parameter has 3 options: prompt, controlnet and balanced                                                                                                                                                                                                                                                                     |
 
 &nbsp;
 
 ### Request Image To Text
+
+[Read Documentation](https://docs.runware.ai/en/utilities/image-to-text)
 
 ```js
 
@@ -226,6 +230,8 @@ return interface IImageToText {
 &nbsp;
 
 ### Remove Image Background
+
+[Read Documentation](https://docs.runware.ai/en/image-editing/background-removal)
 
 ```js
 
@@ -274,6 +280,8 @@ return interface IImage {
 
 ### Upscale Image
 
+[Read Documentation](https://docs.runware.ai/en/image-editing/upscaling)
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
@@ -312,6 +320,8 @@ return interface IImage {
 
 ### Enhance Prompt
 
+[Read Documentation](https://docs.runware.ai/en/utilities/prompt-enhancer)
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
@@ -340,6 +350,8 @@ return interface IEnhancedPrompt {
 &nbsp;
 
 ### ControlNet Preprocess
+
+[Read Documentation](https://docs.runware.ai/en/image-editing/controlnet-tools)
 
 ```js
 
@@ -384,6 +396,127 @@ return interface IControlNetImage {
 
 &nbsp;
 
+### Model Upload
+
+[Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const basePayload = {
+	air: string;
+	name: string;
+	downloadUrl: string;
+	uniqueIdentifier: string;
+	version: string;
+	format: EModelFormat;
+	architecture: EModelArchitecture;
+	heroImageUrl?: string;
+	tags?: string[];
+	shortDescription?: string;
+	comment?: string;
+	private: boolean;
+	customTaskUUID?: string;
+	retry?: number;
+	onUploadStream?: (
+		response?: IAddModelResponse,
+		error?: IErrorResponse
+	) => void;
+}
+
+const controlNetUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "controlnet";
+ 	conditioning: EModelConditioning;
+})
+console.log(controlNetUpload)
+
+const checkpointUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "checkpoint";
+ 	positiveTriggerWords?: string;
+	defaultCFGScale?: number;
+	defaultStrength: number;
+	defaultSteps?: number;
+	defaultScheduler?: number;
+	type?: EModelType;
+})
+console.log(checkpointUpload)
+
+const loraUpload = await runware.modelUpload({
+	...basePayload,
+  	category: "lora";
+ 	defaultWeight: number;
+  	positiveTriggerWords?: string;
+})
+
+console.log(loraUpload)
+
+return interface IAddModelResponse {
+  status: string;
+  message: string;
+  taskUUID: string;
+  air: string;
+  taskType: string;
+}
+
+export interface IErrorResponse {
+  code: string;
+  message: string;
+  parameter: string;
+  type: string;
+  documentation: string;
+  taskUUID: string;
+}
+
+```
+
+&nbsp;
+
+### Photo Maker
+
+[Read Documentation](https://docs.runware.ai/en/image-inference/photomaker)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const photoMaker = await runware.modelUpload({
+	positivePrompt: string;
+	height: number;
+	width: number;
+	numberResults: number;
+	steps?: number;
+	inputImages: string[];
+	style: EPhotoMakerEnum;
+	strength?: number;
+	outputFormat?: string;
+	includeCost?: boolean;
+
+	customTaskUUID?: string;
+	retry?: number;
+	onPartialImages?: (images: IImage[], error?: IError) => void
+})
+console.log(photoMaker)
+
+export interface IImage {
+	taskType: ETaskType;
+	imageUUID: string;
+	inputImageUUID?: string;
+	taskUUID: string;
+	imageURL?: string;
+	imageBase64Data?: string;
+	imageDataURI?: string;
+	NSFWContent?: boolean;
+	cost?: number;
+	seed?: number;
+}
+
+```
+
+&nbsp;
+
 ## Demo
 
 <!-- To be changed to another example -->
@@ -391,6 +524,14 @@ return interface IControlNetImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.20
+
+**Added or Changed**
+
+- Add Model Upload
+- Add Photo Maker
+- Add Refiner
 
 ### - v1.1.19
 
