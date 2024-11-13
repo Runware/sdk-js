@@ -28,6 +28,10 @@ import {
   IErrorResponse,
   TPhotoMaker,
   TPhotoMakerResponse,
+  TModelSearch,
+  TImageMaskingResponse,
+  TImageMasking,
+  TModelSearchResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -1082,6 +1086,95 @@ export class RunwareBase {
           error: e,
         }) as TPhotoMakerResponse[];
       }
+    }
+  };
+
+  modelSearch = async (
+    payload: TModelSearch
+  ): Promise<TModelSearchResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        extra: true,
+        taskType: ETaskType.MODEL_SEARCH,
+      },
+      debugKey: "model-search",
+    });
+  };
+
+  imageMasking = async (
+    payload: TImageMasking
+  ): Promise<TImageMaskingResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.IMAGE_MASKING,
+      },
+      debugKey: "image-masking",
+    });
+  };
+
+  protected baseSingleRequest = async <T>({
+    payload,
+    debugKey,
+  }: {
+    payload: Record<string, any>;
+    debugKey: string;
+  }): Promise<T> => {
+    const { retry, customTaskUUID, ...restPayload } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          const taskUUID = customTaskUUID || getUUID();
+
+          this.send({
+            ...restPayload,
+            taskUUID,
+          });
+
+          lis = this.globalListener({
+            taskUUID,
+          });
+
+          const response = await getIntervalWithPromise(
+            ({ resolve, reject }) => {
+              const response = this.getSingleMessage({ taskUUID });
+              if (!response) return;
+
+              if (response?.error) {
+                reject(response);
+                return true;
+              }
+
+              if (response) {
+                delete this._globalMessages[taskUUID];
+                resolve(response);
+                return true;
+              }
+            },
+            {
+              debugKey,
+              timeoutDuration: this._timeoutDuration,
+            }
+          );
+
+          lis.destroy();
+          return response as T;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      throw e;
     }
   };
 
