@@ -517,6 +517,125 @@ export interface IImage {
 
 &nbsp;
 
+### Model Search
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const modelSearch = await runware.modelSearch({
+	search: string;
+	tags?: string[];
+	category?: "checkpoint" | "lora" | "controlnet";
+	architecture?: EModelArchitecture;
+	limit?: number;
+	offset?: number;
+	owned?: boolean;
+	featured: boolean;
+	type: string;
+	conditioning: string;
+	private: boolean;
+	customTaskUUID?: string;
+	retry?: number;
+})
+console.log(modelSearch)
+
+export type TModelSearchResponse = {
+  results: TModel[];
+  taskUUID: string;
+  taskType: string;
+  totalResults: number;
+};
+
+export type TModel = {
+  name: string;
+  air: string;
+  downloadUrl: string;
+  tags: string[];
+  heroImage: string;
+  category: string;
+  floatingPoint: string;
+  private: boolean;
+  shortDescription: string;
+  comment: string;
+  positiveTriggerWords: string;
+  defaultSteps: number;
+  defaultGuidanceScale: number;
+  defaultStrength: number;
+  defaultVaeId: number;
+  updatedDateUnixTimestamp: number;
+  version: string;
+  conditioning: string;
+  defaultScheduler: string;
+  defaultCFG: number;
+  format: string;
+  uniqueIdentifier: string;
+  architecture: string;
+  type: string;
+  nsfw: boolean;
+  sourceUrl: string;
+  downloadCount: number;
+  nsfwLevel: number;
+  rating: number;
+  ratingCount: number;
+  thumbsUpCount: number;
+  thumbsDownCount: number;
+  defaultEmaEnable: boolean;
+  defaultImageSizeId: string;
+  compatibleSizeIds: number[];
+};
+
+
+```
+
+&nbsp;
+
+### Image Masking
+
+[Read Documentation](https://docs.runware.ai/en/image-editing/image-masking)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+
+const imageMasking = await runware.imageMask({
+  model: string;
+  inputImage: string;
+  confidence?: number;
+  maskPadding?: number;
+  maskBlur?: number;
+  outputFormat?: string;
+  outputType?: string;
+  includeCost?: boolean;
+  uploadEndpoint?: string;
+  customTaskUUID?: string;
+  retry?: number;
+})
+console.log(imageMasking)
+
+export type TImageMaskingResponse = {
+  taskType: string;
+  taskUUID: string;
+  imageUUID: string;
+
+  detections: [
+    {
+      x_min: number;
+      y_min: number;
+      x_max: number;
+      y_max: number;
+    }
+  ];
+  maskImageURL: string;
+  cost: number;
+};
+
+
+
+```
+
+&nbsp;
+
 ## Demo
 
 <!-- To be changed to another example -->
@@ -524,6 +643,13 @@ export interface IImage {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.21
+
+**Added or Changed**
+
+- Add Model Search
+- Add Image Masking
 
 ### - v1.1.20
 

@@ -19,6 +19,8 @@ export enum ETaskType {
   AUTHENTICATION = "authentication",
   MODEL_UPLOAD = "modelUpload",
   PHOTO_MAKER = "photoMaker",
+  MODEL_SEARCH = "modelSearch",
+  IMAGE_MASKING = "imageMasking",
 }
 
 export type RunwareBaseType = {
@@ -492,3 +494,98 @@ export enum EPhotoMakerEnum {
   Lowpoly = "Lowpoly",
   LineArt = "Line art",
 }
+
+export type TModelSearch = {
+  search: string;
+  tags?: string[];
+  category?: "checkpoint" | "lora" | "controlnet";
+  architecture?: EModelArchitecture;
+  limit?: number;
+  offset?: number;
+  owned?: boolean;
+  featured: boolean;
+  type: string;
+  conditioning: string;
+  private: boolean;
+
+  // other options
+  customTaskUUID?: string;
+  retry?: number;
+};
+
+export type TModel = {
+  name: string;
+  air: string;
+  downloadUrl: string;
+  tags: string[];
+  heroImage: string;
+  category: string;
+  floatingPoint: string;
+  private: boolean;
+  shortDescription: string;
+  comment: string;
+  positiveTriggerWords: string;
+  defaultSteps: number;
+  defaultGuidanceScale: number;
+  defaultStrength: number;
+  defaultVaeId: number;
+  updatedDateUnixTimestamp: number;
+  version: string;
+  conditioning: string;
+  defaultScheduler: string;
+  defaultCFG: number;
+  format: string;
+  uniqueIdentifier: string;
+  architecture: string;
+  type: string;
+  nsfw: boolean;
+  sourceUrl: string;
+  downloadCount: number;
+  nsfwLevel: number;
+  rating: number;
+  ratingCount: number;
+  thumbsUpCount: number;
+  thumbsDownCount: number;
+  defaultEmaEnable: boolean;
+  defaultImageSizeId: string;
+  compatibleSizeIds: number[];
+};
+
+export type TModelSearchResponse = {
+  results: TModel[];
+  taskUUID: string;
+  taskType: string;
+  totalResults: number;
+};
+
+export type TImageMasking = {
+  model: string;
+  inputImage: string;
+  confidence?: number;
+  maskPadding?: number;
+  maskBlur?: number;
+  outputFormat?: string;
+  outputType?: string;
+  includeCost?: boolean;
+  uploadEndpoint?: string;
+
+  customTaskUUID?: string;
+  retry?: number;
+};
+
+export type TImageMaskingResponse = {
+  taskType: string;
+  taskUUID: string;
+  imageUUID: string;
+
+  detections: [
+    {
+      x_min: number;
+      y_min: number;
+      x_max: number;
+      y_max: number;
+    }
+  ];
+  maskImageURL: string;
+  cost: number;
+};
