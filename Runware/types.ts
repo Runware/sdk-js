@@ -44,7 +44,7 @@ export interface IImage {
   imageDataURI?: string;
   NSFWContent?: boolean;
   cost?: number;
-  seed?: number;
+  seed: number;
 }
 
 export interface ITextToImage extends IImage {
