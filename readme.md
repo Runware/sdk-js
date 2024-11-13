@@ -644,6 +644,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.22
+
+**Added or Changed**
+
+- Fix seed type in IImage
+
 ### - v1.1.21
 
 **Added or Changed**
