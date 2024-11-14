@@ -401,7 +401,8 @@ export type TPhotoMaker = {
   inputImages: string[];
   style: EPhotoMakerEnum;
   strength?: number;
-  positivePrompt: string; //we are automatically adding the "img" trigger word to the prompt
+  positivePrompt: string;
+  negativePrompt?: string;
   height: number;
   width: number;
   scheduler?: string;

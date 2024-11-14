@@ -648,6 +648,7 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
+- Add negative prompt to photoMaker
 - Fix seed type in IImage
 
 ### - v1.1.21
