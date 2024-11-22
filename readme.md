@@ -648,6 +648,12 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
+- Fix default schedular from number to string
+
+### - v1.1.26
+
+**Added or Changed**
+
 - Fix require import
 
 ### - v1.1.25
