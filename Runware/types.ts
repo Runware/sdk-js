@@ -131,7 +131,7 @@ export interface IRequestImage {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
   uploadEndpoint?: string;
-  checkNsfw?: boolean;
+  checkNSFW?: boolean;
   positivePrompt: string;
   negativePrompt?: string;
   seedImage?: File | string;
@@ -143,6 +143,7 @@ export interface IRequestImage {
   steps?: number;
   scheduler?: string;
   seed?: number;
+  maskMargin?: number;
   CFGScale?: number;
   clipSkip?: number;
   usePromptWeighting?: boolean;
@@ -569,6 +570,7 @@ export type TImageMasking = {
   outputType?: string;
   includeCost?: boolean;
   uploadEndpoint?: string;
+  maxDetections?: number;
 
   customTaskUUID?: string;
   retry?: number;

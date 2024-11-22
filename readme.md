@@ -644,6 +644,30 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.26
+
+**Added or Changed**
+
+- Fix require import
+
+### - v1.1.25
+
+**Added or Changed**
+
+- Add maxDetections to image masking
+
+### - v1.1.24
+
+**Added or Changed**
+
+- Add mask margin
+
+### - v1.1.23
+
+**Added or Changed**
+
+- Fix checkNSFW
+
 ### - v1.1.22
 
 **Added or Changed**
