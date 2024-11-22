@@ -382,8 +382,8 @@ export type TAddModelCheckPoint = {
   defaultCFGScale?: number;
   defaultStrength: number;
   defaultSteps?: number;
-  defaultScheduler?: number;
-  type?: EModelType;
+  defaultScheduler: string;
+  type: EModelType;
 } & TAddModelBaseType;
 
 export type TAddModelLora = {
