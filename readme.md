@@ -644,6 +644,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.27
+
+**Added or Changed**
+
+- Fix Checkpoint Model Upload Types
+
 ### - v1.1.26
 
 **Added or Changed**
