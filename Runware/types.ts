@@ -146,7 +146,11 @@ export interface IRequestImage {
   maskMargin?: number;
   CFGScale?: number;
   clipSkip?: number;
+  /**
+  * @deprecated The usePromptWeighting should not be used, use promptWeighting instead
+  */
   usePromptWeighting?: boolean;
+  promptWeighting?: 'compel' | 'sdEmbeds'
   numberResults?: number; // default to 1
   controlNet?: IControlNet[];
   lora?: ILora[];
