@@ -644,7 +644,13 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
-### - v1.1.26
+### - v1.1.28
+
+**Added or Changed**
+
+- Add prompt weighting to request image
+
+### - v1.1.27
 
 **Added or Changed**
 

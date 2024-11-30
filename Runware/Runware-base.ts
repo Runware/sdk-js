@@ -383,6 +383,7 @@ export class RunwareBase {
     seed,
     CFGScale,
     clipSkip,
+    usePromptWeighting,
     promptWeighting,
     numberResults = 1,
     controlNet,
@@ -477,6 +478,10 @@ export class RunwareBase {
         ...evaluateNonTrue({ key: "CFGScale", value: CFGScale }),
         ...evaluateNonTrue({ key: "clipSkip", value: clipSkip }),
         ...evaluateNonTrue({ key: "maskMargin", value: maskMargin }),
+        ...evaluateNonTrue({
+          key: "usePromptWeighting",
+          value: usePromptWeighting,
+        }),
         ...evaluateNonTrue({ key: "steps", value: steps }),
         ...(promptWeighting ? { promptWeighting } : {}),
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),

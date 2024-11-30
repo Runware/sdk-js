@@ -127,6 +127,8 @@ export interface IError {
   taskUUID: string;
 }
 
+export type TPromptWeighting = "compel" | "sdEmbeds";
+
 export interface IRequestImage {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
@@ -147,10 +149,10 @@ export interface IRequestImage {
   CFGScale?: number;
   clipSkip?: number;
   /**
-  * @deprecated The usePromptWeighting should not be used, use promptWeighting instead
-  */
+   * @deprecated The usePromptWeighting should not be used, use promptWeighting instead
+   */
   usePromptWeighting?: boolean;
-  promptWeighting?: 'compel' | 'sdEmbeds'
+  promptWeighting?: TPromptWeighting;
   numberResults?: number; // default to 1
   controlNet?: IControlNet[];
   lora?: ILora[];
