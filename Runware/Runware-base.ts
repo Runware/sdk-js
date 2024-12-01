@@ -365,39 +365,41 @@ export class RunwareBase {
     });
   }
 
-  async requestImages({
-    outputType,
-    outputFormat,
-    uploadEndpoint,
-    checkNSFW,
-    positivePrompt,
-    negativePrompt,
-    seedImage,
-    maskImage,
-    strength,
-    height,
-    width,
-    model,
-    steps,
-    scheduler,
-    seed,
-    CFGScale,
-    clipSkip,
-    usePromptWeighting,
-    promptWeighting,
-    numberResults = 1,
-    controlNet,
-    lora,
-    onPartialImages,
-    includeCost,
-    customTaskUUID,
-    retry,
-    refiner,
-    maskMargin,
-  }: // imageSize,
-
-  // gScale,
-  IRequestImage): Promise<ITextToImage[] | undefined> {
+  async requestImages(
+    {
+      outputType,
+      outputFormat,
+      uploadEndpoint,
+      checkNSFW,
+      positivePrompt,
+      negativePrompt,
+      seedImage,
+      maskImage,
+      strength,
+      height,
+      width,
+      model,
+      steps,
+      scheduler,
+      seed,
+      CFGScale,
+      clipSkip,
+      usePromptWeighting,
+      promptWeighting,
+      numberResults = 1,
+      controlNet,
+      lora,
+      onPartialImages,
+      includeCost,
+      customTaskUUID,
+      retry,
+      refiner,
+      maskMargin,
+    }: // imageSize,
+    // gScale,
+    IRequestImage,
+    moreOptions?: Record<string, any>
+  ): Promise<ITextToImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
@@ -491,6 +493,7 @@ export class RunwareBase {
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
+        ...(moreOptions ?? {}),
       };
 
       return await asyncRetry(

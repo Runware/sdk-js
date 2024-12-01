@@ -644,6 +644,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.29
+
+**Added or Changed**
+
+- Add backdoor for request images
+
 ### - v1.1.28
 
 **Added or Changed**
