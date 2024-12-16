@@ -649,6 +649,7 @@ export type TImageMaskingResponse = {
 **Added or Changed**
 
 - Fix error bubbling for request images filtering by taskUUID
+- Fix multiple instance of retrying connection
 
 ### - v1.1.29
 

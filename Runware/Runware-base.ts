@@ -65,6 +65,7 @@ export class RunwareBase {
   _shouldReconnect: boolean;
   _globalMaxRetries: number;
   _timeoutDuration: number;
+  ensureConnectionUUID: string | null = null;
 
   constructor({
     apiKey,
@@ -1185,7 +1186,6 @@ export class RunwareBase {
 
   async ensureConnection() {
     let isConnected = this.connected();
-
     if (isConnected || this._url === BASE_RUNWARE_URLS.TEST) return;
 
     const retryInterval = 2000;
@@ -1200,14 +1200,13 @@ export class RunwareBase {
         let retry = 0;
         const MAX_RETRY = 30;
 
-        // Retry every (retryInterval % retry) => 60s
-        // every 20 seconds (ie. => retry is 10 (20s), retry is 20 (40s))
-        const SHOULD_RETRY = retry % 10 === 0;
+        const localConnectionUUID = getUUID();
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
 
         const clearAllIntervals = () => {
+          this.ensureConnectionUUID = null;
           clearInterval(retryIntervalId);
           clearInterval(pollingIntervalId);
         };
@@ -1216,6 +1215,23 @@ export class RunwareBase {
           retryIntervalId = setInterval(async () => {
             try {
               const hasConnected = this.connected();
+
+              // only one instance should be responsible for making the call again, not other ensureConnection
+              let shouldCallServer = false;
+
+              if (
+                !this.ensureConnectionUUID ||
+                localConnectionUUID === this.ensureConnectionUUID
+              ) {
+                if (!this.ensureConnectionUUID) {
+                  this.ensureConnectionUUID = localConnectionUUID;
+                }
+                shouldCallServer = true;
+              }
+
+              // Retry every (retryInterval % retry) => 60s
+              // every 20 seconds (ie. => retry is 10 (20s), retry is 20 (40s))
+              const SHOULD_RETRY = retry % 10 === 0 && shouldCallServer;
 
               if (hasConnected) {
                 clearAllIntervals();
@@ -1252,6 +1268,8 @@ export class RunwareBase {
         }, pollingInterval);
       });
     } catch (e) {
+      this.ensureConnectionUUID = null;
+
       throw (
         this._invalidAPIkey ??
         "Could not connect to server. Ensure your API key is correct"
