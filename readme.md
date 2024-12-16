@@ -644,6 +644,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.30
+
+**Added or Changed**
+
+- Fix error bubbling for request images filtering by taskUUID
+
 ### - v1.1.29
 
 **Added or Changed**

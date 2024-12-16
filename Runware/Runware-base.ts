@@ -543,12 +543,10 @@ export class RunwareBase {
         }
       );
     } catch (e) {
-      if ((e as any).taskUUID) {
-        throw e;
-      }
       if (retryCount >= totalRetry) {
         return this.handleIncompleteImages({ taskUUIDs, error: e });
       }
+      throw e;
     }
   }
 
