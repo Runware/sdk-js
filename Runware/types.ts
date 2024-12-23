@@ -507,14 +507,12 @@ export type TModelSearch = {
   search?: string;
   tags?: string[];
   category?: "checkpoint" | "lora" | "controlnet";
+  type?: string;
   architecture?: EModelArchitecture;
+  conditioning?: string;
+  visibility?: "public" | "private" | "all";
   limit?: number;
   offset?: number;
-  owned?: boolean;
-  featured?: boolean;
-  type?: string;
-  conditioning?: string;
-  private?: boolean;
 
   // other options
   customTaskUUID?: string;
@@ -570,7 +568,7 @@ export type TImageMasking = {
 export type TImageMaskingResponse = {
   taskType: string;
   taskUUID: string;
-  imageUUID: string;
+  maskImageUUID: string;
 
   detections: [
     {
