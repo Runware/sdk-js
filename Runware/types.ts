@@ -504,7 +504,7 @@ export enum EPhotoMakerEnum {
 }
 
 export type TModelSearch = {
-  search: string;
+  search?: string;
   tags?: string[];
   category?: "checkpoint" | "lora" | "controlnet";
   architecture?: EModelArchitecture;
@@ -522,47 +522,27 @@ export type TModelSearch = {
 } & { [key: string]: any };
 
 export type TModel = {
-  name: string;
   air: string;
-  downloadUrl: string;
+  name: string;
+  version: string;
+  category: string;
+  architecture: string;
   tags: string[];
   heroImage: string;
-  category: string;
-  floatingPoint: string;
   private: boolean;
-  shortDescription: string;
   comment: string;
-  positiveTriggerWords: string;
-  defaultGuidanceScale: number;
-  defaultStrength: number;
-  defaultVaeId: number;
-  updatedDateUnixTimestamp: number;
-  version: string;
-  format: string;
-  uniqueIdentifier: string;
-  architecture: string;
-  nsfw: boolean;
-  sourceUrl: string;
-  downloadCount: number;
-  nsfwLevel: number;
-  rating: number;
-  ratingCount: number;
-  thumbsUpCount: number;
-  thumbsDownCount: number;
-  defaultEmaEnable: boolean;
-  defaultImageSizeId: string;
-  compatibleSizeIds: number[];
 
   // Optionals
-  conditioning?: string;
-  positiveTriggerPrompt?: string;
+  type?: string;
   defaultWidth?: number;
   defaultHeight?: number;
   defaultSteps?: number;
   defaultScheduler?: string;
   defaultCFG?: number;
-  type?: string;
-};
+  defaultStrength: number;
+  conditioning?: string;
+  positiveTriggerWords?: string;
+} & { [key: string]: any };
 
 export type TModelSearchResponse = {
   results: TModel[];
