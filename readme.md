@@ -644,6 +644,13 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.31
+
+**Added or Changed**
+
+- Remove hardcoded extra parameters
+- Add optional parameters in TModel
+
 ### - v1.1.30
 
 **Added or Changed**

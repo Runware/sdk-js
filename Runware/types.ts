@@ -511,15 +511,15 @@ export type TModelSearch = {
   limit?: number;
   offset?: number;
   owned?: boolean;
-  featured: boolean;
-  type: string;
-  conditioning: string;
-  private: boolean;
+  featured?: boolean;
+  type?: string;
+  conditioning?: string;
+  private?: boolean;
 
   // other options
   customTaskUUID?: string;
   retry?: number;
-};
+} & { [key: string]: any };
 
 export type TModel = {
   name: string;
@@ -533,19 +533,14 @@ export type TModel = {
   shortDescription: string;
   comment: string;
   positiveTriggerWords: string;
-  defaultSteps: number;
   defaultGuidanceScale: number;
   defaultStrength: number;
   defaultVaeId: number;
   updatedDateUnixTimestamp: number;
   version: string;
-  conditioning: string;
-  defaultScheduler: string;
-  defaultCFG: number;
   format: string;
   uniqueIdentifier: string;
   architecture: string;
-  type: string;
   nsfw: boolean;
   sourceUrl: string;
   downloadCount: number;
@@ -557,6 +552,16 @@ export type TModel = {
   defaultEmaEnable: boolean;
   defaultImageSizeId: string;
   compatibleSizeIds: number[];
+
+  // Optionals
+  conditioning?: string;
+  positiveTriggerPrompt?: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  defaultSteps?: number;
+  defaultScheduler?: string;
+  defaultCFG?: number;
+  type?: string;
 };
 
 export type TModelSearchResponse = {

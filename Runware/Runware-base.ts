@@ -1101,7 +1101,6 @@ export class RunwareBase {
     return this.baseSingleRequest({
       payload: {
         ...payload,
-        extra: true,
         taskType: ETaskType.MODEL_SEARCH,
       },
       debugKey: "model-search",
