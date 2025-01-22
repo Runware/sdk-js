@@ -482,7 +482,7 @@ export interface IErrorResponse {
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 
-const photoMaker = await runware.modelUpload({
+const photoMaker = await runware.photoMaker({
 	positivePrompt: string;
 	height: number;
 	width: number;
@@ -643,6 +643,12 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.34
+
+**Added or Changed**
+
+- Limit seed to Number.MAX_SAFE_INTEGER
 
 ### - v1.1.33
 

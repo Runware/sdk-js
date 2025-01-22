@@ -42,6 +42,7 @@ import {
   evaluateNonTrue,
   fileToBase64,
   getIntervalWithPromise,
+  getRandomSeed,
   getUUID,
   isValidUUID,
   removeFromAray,
@@ -488,7 +489,7 @@ export class RunwareBase {
         ...evaluateNonTrue({ key: "steps", value: steps }),
         ...(promptWeighting ? { promptWeighting } : {}),
         ...(controlNetData.length ? { controlNet: controlNetData } : {}),
-        ...(seed ? { seed: seed } : {}),
+        ...(seed ? { seed: seed } : { seed: getRandomSeed() }),
         ...(scheduler ? { scheduler } : {}),
         ...(refiner ? { refiner } : {}),
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
@@ -1052,6 +1053,9 @@ export class RunwareBase {
 
           this.send({
             ...photoMakerPayload,
+            ...(photoMakerPayload.seed
+              ? { seed: photoMakerPayload.seed }
+              : { seed: getRandomSeed() }),
             numberResults: imageRemaining,
             taskUUID,
             taskType: ETaskType.PHOTO_MAKER,
