@@ -93,6 +93,8 @@ export type IControlNetPreprocess = {
   lowThresholdCanny?: number;
   includeHandsAndFaceOpenPose?: boolean;
   includeCost?: boolean;
+  outputQuality?: number;
+
   customTaskUUID?: string;
   retry?: number;
 };
@@ -158,6 +160,7 @@ export interface IRequestImage {
   lora?: ILora[];
   includeCost?: boolean;
   customTaskUUID?: string;
+  outputQuality?: number;
 
   // imageSize?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
@@ -195,6 +198,8 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   alphaMattingBackgroundThreshold?: number;
   alphaMattingErodeSize?: number;
   includeCost?: boolean;
+  outputQuality?: number;
+
   retry?: number;
 }
 
@@ -226,6 +231,8 @@ export interface IUpscaleGan {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
   includeCost?: boolean;
+  outputQuality?: number;
+
   customTaskUUID?: string;
   retry?: number;
 }
@@ -419,6 +426,7 @@ export type TPhotoMaker = {
   includeCost?: boolean;
   numberResults: number;
   seed?: number;
+  outputQuality?: number;
 
   // other options
   customTaskUUID?: string;
@@ -560,6 +568,7 @@ export type TImageMasking = {
   includeCost?: boolean;
   uploadEndpoint?: string;
   maxDetections?: number;
+  outputQuality?: number;
 
   customTaskUUID?: string;
   retry?: number;

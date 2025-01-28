@@ -644,6 +644,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.35
+
+**Added or Changed**
+
+- Include outputQuality in request payload for `requestImages`, `upscaleGan`, `removeImageBackground`, `controlNetPreProcess`, `photoMaker` and `imageMasking`
+
 ### - v1.1.34
 
 **Added or Changed**

@@ -397,6 +397,7 @@ export class RunwareBase {
       retry,
       refiner,
       maskMargin,
+      outputQuality,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -495,6 +496,7 @@ export class RunwareBase {
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
+        ...(outputQuality ? { outputQuality } : {}),
         ...(moreOptions ?? {}),
       };
 
@@ -563,6 +565,7 @@ export class RunwareBase {
     lowThresholdCanny,
     includeHandsAndFaceOpenPose,
     includeCost,
+    outputQuality,
     customTaskUUID,
     retry,
   }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
@@ -599,6 +602,7 @@ export class RunwareBase {
               key: "includeHandsAndFaceOpenPose",
               value: includeHandsAndFaceOpenPose,
             }),
+            ...(outputQuality ? { outputQuality } : {}),
           });
           lis = this.globalListener({
             taskUUID,
@@ -726,6 +730,7 @@ export class RunwareBase {
     alphaMattingForegroundThreshold,
     alphaMattingBackgroundThreshold,
     alphaMattingErodeSize,
+    outputQuality,
     includeCost,
     customTaskUUID,
     retry,
@@ -772,6 +777,7 @@ export class RunwareBase {
             }),
             ...evaluateNonTrue({ key: "outputType", value: outputType }),
             ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
+            ...(outputQuality ? { outputQuality } : {}),
           });
 
           lis = this.globalListener({
@@ -823,6 +829,7 @@ export class RunwareBase {
     outputType,
     outputFormat,
     includeCost,
+    outputQuality,
     customTaskUUID,
     retry,
   }: IUpscaleGan): Promise<IImage> => {
@@ -846,6 +853,7 @@ export class RunwareBase {
             upscaleFactor,
             ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
             ...(outputType ? { outputType } : {}),
+            ...(outputQuality ? { outputQuality } : {}),
             ...(outputFormat ? { outputFormat } : {}),
           });
 
@@ -1196,7 +1204,12 @@ export class RunwareBase {
     // const pollingInterval = this._sdkType === SdkType.CLIENT ? 200 : 2000;
 
     try {
-      if (this._invalidAPIkey) throw this._invalidAPIkey;
+      if (this._invalidAPIkey) {
+        // const currentInvalidApiKey = this._invalidAPIkey;
+        // this._invalidAPIkey = undefined;
+        // throw currentInvalidApiKey;
+        throw this._invalidAPIkey;
+      }
 
       return new Promise((resolve, reject) => {
         //  const isConnected =
@@ -1272,6 +1285,9 @@ export class RunwareBase {
       });
     } catch (e) {
       this.ensureConnectionUUID = null;
+      // if (this._invalidAPIkey) {
+      //   this._invalidAPIkey = undefined;
+      // }
 
       throw (
         this._invalidAPIkey ??
