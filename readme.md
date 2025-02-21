@@ -98,6 +98,8 @@ const images = await runware.requestImages({
 	controlNet?: IControlNet[];
 	lora?: ILora[];
   	retry?: number;
+	ipAdapters?: IipAdapters[];
+	embeddings?: IEmbedding[];
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
 })
 
@@ -137,6 +139,15 @@ const [firstImagesRequest, secondImagesRequest] = await Promise.all([
 		height: number;
 		numberResults: number;
 		model: string;
+		ipAdapters: [{
+			model: string;
+			weight: number;
+			guideImage: string;
+		}],
+		embeddings: [{
+			model: string;
+			weight: number;
+		}]
 		onPartialImages?: (images: IImage[], error: IError) =>  void;
 	})
 ])
@@ -181,6 +192,8 @@ return interface ITextToImage {
 | usePromptWeighting | boolean: `(Optional)`                 | Allow setting different weights per words or expressions in prompts.                                                                                                                                                                                                          |
 | clipSkip           | number: `(Optional)`                  | CLIP Skip is a feature that enables skipping layers of the CLIP embedding process, leading to quicker and more varied image generation.                                                                                                                                       |
 | lora               | ILora[]: `(Optional)`                 | With LoRA (Low-Rank Adaptation), you can adapt a model to specific styles or features by emphasizing particular aspects of the data.                                                                                                                                          |
+| embeddings         | IEmbedding[]: `(Optional)`            | Embeddings (or Textual Inversion) can be used to add specific concepts or styles to your generations. Multiple embeddings can be used at the same time.                                                                                                                       |
+| ipAdapters         | IipAdapter[]: `(Optional)`            | IP-Adapters enable image-prompted generation, allowing you to use reference images to guide the style and content of your generations. Multiple IP Adapters can be used simultaneously.                                                                                       |
 | controlNet         | IControlNet[]: `(Optional)`           | With ControlNet, you can provide a guide image to help the model generate images that align with the desired structure.                                                                                                                                                       |
 | onPartialImages    | function: `(Optional)`                | If you want to receive the images as they are generated instead of waiting for the async request, you get the images as they are generated from this function.                                                                                                                |
 | includeCost        | boolean `(Optional)`                  | If set to true, the cost to perform the task will be included in the response object.                                                                                                                                                                                         |
@@ -643,6 +656,13 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.36
+
+**Added or Changed**
+
+- Handle Server error and invalid api key error correctly.
+- Add ip adapter and embeddings.
 
 ### - v1.1.35
 

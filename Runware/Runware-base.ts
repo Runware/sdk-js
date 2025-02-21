@@ -32,6 +32,7 @@ import {
   TImageMaskingResponse,
   TImageMasking,
   TModelSearchResponse,
+  TServerError,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -61,7 +62,7 @@ export class RunwareBase {
   _globalImages: IImage[] = [];
   _globalError: IError | undefined;
   _connectionSessionUUID: string | undefined;
-  _invalidAPIkey: string | undefined;
+  _connectionError: TServerError | undefined;
   _sdkType: SdkType;
   _shouldReconnect: boolean;
   _globalMaxRetries: number;
@@ -113,10 +114,14 @@ export class RunwareBase {
   //     }
   //   };
 
-  //   return {
+  //   return
   //     destroy: () => {},
   //   };
   // }
+
+  protected isInvalidAPIKey = () => {
+    return this._connectionError?.error?.code === "invalidApiKey";
+  };
 
   protected addListener({
     lis,
@@ -187,12 +192,12 @@ export class RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            this._invalidAPIkey = m;
+            this._connectionError = m;
             return;
           }
           this._connectionSessionUUID =
             m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
-          this._invalidAPIkey = undefined;
+          this._connectionError = undefined;
         },
       });
     };
@@ -208,7 +213,7 @@ export class RunwareBase {
     this._ws.onclose = (e: any) => {
       // console.log("closing");
       // console.log("invalid", this._invalidAPIkey);
-      if (this._invalidAPIkey) {
+      if (this.isInvalidAPIKey()) {
         return;
       }
     };
@@ -389,8 +394,6 @@ export class RunwareBase {
       usePromptWeighting,
       promptWeighting,
       numberResults = 1,
-      controlNet,
-      lora,
       onPartialImages,
       includeCost,
       customTaskUUID,
@@ -398,6 +401,10 @@ export class RunwareBase {
       refiner,
       maskMargin,
       outputQuality,
+      controlNet,
+      lora,
+      embeddings,
+      ipAdapters,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -474,7 +481,7 @@ export class RunwareBase {
         ...(height ? { height } : {}),
         ...(width ? { width } : {}),
         numberResults,
-        ...(lora?.length ? { lora: lora } : {}),
+
         ...(outputType ? { outputType } : {}),
         ...(outputFormat ? { outputFormat } : {}),
         ...(uploadEndpoint ? { uploadEndpoint } : {}),
@@ -489,7 +496,6 @@ export class RunwareBase {
         }),
         ...evaluateNonTrue({ key: "steps", value: steps }),
         ...(promptWeighting ? { promptWeighting } : {}),
-        ...(controlNetData.length ? { controlNet: controlNetData } : {}),
         ...(seed ? { seed: seed } : { seed: getRandomSeed() }),
         ...(scheduler ? { scheduler } : {}),
         ...(refiner ? { refiner } : {}),
@@ -497,6 +503,10 @@ export class RunwareBase {
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
         ...(outputQuality ? { outputQuality } : {}),
+        ...(controlNetData.length ? { controlNet: controlNetData } : {}),
+        ...(lora?.length ? { lora: lora } : {}),
+        ...(embeddings?.length ? { embeddings } : {}),
+        ...(ipAdapters?.length ? { ipAdapters } : {}),
         ...(moreOptions ?? {}),
       };
 
@@ -1204,11 +1214,8 @@ export class RunwareBase {
     // const pollingInterval = this._sdkType === SdkType.CLIENT ? 200 : 2000;
 
     try {
-      if (this._invalidAPIkey) {
-        // const currentInvalidApiKey = this._invalidAPIkey;
-        // this._invalidAPIkey = undefined;
-        // throw currentInvalidApiKey;
-        throw this._invalidAPIkey;
+      if (this.isInvalidAPIKey()) {
+        throw this._connectionError;
       }
 
       return new Promise((resolve, reject) => {
@@ -1276,21 +1283,19 @@ export class RunwareBase {
             resolve(true);
             return;
           }
-          if (!!this._invalidAPIkey) {
+          if (!!this.isInvalidAPIKey()) {
             clearAllIntervals();
-            reject(this._invalidAPIkey);
+            reject(this._connectionError);
             return;
           }
         }, pollingInterval);
       });
     } catch (e) {
       this.ensureConnectionUUID = null;
-      // if (this._invalidAPIkey) {
-      //   this._invalidAPIkey = undefined;
-      // }
+      this._connectionError = undefined;
 
       throw (
-        this._invalidAPIkey ??
+        this._connectionError ??
         "Could not connect to server. Ensure your API key is correct"
       );
     }

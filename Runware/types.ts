@@ -156,17 +156,30 @@ export interface IRequestImage {
   usePromptWeighting?: boolean;
   promptWeighting?: TPromptWeighting;
   numberResults?: number; // default to 1
-  controlNet?: IControlNet[];
-  lora?: ILora[];
   includeCost?: boolean;
   customTaskUUID?: string;
   outputQuality?: number;
+
+  controlNet?: IControlNet[];
+  lora?: ILora[];
+  embeddings?: IEmbedding[];
+  ipAdapters?: IipAdapter[];
 
   // imageSize?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
   refiner?: IRefiner;
   // gScale?: number;
+}
+
+export interface IEmbedding {
+  model: string;
+  weight: number;
+}
+export interface IipAdapter {
+  model: string;
+  weight: number;
+  guideImage: string;
 }
 
 export interface IRefiner {
@@ -589,4 +602,14 @@ export type TImageMaskingResponse = {
   ];
   maskImageURL: string;
   cost: number;
+};
+
+export type TServerError = {
+  error: {
+    code: string;
+    message: string;
+    parameter: string;
+    type: string;
+    taskType: string;
+  };
 };

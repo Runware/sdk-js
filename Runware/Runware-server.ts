@@ -88,12 +88,12 @@ export class RunwareServer extends RunwareBase {
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
-            this._invalidAPIkey = m;
+            this._connectionError = m;
             return;
           }
           this._connectionSessionUUID =
             m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
-          this._invalidAPIkey = undefined;
+          this._connectionError = undefined;
         },
       });
     });
@@ -119,7 +119,7 @@ export class RunwareServer extends RunwareBase {
   };
 
   protected handleClose() {
-    if (this._invalidAPIkey) {
+    if (this.isInvalidAPIKey()) {
       return;
     }
     if (this._reconnectingIntervalId) {
