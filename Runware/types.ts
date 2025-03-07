@@ -157,21 +157,29 @@ export interface IRequestImage {
   promptWeighting?: TPromptWeighting;
   numberResults?: number; // default to 1
   includeCost?: boolean;
-  customTaskUUID?: string;
   outputQuality?: number;
 
   controlNet?: IControlNet[];
   lora?: ILora[];
   embeddings?: IEmbedding[];
   ipAdapters?: IipAdapter[];
+  outpaint?: IOutpaint;
+  refiner?: IRefiner;
 
   // imageSize?: number;
+  customTaskUUID?: string;
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
-  refiner?: IRefiner;
   // gScale?: number;
 }
 
+export interface IOutpaint {
+  top?: number;
+  bottom?: number;
+  right?: number;
+  left?: number;
+  blur?: number;
+}
 export interface IEmbedding {
   model: string;
   weight: number;
@@ -424,21 +432,25 @@ export type TAddModel =
   | TAddModelLora;
 
 export type TPhotoMaker = {
-  model?: string; // this should be hidden for now cause we have a single model
-  inputImages: string[];
   style: EPhotoMakerEnum;
-  strength?: number;
+  inputImages: string[];
+  outputType?: string;
+  outputFormat?: string;
+  uploadEndpoint?: string;
+  checkNSFW?: boolean;
   positivePrompt: string;
   negativePrompt?: string;
+  strength?: number;
   height: number;
   width: number;
-  scheduler?: string;
+  model?: string; // this should be hidden for now cause we have a single model
   steps?: number;
-  CFGScale?: number;
-  outputFormat?: string;
-  includeCost?: boolean;
-  numberResults: number;
+  scheduler?: string;
   seed?: number;
+  CFGScale?: number;
+  clipSkip?: number;
+  numberResults: number;
+  includeCost?: boolean;
   outputQuality?: number;
 
   // other options

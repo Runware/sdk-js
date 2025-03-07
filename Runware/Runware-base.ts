@@ -405,6 +405,7 @@ export class RunwareBase {
       lora,
       embeddings,
       ipAdapters,
+      outpaint,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -499,6 +500,7 @@ export class RunwareBase {
         ...(seed ? { seed: seed } : { seed: getRandomSeed() }),
         ...(scheduler ? { scheduler } : {}),
         ...(refiner ? { refiner } : {}),
+        ...(outpaint ? { outpaint } : {}),
         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
         ...(seedImageUUID ? { seedImage: seedImageUUID } : {}),
         ...(maskImageUUID ? { maskImage: maskImageUUID } : {}),
@@ -1039,7 +1041,8 @@ export class RunwareBase {
   };
 
   photoMaker = async (
-    payload: TPhotoMaker
+    payload: TPhotoMaker,
+    moreOptions?: Record<string, any>
   ): Promise<TPhotoMakerResponse[] | undefined> => {
     // This is written to destructure the payload from the additional parameters
     const {
@@ -1074,6 +1077,7 @@ export class RunwareBase {
             ...(photoMakerPayload.seed
               ? { seed: photoMakerPayload.seed }
               : { seed: getRandomSeed() }),
+            ...(moreOptions ?? {}),
             numberResults: imageRemaining,
             taskUUID,
             taskType: ETaskType.PHOTO_MAKER,
