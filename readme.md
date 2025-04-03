@@ -666,6 +666,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.38
+
+**Added or Changed**
+
+- Update bg removal payloads
+
 ### - v1.1.37
 
 **Added or Changed**

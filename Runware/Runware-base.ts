@@ -731,108 +731,103 @@ export class RunwareBase {
     }
   };
 
-  removeImageBackground = async ({
-    inputImage,
-    outputType,
-    outputFormat,
-    rgba,
-    postProcessMask,
-    returnOnlyMask,
-    alphaMatting,
-    alphaMattingForegroundThreshold,
-    alphaMattingBackgroundThreshold,
-    alphaMattingErodeSize,
-    outputQuality,
-    includeCost,
-    customTaskUUID,
-    retry,
-  }: IRemoveImageBackground): Promise<IRemoveImage> => {
-    const totalRetry = retry || this._globalMaxRetries;
-    let lis: any = undefined;
+  removeImageBackground = async (
+    payload: IRemoveImageBackground
+  ): Promise<IRemoveImage> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
+      },
+      debugKey: "remove-image-background",
+    });
 
-    try {
-      return await asyncRetry(
-        async () => {
-          await this.ensureConnection();
-          const imageUploaded = inputImage
-            ? await this.uploadImage(inputImage as File | string)
-            : null;
+    // const totalRetry = retry || this._globalMaxRetries;
+    // let lis: any = undefined;
 
-          const taskUUID = customTaskUUID || getUUID();
+    // try {
+    //   return await asyncRetry(
+    //     async () => {
+    //       await this.ensureConnection();
+    //       const imageUploaded = inputImage
+    //         ? await this.uploadImage(inputImage as File | string)
+    //         : null;
 
-          this.send({
-            taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
-            taskUUID,
-            inputImage: imageUploaded?.imageUUID,
-            ...evaluateNonTrue({ key: "rgba", value: rgba }),
-            ...evaluateNonTrue({
-              key: "postProcessMask",
-              value: postProcessMask,
-            }),
-            ...evaluateNonTrue({
-              key: "returnOnlyMask",
-              value: returnOnlyMask,
-            }),
-            ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
-            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-            ...evaluateNonTrue({
-              key: "alphaMattingForegroundThreshold",
-              value: alphaMattingForegroundThreshold,
-            }),
-            ...evaluateNonTrue({
-              key: "alphaMattingBackgroundThreshold",
-              value: alphaMattingBackgroundThreshold,
-            }),
-            ...evaluateNonTrue({
-              key: "alphaMattingErodeSize",
-              value: alphaMattingErodeSize,
-            }),
-            ...evaluateNonTrue({ key: "outputType", value: outputType }),
-            ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-            ...(outputQuality ? { outputQuality } : {}),
-          });
+    //       const taskUUID = customTaskUUID || getUUID();
 
-          lis = this.globalListener({
-            taskUUID,
-          });
+    //       this.send({
+    //         taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
+    //         taskUUID,
+    //         inputImage: imageUploaded?.imageUUID,
+    //         ...evaluateNonTrue({ key: "rgba", value: rgba }),
+    //         ...evaluateNonTrue({
+    //           key: "postProcessMask",
+    //           value: postProcessMask,
+    //         }),
+    //         ...evaluateNonTrue({
+    //           key: "returnOnlyMask",
+    //           value: returnOnlyMask,
+    //         }),
+    //         ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
+    //         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+    //         ...evaluateNonTrue({
+    //           key: "alphaMattingForegroundThreshold",
+    //           value: alphaMattingForegroundThreshold,
+    //         }),
+    //         ...evaluateNonTrue({
+    //           key: "alphaMattingBackgroundThreshold",
+    //           value: alphaMattingBackgroundThreshold,
+    //         }),
+    //         ...evaluateNonTrue({
+    //           key: "alphaMattingErodeSize",
+    //           value: alphaMattingErodeSize,
+    //         }),
+    //         ...evaluateNonTrue({ key: "outputType", value: outputType }),
+    //         ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
+    //         ...(outputQuality ? { outputQuality } : {}),
+    //       });
 
-          const response = await getIntervalWithPromise(
-            ({ resolve, reject }) => {
-              const newRemoveBackground = this.getSingleMessage({ taskUUID });
+    //       lis = this.globalListener({
+    //         taskUUID,
+    //       });
 
-              if (!newRemoveBackground) return;
+    //       const response = await getIntervalWithPromise(
+    //         ({ resolve, reject }) => {
+    //           const newRemoveBackground = this.getSingleMessage({ taskUUID });
 
-              if (newRemoveBackground?.error) {
-                reject(newRemoveBackground);
-                return true;
-              }
+    //           if (!newRemoveBackground) return;
 
-              if (newRemoveBackground) {
-                delete this._globalMessages[taskUUID];
-                resolve(newRemoveBackground);
-                return true;
-              }
-            },
-            {
-              debugKey: "remove-image-background",
-              timeoutDuration: this._timeoutDuration,
-            }
-          );
+    //           if (newRemoveBackground?.error) {
+    //             reject(newRemoveBackground);
+    //             return true;
+    //           }
 
-          lis.destroy();
+    //           if (newRemoveBackground) {
+    //             delete this._globalMessages[taskUUID];
+    //             resolve(newRemoveBackground);
+    //             return true;
+    //           }
+    //         },
+    //         {
+    //           debugKey: "remove-image-background",
+    //           timeoutDuration: this._timeoutDuration,
+    //         }
+    //       );
 
-          return response as IImage;
-        },
-        {
-          maxRetries: totalRetry,
-          callback: () => {
-            lis?.destroy();
-          },
-        }
-      );
-    } catch (e) {
-      throw e;
-    }
+    //       lis.destroy();
+
+    //       return response as IImage;
+    //     },
+    //     {
+    //       maxRetries: totalRetry,
+    //       callback: () => {
+    //         lis?.destroy();
+    //       },
+    //     }
+    //   );
+    // } catch (e) {
+    //   throw e;
+    // }
   };
 
   upscaleGan = async ({

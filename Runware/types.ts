@@ -13,14 +13,14 @@ export enum ETaskType {
   IMAGE_UPLOAD = "imageUpload",
   IMAGE_UPSCALE = "imageUpscale",
   IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
+  PHOTO_MAKER = "photoMaker",
   IMAGE_CAPTION = "imageCaption",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
+  IMAGE_MASKING = "imageMasking",
   PROMPT_ENHANCE = "promptEnhance",
   AUTHENTICATION = "authentication",
   MODEL_UPLOAD = "modelUpload",
-  PHOTO_MAKER = "photoMaker",
   MODEL_SEARCH = "modelSearch",
-  IMAGE_MASKING = "imageMasking",
 }
 
 export type RunwareBaseType = {
@@ -211,16 +211,18 @@ export interface IImageToText {
 export interface IRemoveImageBackground extends IRequestImageToText {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
-  rgba?: number[];
-  postProcessMask?: boolean;
-  returnOnlyMask?: boolean;
-  alphaMatting?: boolean;
-  alphaMattingForegroundThreshold?: number;
-  alphaMattingBackgroundThreshold?: number;
-  alphaMattingErodeSize?: number;
+  model: string;
+  settings?: {
+    rgba?: number[];
+    postProcessMask?: boolean;
+    returnOnlyMask?: boolean;
+    alphaMatting?: boolean;
+    alphaMattingForegroundThreshold?: number;
+    alphaMattingBackgroundThreshold?: number;
+    alphaMattingErodeSize?: number;
+  };
   includeCost?: boolean;
   outputQuality?: number;
-
   retry?: number;
 }
 
