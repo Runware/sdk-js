@@ -33,6 +33,7 @@ import {
   TImageMasking,
   TModelSearchResponse,
   TServerError,
+  IOutputType,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -144,8 +145,8 @@ export class RunwareBase {
       const arrayErrors = (msg as any)?.[0]?.errors
         ? (msg as any)?.[0]?.errors
         : Array.isArray(msg?.errors)
-        ? msg.errors
-        : [msg.errors];
+          ? msg.errors
+          : [msg.errors];
 
       const filteredMessage = arrayMessage.filter(
         (v) => (v?.taskUUID || v?.taskType) === taskUUID
@@ -372,7 +373,7 @@ export class RunwareBase {
     });
   }
 
-  async requestImages(
+  async requestImages<TOutput extends IOutputType = any, HasCost extends boolean = false>(
     {
       outputType,
       outputFormat,
@@ -407,10 +408,10 @@ export class RunwareBase {
       ipAdapters,
       outpaint,
     }: // imageSize,
-    // gScale,
-    IRequestImage,
+      // gScale,
+      IRequestImage<TOutput, HasCost>,
     moreOptions?: Record<string, any>
-  ): Promise<ITextToImage[] | undefined> {
+  ): Promise<ITextToImage<TOutput, HasCost>[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
     let taskUUIDs: string[] = [];
@@ -661,12 +662,12 @@ export class RunwareBase {
     }
   };
 
-  requestImageToText = async ({
+  requestImageToText = async <HasCost extends boolean = false>({
     inputImage,
     includeCost,
     customTaskUUID,
     retry,
-  }: IRequestImageToText): Promise<IImageToText> => {
+  }: IRequestImageToText<HasCost>): Promise<IImageToText<HasCost>> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
 
@@ -731,9 +732,9 @@ export class RunwareBase {
     }
   };
 
-  removeImageBackground = async (
-    payload: IRemoveImageBackground
-  ): Promise<IRemoveImage> => {
+  removeImageBackground = async<TOutput extends IOutputType = any, HasCost extends boolean = false>(
+    payload: IRemoveImageBackground<TOutput, HasCost>
+  ): Promise<IRemoveImage<TOutput, HasCost>> => {
     return this.baseSingleRequest({
       payload: {
         ...payload,
@@ -830,7 +831,7 @@ export class RunwareBase {
     // }
   };
 
-  upscaleGan = async ({
+  upscaleGan = async<TOutput extends IOutputType = any, HasCost extends boolean = false>({
     inputImage,
     upscaleFactor,
     outputType,
@@ -839,7 +840,7 @@ export class RunwareBase {
     outputQuality,
     customTaskUUID,
     retry,
-  }: IUpscaleGan): Promise<IImage> => {
+  }: IUpscaleGan<TOutput, HasCost>): Promise<IImage<TOutput, HasCost>> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
 
@@ -903,14 +904,14 @@ export class RunwareBase {
     }
   };
 
-  enhancePrompt = async ({
+  enhancePrompt = async<HasCost extends boolean = false> ({
     prompt,
     promptMaxLength = 380,
     promptVersions = 1,
     includeCost,
     customTaskUUID,
     retry,
-  }: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
+  }: IPromptEnhancer<HasCost>): Promise<IEnhancedPrompt<HasCost>[]> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
 
@@ -1217,7 +1218,7 @@ export class RunwareBase {
         throw this._connectionError;
       }
 
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         //  const isConnected =
         let retry = 0;
         const MAX_RETRY = 30;
@@ -1257,7 +1258,7 @@ export class RunwareBase {
 
               if (hasConnected) {
                 clearAllIntervals();
-                resolve(true);
+                resolve();
               } else if (retry >= MAX_RETRY) {
                 clearAllIntervals();
                 reject(new Error("Retry timed out"));
@@ -1279,7 +1280,7 @@ export class RunwareBase {
 
           if (hasConnected) {
             clearAllIntervals();
-            resolve(true);
+            resolve();
             return;
           }
           if (!!this.isInvalidAPIKey()) {
