@@ -34,23 +34,41 @@ export type RunwareBaseType = {
 export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 
-export interface IImage {
+
+interface IOutputTypeFieldBase64 {
+  imageBase64Data: string
+}
+
+interface IOutputTypeFieldUrl {
+  imageURL: string;
+}
+
+interface IOutputTypeFieldUri {
+  imageDataURI: string;
+}
+
+type OutputTypeFieldMap = {
+  base64Data: IOutputTypeFieldBase64;
+  dataURI: IOutputTypeFieldUri;
+  URL: IOutputTypeFieldUrl;
+};
+
+type CostField<Value extends boolean> = Value extends true ? { cost: number } : {}
+
+export type IImage<TOutput extends IOutputType = any, HasCost extends boolean = false> = {
   taskType: ETaskType;
   imageUUID: string;
   inputImageUUID?: string;
   taskUUID: string;
-  imageURL?: string;
-  imageBase64Data?: string;
-  imageDataURI?: string;
   NSFWContent?: boolean;
-  cost?: number;
   seed: number;
-}
+} & OutputTypeFieldMap[TOutput] & CostField<HasCost>
 
-export interface ITextToImage extends IImage {
+export type ITextToImage<TOutput extends IOutputType = any, HasCost extends boolean = false> = {
   positivePrompt?: string;
   negativePrompt?: string;
-}
+} & IImage<TOutput> & CostField<HasCost>
+
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -131,8 +149,8 @@ export interface IError {
 
 export type TPromptWeighting = "compel" | "sdEmbeds";
 
-export interface IRequestImage {
-  outputType?: IOutputType;
+export interface IRequestImage<TOutput extends IOutputType = any, HasCost extends boolean = false> {
+  outputType?: TOutput;
   outputFormat?: IOutputFormat;
   uploadEndpoint?: string;
   checkNSFW?: boolean;
@@ -156,7 +174,7 @@ export interface IRequestImage {
   usePromptWeighting?: boolean;
   promptWeighting?: TPromptWeighting;
   numberResults?: number; // default to 1
-  includeCost?: boolean;
+  includeCost?: HasCost;
   outputQuality?: number;
 
   controlNet?: IControlNet[];
@@ -195,21 +213,20 @@ export interface IRefiner {
   startStep?: number;
   startStepPercentage?: number;
 }
-export interface IRequestImageToText {
+export interface IRequestImageToText<HasCost extends boolean = false> {
   inputImage?: File | string;
-  includeCost?: boolean;
+  includeCost?: HasCost;
   customTaskUUID?: string;
   retry?: number;
 }
-export interface IImageToText {
+export type IImageToText<HasCost extends boolean = false> = {
   taskType: ETaskType;
   taskUUID: string;
   text: string;
-  cost?: number;
-}
+} & CostField<HasCost>
 
-export interface IRemoveImageBackground extends IRequestImageToText {
-  outputType?: IOutputType;
+export type IRemoveImageBackground<TOutput extends IOutputType = any, HasCost extends boolean = false> = {
+  outputType?: TOutput;
   outputFormat?: IOutputFormat;
   model: string;
   settings?: {
@@ -221,41 +238,36 @@ export interface IRemoveImageBackground extends IRequestImageToText {
     alphaMattingBackgroundThreshold?: number;
     alphaMattingErodeSize?: number;
   };
-  includeCost?: boolean;
+  includeCost?: HasCost;
   outputQuality?: number;
   retry?: number;
-}
+} & IRequestImageToText<HasCost>
 
-export interface IRemoveImage {
+export type IRemoveImage<TOutput extends IOutputType = any, HasCost extends boolean = false> = {
   taskType: ETaskType;
   taskUUID: string;
   imageUUID: string;
   inputImageUUID: string;
-  imageURL?: string;
-  imageBase64Data?: string;
-  imageDataURI?: string;
-  cost?: number;
-}
+} & OutputTypeFieldMap[TOutput] & CostField<HasCost>
 
-export interface IPromptEnhancer {
+export interface IPromptEnhancer<HasCost extends boolean = false> {
   promptMaxLength?: number;
   promptVersions?: number;
   prompt: string;
-  includeCost?: boolean;
+  includeCost?: HasCost;
   customTaskUUID?: string;
   retry?: number;
 }
 
-export interface IEnhancedPrompt extends IImageToText {}
+export type IEnhancedPrompt<HasCost extends boolean = false> = IImageToText<HasCost>
 
-export interface IUpscaleGan {
+export interface IUpscaleGan<TOuput extends IOutputType = any, HasCost extends boolean = false> {
   inputImage: File | string;
   upscaleFactor: number;
-  outputType?: IOutputType;
+  outputType?: TOuput;
   outputFormat?: IOutputFormat;
-  includeCost?: boolean;
+  includeCost?: HasCost;
   outputQuality?: number;
-
   customTaskUUID?: string;
   retry?: number;
 }
@@ -355,7 +367,7 @@ export type RequireOnlyOne<T, Keys extends keyof T = keyof T> = Pick<
 > &
   {
     [K in Keys]-?: Required<Pick<T, K>> &
-      Partial<Record<Exclude<Keys, K>, undefined>>;
+    Partial<Record<Exclude<Keys, K>, undefined>>;
   }[Keys];
 
 export type ListenerType = {
