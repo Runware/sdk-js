@@ -165,6 +165,10 @@ export interface IRequestImage {
   ipAdapters?: IipAdapter[];
   outpaint?: IOutpaint;
   refiner?: IRefiner;
+  acceleratorOptions?: TAcceleratorOptions;
+  advancedFeatures?: {
+    layerDiffuse: boolean;
+  };
 
   // imageSize?: number;
   customTaskUUID?: string;
@@ -172,6 +176,14 @@ export interface IRequestImage {
   retry?: number;
   // gScale?: number;
 }
+
+export type TAcceleratorOptions =
+  | { teaCache: boolean; teaCacheDistance: number }
+  | {
+      deepCache: boolean;
+      deepCacheInterval: number;
+      deepCacheBranchId: number;
+    };
 
 export interface IOutpaint {
   top?: number;
@@ -599,6 +611,20 @@ export type TImageMasking = {
 
   customTaskUUID?: string;
   retry?: number;
+};
+
+export type TImageUpload = {
+  image: string;
+
+  customTaskUUID?: string;
+  retry?: number;
+};
+
+export type TImageUploadResponse = {
+  image: string;
+  taskUUID: string;
+  imageUUID: number;
+  imageURL: string;
 };
 
 export type TImageMaskingResponse = {

@@ -666,6 +666,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.39
+
+**Added or Changed**
+
+- Added Accelerator options (Teachace, Deepcache) and layerDiffuse
+
 ### - v1.1.38
 
 **Added or Changed**

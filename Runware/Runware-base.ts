@@ -33,6 +33,8 @@ import {
   TImageMasking,
   TModelSearchResponse,
   TServerError,
+  TImageUpload,
+  TImageUploadResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -406,6 +408,8 @@ export class RunwareBase {
       embeddings,
       ipAdapters,
       outpaint,
+      acceleratorOptions,
+      advancedFeatures,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -509,6 +513,8 @@ export class RunwareBase {
         ...(lora?.length ? { lora: lora } : {}),
         ...(embeddings?.length ? { embeddings } : {}),
         ...(ipAdapters?.length ? { ipAdapters } : {}),
+        ...(acceleratorOptions ? { acceleratorOptions } : {}),
+        ...(advancedFeatures ? { advancedFeatures } : {}),
         ...(moreOptions ?? {}),
       };
 
@@ -1137,6 +1143,18 @@ export class RunwareBase {
         taskType: ETaskType.IMAGE_MASKING,
       },
       debugKey: "image-masking",
+    });
+  };
+
+  imageUpload = async (
+    payload: TImageUpload
+  ): Promise<TImageUploadResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.IMAGE_UPLOAD,
+      },
+      debugKey: "image-upload",
     });
   };
 
