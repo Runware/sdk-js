@@ -410,6 +410,7 @@ export class RunwareBase {
       outpaint,
       acceleratorOptions,
       advancedFeatures,
+      referenceImages,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -515,6 +516,7 @@ export class RunwareBase {
         ...(ipAdapters?.length ? { ipAdapters } : {}),
         ...(acceleratorOptions ? { acceleratorOptions } : {}),
         ...(advancedFeatures ? { advancedFeatures } : {}),
+        ...(referenceImages?.length ? { referenceImages } : {}),
         ...(moreOptions ?? {}),
       };
 

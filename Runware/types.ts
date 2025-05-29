@@ -169,6 +169,7 @@ export interface IRequestImage {
   advancedFeatures?: {
     layerDiffuse: boolean;
   };
+  referenceImages?: string[];
 
   // imageSize?: number;
   customTaskUUID?: string;
