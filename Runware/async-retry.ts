@@ -16,6 +16,9 @@ export const asyncRetry = async (
       return result; // Return the result if successful
     } catch (error: any) {
       callback?.();
+      if (error?.error) {
+        throw error;
+      }
       maxRetries--;
       if (maxRetries > 0) {
         await delay(delayInSeconds); // Delay before the next retry

@@ -2,6 +2,7 @@ import {
   EPreProcessor,
   EPreProcessorGroup,
   Environment,
+  GetWithPromiseAsyncCallBackType,
   GetWithPromiseCallBackType,
   IRequestImage,
 } from "./types";
@@ -33,10 +34,12 @@ export const getIntervalWithPromise = (
     debugKey = "debugKey",
     timeoutDuration = TIMEOUT_DURATION,
     shouldThrowError = true,
+    pollingInterval = POLLING_INTERVAL,
   }: {
     debugKey?: string;
     timeoutDuration?: number;
     shouldThrowError?: boolean;
+    pollingInterval?: number;
   }
 ) => {
   timeoutDuration =
@@ -58,12 +61,13 @@ export const getIntervalWithPromise = (
 
     let intervalId = setInterval(async () => {
       const shouldClear = callback({ resolve, reject, intervalId });
+
       if (shouldClear) {
         clearInterval(intervalId);
         clearTimeout(timeoutId);
       }
       // resolve(imagesWithSimilarTask); // Resolve the promise with the data
-    }, POLLING_INTERVAL); // Check every 1 second (adjust the interval as needed)
+    }, pollingInterval); // Check every 1 second (adjust the interval as needed)
   });
 };
 
@@ -269,4 +273,50 @@ export const getRandomNumber = (min: number, max: number) => {
 };
 export const getRandomSeed = () => {
   return getRandomNumber(1, Number.MAX_SAFE_INTEGER);
+};
+
+export const getIntervalAsyncWithPromise = (
+  callback: GetWithPromiseAsyncCallBackType,
+  {
+    debugKey = "debugKey",
+    timeoutDuration = TIMEOUT_DURATION,
+    shouldThrowError = true,
+    pollingInterval = POLLING_INTERVAL,
+  }: {
+    debugKey?: string;
+    timeoutDuration?: number;
+    shouldThrowError?: boolean;
+    pollingInterval?: number;
+  }
+) => {
+  timeoutDuration =
+    timeoutDuration < MINIMUM_TIMEOUT_DURATION
+      ? MINIMUM_TIMEOUT_DURATION
+      : timeoutDuration;
+
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        if (shouldThrowError) {
+          reject(`Response could not be received from server for ${debugKey}`);
+        }
+      }
+      clearTimeout(timeoutId);
+    }, timeoutDuration);
+
+    let intervalId = setInterval(async () => {
+      try {
+        const shouldClear = await callback({ resolve, reject, intervalId });
+        if (shouldClear) {
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+        }
+      } catch (error) {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    }, pollingInterval);
+  });
 };

@@ -13,6 +13,8 @@ export enum ETaskType {
   IMAGE_UPLOAD = "imageUpload",
   IMAGE_UPSCALE = "imageUpscale",
   IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
+  VIDEO_INFERENCE = "videoInference",
+  GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
   IMAGE_CAPTION = "imageCaption",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
@@ -34,6 +36,11 @@ export type RunwareBaseType = {
 export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 
+export interface IAdditionalResponsePayload {
+  includePayload?: boolean;
+  includeGenerationTime?: boolean;
+}
+
 export interface IImage {
   taskType: ETaskType;
   imageUUID: string;
@@ -50,6 +57,16 @@ export interface IImage {
 export interface ITextToImage extends IImage {
   positivePrompt?: string;
   negativePrompt?: string;
+}
+
+export interface IVideoToImage {
+  taskUUID: string;
+  taskType: string;
+  status: string;
+  videoUUID?: string;
+  cost?: number;
+  seed?: number;
+  videoURL?: string;
 }
 export interface IControlNetImage {
   taskUUID: string;
@@ -97,7 +114,7 @@ export type IControlNetPreprocess = {
 
   customTaskUUID?: string;
   retry?: number;
-};
+} & IAdditionalResponsePayload;
 
 // export type IControlNetA = RequireOnlyOne<
 //   IControlNetGeneral,
@@ -131,7 +148,7 @@ export interface IError {
 
 export type TPromptWeighting = "compel" | "sdEmbeds";
 
-export interface IRequestImage {
+export interface IRequestImage extends IAdditionalResponsePayload {
   outputType?: IOutputType;
   outputFormat?: IOutputFormat;
   uploadEndpoint?: string;
@@ -208,7 +225,7 @@ export interface IRefiner {
   startStep?: number;
   startStepPercentage?: number;
 }
-export interface IRequestImageToText {
+export interface IRequestImageToText extends IAdditionalResponsePayload {
   inputImage?: File | string;
   includeCost?: boolean;
   customTaskUUID?: string;
@@ -239,6 +256,36 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   retry?: number;
 }
 
+export interface IRequestVideo extends IRequestImageToText {
+  outputType?: IOutputType;
+  outputFormat?: IOutputFormat;
+  outputQuality?: number;
+  uploadEndpoint?: string;
+  checkNSFW?: boolean;
+  includeCost?: boolean;
+  positivePrompt: string;
+  negativePrompt?: string;
+  model: string;
+  steps?: number;
+  CFGScale?: number;
+  seed?: number;
+  duration?: number;
+  fps?: number;
+  width?: number;
+  height?: number;
+  numberResults?: number;
+
+  skipResponse?: boolean;
+  customTaskUUID?: string;
+  retry?: number;
+
+  [key: string]: any;
+}
+export interface IAsyncResults {
+  taskUUID: string;
+  onPartialImages?: (images: IImage[], error?: IError) => void;
+}
+
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
@@ -250,7 +297,7 @@ export interface IRemoveImage {
   cost?: number;
 }
 
-export interface IPromptEnhancer {
+export interface IPromptEnhancer extends IAdditionalResponsePayload {
   promptMaxLength?: number;
   promptVersions?: number;
   prompt: string;
@@ -261,7 +308,7 @@ export interface IPromptEnhancer {
 
 export interface IEnhancedPrompt extends IImageToText {}
 
-export interface IUpscaleGan {
+export interface IUpscaleGan extends IAdditionalResponsePayload {
   inputImage: File | string;
   upscaleFactor: number;
   outputType?: IOutputType;
@@ -298,6 +345,16 @@ export type GetWithPromiseCallBackType = ({
   reject: <T>(value: T) => void;
   intervalId: any;
 }) => boolean | undefined;
+
+export type GetWithPromiseAsyncCallBackType = ({
+  resolve,
+  reject,
+  intervalId,
+}: {
+  resolve: <T>(value: T) => void;
+  reject: <T>(value: T) => void;
+  intervalId: any;
+}) => any;
 
 export enum EPreProcessorGroup {
   "canny" = "canny",
@@ -400,13 +457,13 @@ export interface IErrorResponse {
 export type TAddModelBaseType = {
   air: string;
   name: string;
-  downloadUrl: string;
+  downloadURL: string;
   uniqueIdentifier: string;
 
   version: string;
   format: EModelFormat;
   architecture: EModelArchitecture;
-  heroImageUrl?: string;
+  heroImageURL?: string;
   tags?: string[];
   shortDescription?: string;
   comment?: string;
@@ -472,7 +529,7 @@ export type TPhotoMaker = {
   customTaskUUID?: string;
   retry?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
-};
+} & IAdditionalResponsePayload;
 
 export type TPhotoMakerResponse = {
   taskType: string;

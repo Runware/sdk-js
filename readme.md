@@ -429,12 +429,12 @@ const  runware  =  new Runware({ apiKey: "API_KEY" });
 const basePayload = {
 	air: string;
 	name: string;
-	downloadUrl: string;
+	downloadURL: string;
 	uniqueIdentifier: string;
 	version: string;
 	format: EModelFormat;
 	architecture: EModelArchitecture;
-	heroImageUrl?: string;
+	heroImageURL?: string;
 	tags?: string[];
 	shortDescription?: string;
 	comment?: string;
@@ -665,6 +665,12 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.42
+
+**Added or Changed**
+
+- Release video inference
 
 ### - v1.1.40
 

@@ -35,6 +35,9 @@ import {
   TServerError,
   TImageUpload,
   TImageUploadResponse,
+  IRequestVideo,
+  IAsyncResults,
+  IVideoToImage,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -44,6 +47,7 @@ import {
   delay,
   evaluateNonTrue,
   fileToBase64,
+  getIntervalAsyncWithPromise,
   getIntervalWithPromise,
   getRandomSeed,
   getUUID,
@@ -265,14 +269,14 @@ export class RunwareBase {
     onPartialImages,
     taskUUID,
     groupKey,
-    positivePrompt,
-    negativePrompt,
+    requestPayload,
+    startTime,
   }: {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
     groupKey: LISTEN_TO_IMAGES_KEY;
-    positivePrompt?: string;
-    negativePrompt?: string;
+    requestPayload?: Record<string, any>;
+    startTime?: number;
   }) {
     return this.addListener({
       taskUUID: taskUUID,
@@ -285,22 +289,34 @@ export class RunwareBase {
           onPartialImages?.(images, m?.error && m);
           this._globalError = m;
         } else {
-          images = images.map((image) => ({
-            ...image,
-            positivePrompt,
-            negativePrompt,
-          }));
+          images = images.map((image) => {
+            this.insertAdditionalResponse({
+              response: image,
+              payload: requestPayload ? requestPayload : undefined,
+              startTime: startTime ? startTime : undefined,
+            });
+
+            return {
+              ...image,
+            };
+          });
           onPartialImages?.(images, m?.error && m);
 
           if (this._sdkType === SdkType.CLIENT) {
             // this._globalImages = [...this._globalImages, ...m.images];
             this._globalImages = [
               ...this._globalImages,
-              ...(m?.[taskUUID] ?? []).map((image: IImage) => ({
-                ...image,
-                positivePrompt,
-                negativePrompt,
-              })),
+              ...(m?.[taskUUID] ?? []).map((image: IImage) => {
+                this.insertAdditionalResponse({
+                  response: image,
+                  payload: requestPayload ? requestPayload : undefined,
+                  startTime: startTime ? startTime : undefined,
+                });
+
+                return {
+                  ...image,
+                };
+              }),
             ];
           } else {
             this._globalImages = [...this._globalImages, ...images];
@@ -354,11 +370,14 @@ export class RunwareBase {
           return;
         }
 
+        // console.log("m", m);
+
         const value = accessDeepObject({
           key: taskUUID,
           data: m,
           useZero: false,
         });
+        // console.log({ value });
 
         if (Array.isArray(value)) {
           value.forEach((v) => {
@@ -373,6 +392,9 @@ export class RunwareBase {
       },
     });
   }
+
+  // includePayload?: boolean
+  // includeGenerationTime?: boolean
 
   async requestImages(
     {
@@ -411,6 +433,8 @@ export class RunwareBase {
       acceleratorOptions,
       advancedFeatures,
       referenceImages,
+      includeGenerationTime,
+      includePayload,
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -520,6 +544,8 @@ export class RunwareBase {
         ...(moreOptions ?? {}),
       };
 
+      const startTime = Date.now();
+
       return await asyncRetry(
         async () => {
           retryCount++;
@@ -541,12 +567,14 @@ export class RunwareBase {
           };
           this.send(newRequestObject);
 
+          // const generationTime = endTime - startTime;
+
           lis = this.listenToImages({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
-            positivePrompt,
-            negativePrompt,
+            requestPayload: includePayload ? newRequestObject : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
           });
 
           const promise = await this.getSimilarImages({
@@ -588,9 +616,13 @@ export class RunwareBase {
     outputQuality,
     customTaskUUID,
     retry,
+    includeGenerationTime,
+    includePayload,
   }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
+
+    const startTime = Date.now();
 
     try {
       return await asyncRetry(
@@ -600,7 +632,7 @@ export class RunwareBase {
           if (!image?.imageUUID) return null;
 
           const taskUUID = customTaskUUID || getUUID();
-          this.send({
+          const payload = {
             inputImage: image.imageUUID,
             taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
             taskUUID,
@@ -623,6 +655,10 @@ export class RunwareBase {
               value: includeHandsAndFaceOpenPose,
             }),
             ...(outputQuality ? { outputQuality } : {}),
+          };
+
+          this.send({
+            ...payload,
           });
           lis = this.globalListener({
             taskUUID,
@@ -655,6 +691,12 @@ export class RunwareBase {
 
           lis.destroy();
 
+          this.insertAdditionalResponse({
+            response: guideImage,
+            payload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
           return guideImage;
         },
         {
@@ -674,9 +716,13 @@ export class RunwareBase {
     includeCost,
     customTaskUUID,
     retry,
+    includePayload,
+    includeGenerationTime,
   }: IRequestImageToText): Promise<IImageToText> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
+
+    const startTime = Date.now();
 
     try {
       return await asyncRetry(
@@ -687,12 +733,15 @@ export class RunwareBase {
             : null;
 
           const taskUUID = customTaskUUID || getUUID();
-          this.send({
+
+          const payload = {
             taskUUID,
             taskType: ETaskType.IMAGE_CAPTION,
             inputImage: imageUploaded?.imageUUID,
             ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-          });
+          };
+
+          this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -725,6 +774,12 @@ export class RunwareBase {
 
           lis.destroy();
 
+          this.insertAdditionalResponse({
+            response: response,
+            payload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
           return response as IImageToText;
         },
         {
@@ -749,93 +804,86 @@ export class RunwareBase {
       },
       debugKey: "remove-image-background",
     });
+  };
 
-    // const totalRetry = retry || this._globalMaxRetries;
-    // let lis: any = undefined;
+  videoInference = async (
+    payload: IRequestVideo
+  ): Promise<IVideoToImage[] | IVideoToImage> => {
+    const { skipResponse, ...rest } = payload;
+    try {
+      console.log("payload", payload);
+      const request = await this.baseSingleRequest<IVideoToImage>({
+        payload: {
+          ...rest,
+          deliveryMethod: "async",
+          taskType: ETaskType.VIDEO_INFERENCE,
+        },
 
-    // try {
-    //   return await asyncRetry(
-    //     async () => {
-    //       await this.ensureConnection();
-    //       const imageUploaded = inputImage
-    //         ? await this.uploadImage(inputImage as File | string)
-    //         : null;
+        debugKey: "video-inference",
+      });
 
-    //       const taskUUID = customTaskUUID || getUUID();
+      console.log("request", request);
 
-    //       this.send({
-    //         taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
-    //         taskUUID,
-    //         inputImage: imageUploaded?.imageUUID,
-    //         ...evaluateNonTrue({ key: "rgba", value: rgba }),
-    //         ...evaluateNonTrue({
-    //           key: "postProcessMask",
-    //           value: postProcessMask,
-    //         }),
-    //         ...evaluateNonTrue({
-    //           key: "returnOnlyMask",
-    //           value: returnOnlyMask,
-    //         }),
-    //         ...evaluateNonTrue({ key: "alphaMatting", value: alphaMatting }),
-    //         ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-    //         ...evaluateNonTrue({
-    //           key: "alphaMattingForegroundThreshold",
-    //           value: alphaMattingForegroundThreshold,
-    //         }),
-    //         ...evaluateNonTrue({
-    //           key: "alphaMattingBackgroundThreshold",
-    //           value: alphaMattingBackgroundThreshold,
-    //         }),
-    //         ...evaluateNonTrue({
-    //           key: "alphaMattingErodeSize",
-    //           value: alphaMattingErodeSize,
-    //         }),
-    //         ...evaluateNonTrue({ key: "outputType", value: outputType }),
-    //         ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-    //         ...(outputQuality ? { outputQuality } : {}),
-    //       });
+      if (skipResponse) {
+        return request;
+      }
 
-    //       lis = this.globalListener({
-    //         taskUUID,
-    //       });
+      const taskUUID = request?.taskUUID;
 
-    //       const response = await getIntervalWithPromise(
-    //         ({ resolve, reject }) => {
-    //           const newRemoveBackground = this.getSingleMessage({ taskUUID });
+      const numberResults = payload?.numberResults ?? 1;
 
-    //           if (!newRemoveBackground) return;
+      const allVideos = new Map<string, any>();
 
-    //           if (newRemoveBackground?.error) {
-    //             reject(newRemoveBackground);
-    //             return true;
-    //           }
+      await getIntervalAsyncWithPromise(
+        async ({ resolve, reject }) => {
+          try {
+            const videos = await this.getResponse({ taskUUID });
 
-    //           if (newRemoveBackground) {
-    //             delete this._globalMessages[taskUUID];
-    //             resolve(newRemoveBackground);
-    //             return true;
-    //           }
-    //         },
-    //         {
-    //           debugKey: "remove-image-background",
-    //           timeoutDuration: this._timeoutDuration,
-    //         }
-    //       );
+            // Add videos to the collection
+            for (const video of videos || []) {
+              if (video.videoUUID) {
+                allVideos.set(video.videoUUID, video);
+              }
+            }
 
-    //       lis.destroy();
+            // Check completion AFTER updating the collection
+            const isComplete = allVideos.size === numberResults;
 
-    //       return response as IImage;
-    //     },
-    //     {
-    //       maxRetries: totalRetry,
-    //       callback: () => {
-    //         lis?.destroy();
-    //       },
-    //     }
-    //   );
-    // } catch (e) {
-    //   throw e;
-    // }
+            if (isComplete) {
+              resolve(Array.from(allVideos.values()));
+              return true; // Signal to clear the interval
+            }
+
+            return false; // Continue polling
+          } catch (err) {
+            reject(err);
+            return true; // Signal to clear the interval on error
+          }
+        },
+        {
+          debugKey: "async-response",
+          pollingInterval: 2 * 1000,
+          timeoutDuration: 10 * 60 * 1000,
+        }
+      );
+      return Array.from(allVideos.values());
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  getResponse = async (payload: IAsyncResults): Promise<IVideoToImage[]> => {
+    const taskUUID = payload.taskUUID;
+    // const mock = getRandomTaskResponses({ count: 2, taskUUID });
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        customTaskUUID: taskUUID,
+        taskType: ETaskType.GET_RESPONSE,
+      },
+      isMultiple: true,
+      debugKey: "async-results",
+    });
   };
 
   upscaleGan = async ({
@@ -847,10 +895,13 @@ export class RunwareBase {
     outputQuality,
     customTaskUUID,
     retry,
+    includeGenerationTime,
+    includePayload,
   }: IUpscaleGan): Promise<IImage> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
 
+    const startTime = Date.now();
     try {
       return await asyncRetry(
         async () => {
@@ -860,8 +911,7 @@ export class RunwareBase {
           imageUploaded = await this.uploadImage(inputImage as File | string);
 
           const taskUUID = customTaskUUID || getUUID();
-
-          this.send({
+          const payload = {
             taskUUID,
             inputImage: imageUploaded?.imageUUID,
             taskType: ETaskType.IMAGE_UPSCALE,
@@ -870,7 +920,9 @@ export class RunwareBase {
             ...(outputType ? { outputType } : {}),
             ...(outputQuality ? { outputQuality } : {}),
             ...(outputFormat ? { outputFormat } : {}),
-          });
+          };
+
+          this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -897,6 +949,12 @@ export class RunwareBase {
 
           lis.destroy();
 
+          this.insertAdditionalResponse({
+            response,
+            payload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
           return response as IImage;
         },
         {
@@ -918,9 +976,13 @@ export class RunwareBase {
     includeCost,
     customTaskUUID,
     retry,
+    includeGenerationTime,
+    includePayload,
   }: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
+
+    const startTime = Date.now();
 
     try {
       return await asyncRetry(
@@ -928,14 +990,16 @@ export class RunwareBase {
           await this.ensureConnection();
           const taskUUID = customTaskUUID || getUUID();
 
-          this.send({
+          const payload = {
             prompt,
             taskUUID,
             promptMaxLength,
             promptVersions,
             ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
             taskType: ETaskType.PROMPT_ENHANCE,
-          });
+          };
+
+          this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -964,6 +1028,12 @@ export class RunwareBase {
           );
 
           lis.destroy();
+
+          this.insertAdditionalResponse({
+            response: response,
+            payload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
           return response as IEnhancedPrompt[];
         },
         {
@@ -1053,6 +1123,8 @@ export class RunwareBase {
       retry,
       customTaskUUID,
       numberResults,
+      includeGenerationTime,
+      includePayload,
       ...photoMakerPayload
     } = payload;
 
@@ -1060,6 +1132,8 @@ export class RunwareBase {
     let lis: any = undefined;
     let taskUUIDs: string[] = [];
     let retryCount = 0;
+
+    const startTime = Date.now();
 
     try {
       return await asyncRetry(
@@ -1075,23 +1149,28 @@ export class RunwareBase {
 
           const imageRemaining = numberResults - imagesWithSimilarTask.length;
 
-          this.send({
+          const payload = {
             ...photoMakerPayload,
             ...(photoMakerPayload.seed
               ? { seed: photoMakerPayload.seed }
               : { seed: getRandomSeed() }),
             ...(moreOptions ?? {}),
-            numberResults: imageRemaining,
             taskUUID,
             taskType: ETaskType.PHOTO_MAKER,
+            numberResults,
+          };
+
+          this.send({
+            ...payload,
+            numberResults: imageRemaining,
           });
 
           lis = this.listenToImages({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
-            positivePrompt: photoMakerPayload.positivePrompt,
-            // negativePrompt: payload.ne,
+            requestPayload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
           });
 
           const promise = await this.getSimilarImages({
@@ -1163,25 +1242,36 @@ export class RunwareBase {
   protected baseSingleRequest = async <T>({
     payload,
     debugKey,
+    isMultiple,
   }: {
     payload: Record<string, any>;
     debugKey: string;
+    isMultiple?: boolean;
   }): Promise<T> => {
-    const { retry, customTaskUUID, ...restPayload } = payload;
+    const {
+      retry,
+      customTaskUUID,
+      includePayload,
+      includeGenerationTime,
+      ...restPayload
+    } = payload;
 
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
+
+    const startTime = Date.now();
 
     try {
       return await asyncRetry(
         async () => {
           await this.ensureConnection();
           const taskUUID = customTaskUUID || getUUID();
-
-          this.send({
+          const payload = {
             ...restPayload,
             taskUUID,
-          });
+          };
+
+          this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -1189,7 +1279,10 @@ export class RunwareBase {
 
           const response = await getIntervalWithPromise(
             ({ resolve, reject }) => {
-              const response = this.getSingleMessage({ taskUUID });
+              // console.log("multiple", isMultiple);
+              const response = isMultiple
+                ? this.getMultipleMessages({ taskUUID })
+                : this.getSingleMessage({ taskUUID });
               if (!response) return;
 
               if (response?.error) {
@@ -1208,6 +1301,12 @@ export class RunwareBase {
               timeoutDuration: this._timeoutDuration,
             }
           );
+
+          this.insertAdditionalResponse({
+            response: response,
+            payload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
 
           lis.destroy();
           return response as T;
@@ -1371,6 +1470,35 @@ export class RunwareBase {
     const errorValue = this._globalMessages[taskUUID];
     if (!value && !errorValue) return null;
     return errorValue?.error ? errorValue : value;
+  };
+  private getMultipleMessages = ({ taskUUID }: { taskUUID: string }) => {
+    // console.log("global", this._globalMessages);
+    const value = this._globalMessages[taskUUID]?.[0];
+    const mainValue = this._globalMessages[taskUUID];
+    if (!value && !mainValue) return null;
+    return mainValue;
+  };
+
+  private insertAdditionalResponse = <T>({
+    response,
+    payload,
+    startTime,
+  }: {
+    response: T;
+    payload?: Record<string, any>;
+    startTime?: number;
+  }) => {
+    if (!payload && !startTime) return;
+    const res = response as any;
+    res.additionalResponse = {};
+
+    if (!!payload) {
+      (response as any).additionalResponse.payload = payload;
+    }
+    if (!!startTime) {
+      (response as any).additionalResponse.generationTime =
+        Date.now() - startTime;
+    }
   };
 
   private handleIncompleteImages({
