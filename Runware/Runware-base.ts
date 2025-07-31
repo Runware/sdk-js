@@ -435,6 +435,7 @@ export class RunwareBase {
       referenceImages,
       includeGenerationTime,
       includePayload,
+      ...rest
     }: // imageSize,
     // gScale,
     IRequestImage,
@@ -526,7 +527,7 @@ export class RunwareBase {
         }),
         ...evaluateNonTrue({ key: "steps", value: steps }),
         ...(promptWeighting ? { promptWeighting } : {}),
-        ...(seed ? { seed: seed } : { seed: getRandomSeed() }),
+        ...(seed ? { seed: seed } : {}),
         ...(scheduler ? { scheduler } : {}),
         ...(refiner ? { refiner } : {}),
         ...(outpaint ? { outpaint } : {}),
@@ -541,6 +542,7 @@ export class RunwareBase {
         ...(acceleratorOptions ? { acceleratorOptions } : {}),
         ...(advancedFeatures ? { advancedFeatures } : {}),
         ...(referenceImages?.length ? { referenceImages } : {}),
+        ...rest,
         ...(moreOptions ?? {}),
       };
 
@@ -811,7 +813,6 @@ export class RunwareBase {
   ): Promise<IVideoToImage[] | IVideoToImage> => {
     const { skipResponse, ...rest } = payload;
     try {
-      console.log("payload", payload);
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
@@ -821,8 +822,6 @@ export class RunwareBase {
 
         debugKey: "video-inference",
       });
-
-      console.log("request", request);
 
       if (skipResponse) {
         return request;

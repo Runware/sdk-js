@@ -670,6 +670,13 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
+- Allow image inference to take more dynamic params
+- Fix video output type
+
+### - v1.1.42
+
+**Added or Changed**
+
 - Release video inference
 
 ### - v1.1.40

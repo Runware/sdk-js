@@ -35,6 +35,7 @@ export type RunwareBaseType = {
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
+export type IVideoOutputFormat = "MP4" | "WEBM" | "MOV";
 
 export interface IAdditionalResponsePayload {
   includePayload?: boolean;
@@ -193,6 +194,8 @@ export interface IRequestImage extends IAdditionalResponsePayload {
   onPartialImages?: (images: IImage[], error?: IError) => void;
   retry?: number;
   // gScale?: number;
+
+  [key: string]: any;
 }
 
 export type TAcceleratorOptions =
@@ -258,7 +261,7 @@ export interface IRemoveImageBackground extends IRequestImageToText {
 
 export interface IRequestVideo extends IRequestImageToText {
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IVideoOutputFormat;
   outputQuality?: number;
   uploadEndpoint?: string;
   checkNSFW?: boolean;
