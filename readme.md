@@ -99,6 +99,7 @@ const images = await runware.requestImages({
 	lora?: ILora[];
   	retry?: number;
 	ipAdapters?: IipAdapters[];
+	providerSettings?: IProviderSettings;
 	embeddings?: IEmbedding[];
 	outpaint: IOutpaint;
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
