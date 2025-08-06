@@ -144,4 +144,26 @@ describe("When user request an image", async () => {
 
     expect(listenToImages).toHaveBeenCalledTimes(2);
   });
+
+  test("it should request providerSettings", async() => {
+    const sendSpy = vi.spyOn(runware as any, "send");
+
+    const providerSettings = {
+      bfl: {
+        promptUpsampling: true,
+        safetyTolerance: 4,
+        raw: true,
+      },
+    };
+
+    await runware.requestImages({
+      ...testExamples.imageReq,
+      providerSettings
+    });
+
+    expect(sendSpy).toHaveBeenCalledWith({
+      ...testExamples.imageRes,
+      providerSettings
+    });
+  });
 });

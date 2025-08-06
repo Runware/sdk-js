@@ -181,6 +181,7 @@ export interface IRequestImage extends IAdditionalResponsePayload {
   lora?: ILora[];
   embeddings?: IEmbedding[];
   ipAdapters?: IipAdapter[];
+  providerSettings?: IProviderSettings;
   outpaint?: IOutpaint;
   refiner?: IRefiner;
   acceleratorOptions?: TAcceleratorOptions;
@@ -222,6 +223,21 @@ export interface IipAdapter {
   weight: number;
   guideImage: string;
 }
+
+export interface IBflProviderSettings {
+  promptUpsampling?: boolean;
+  safetyTolerance?: number;
+  raw?: boolean;
+}
+
+export type ProviderSettings = {
+  bfl: IBflProviderSettings;
+};
+
+export type IProviderSettings = RequireOnlyOne<
+  ProviderSettings,
+  keyof ProviderSettings
+>;
 
 export interface IRefiner {
   model: string;

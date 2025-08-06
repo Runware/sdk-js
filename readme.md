@@ -99,6 +99,7 @@ const images = await runware.requestImages({
 	lora?: ILora[];
   	retry?: number;
 	ipAdapters?: IipAdapters[];
+	providerSettings?: IProviderSettings;
 	embeddings?: IEmbedding[];
 	outpaint: IOutpaint;
 	onPartialImages?: (images: IImage[], error: IError) =>  void;
@@ -665,6 +666,12 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.44
+
+**Added or Changed**
+
+- Added providerSettings
 
 ### - v1.1.42
 
