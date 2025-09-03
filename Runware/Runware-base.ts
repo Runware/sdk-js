@@ -869,15 +869,6 @@ export class RunwareBase {
       if (inputAudio) {
         this._warnOnUpload(inputAudio, "audio");
 
-        if (
-          inputAudio instanceof File ||
-          (typeof inputAudio === "string" && !isValidUUID(inputAudio))
-        ) {
-          console.warn(
-            "Longer time for inference because of upload, we advise you upload the media separately and supply the uuid to have a faster inference"
-          );
-        }
-
         const uploadedAudio = await this.uploadMedia(inputAudio);
         if (uploadedAudio) {
           audioUUID = uploadedAudio.mediaUUID;
