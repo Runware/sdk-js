@@ -299,6 +299,22 @@ export class RunwareBase {
     }
   };
 
+  private _warnOnUpload = (
+    media: File | string | undefined,
+    mediaType: "audio" | "video"
+  ) => {
+    if (!media) return;
+
+    if (
+      media instanceof File ||
+      (typeof media === "string" && !isValidUUID(media))
+    ) {
+      console.warn(
+        `Longer time for inference because of ${mediaType} upload, we advise you upload the media separately and supply the uuid to have a faster inference`
+      );
+    }
+  };
+
   private listenToImages({
     onPartialImages,
     taskUUID,
@@ -851,9 +867,21 @@ export class RunwareBase {
     try {
       let audioUUID: string | null = null;
       if (inputAudio) {
+        this._warnOnUpload(inputAudio, "audio");
+
+        if (
+          inputAudio instanceof File ||
+          (typeof inputAudio === "string" && !isValidUUID(inputAudio))
+        ) {
+          console.warn(
+            "Longer time for inference because of upload, we advise you upload the media separately and supply the uuid to have a faster inference"
+          );
+        }
+
         const uploadedAudio = await this.uploadMedia(inputAudio);
-        if (!uploadedAudio) return [];
-        audioUUID = uploadedAudio.mediaUUID;
+        if (uploadedAudio) {
+          audioUUID = uploadedAudio.mediaUUID;
+        }
       }
 
       const request = await this.baseSingleRequest<IVideoToImage>({
@@ -1282,7 +1310,7 @@ export class RunwareBase {
     });
   };
 
-  mediaUpload = async (
+  mediaStorage = async (
     payload: TMediaStorage
   ): Promise<TMediaStorageResponse> => {
     return this.baseSingleRequest({

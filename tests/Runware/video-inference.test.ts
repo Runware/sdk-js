@@ -34,7 +34,7 @@ describe("when user requests audio to video", async () => {
 
   beforeAll(async () => {
     vi.spyOn(runware as any, "uploadMedia").mockReturnValue(
-      testExamples.mediaUploadRes
+      testExamples.mediaStorageRes
     );
   });
 
@@ -67,7 +67,7 @@ describe("when user requests audio to video", async () => {
       payload: {
         model: "audio-to-video-model",
         positivePrompt: "a dancing robot",
-        inputAudio: testExamples.mediaUploadRes.mediaUUID,
+        inputAudio: testExamples.mediaStorageRes.mediaUUID,
         deliveryMethod: "async",
         taskType: ETaskType.VIDEO_INFERENCE,
       },

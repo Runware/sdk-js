@@ -40,7 +40,7 @@ export const testExamples = {
     taskUUID: "50836053-a0ee-4cf5-b9d6-ae7c5d140ada",
     taskType: ETaskType.IMAGE_UPLOAD,
   },
-  mediaUploadRes: {
+  mediaStorageRes: {
     mediaUUID: mockNewMediaUID,
     mediaURL: "data:audio/mp3;base64,iVBORw0KGgoAAAA...",
     taskUUID: "50836053-a0ee-4cf5-b9d6-ae7c5d140ada",

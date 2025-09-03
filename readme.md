@@ -671,7 +671,7 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
-- Added mediaUpload()
+- Added mediaStorage()
 - Updated video inference to accept an audio input
 
 ### - v1.1.44
