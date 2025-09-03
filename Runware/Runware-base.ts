@@ -38,6 +38,9 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  UploadMediaType,
+  TMediaStorage,
+  TMediaStorageResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -258,6 +261,37 @@ export class RunwareBase {
           imageUUID: imageBase64,
           taskUUID,
           taskType: ETaskType.IMAGE_UPLOAD,
+        };
+      });
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  private uploadMedia = async (
+    file: File | string
+  ): Promise<UploadMediaType | null> => {
+    try {
+      return await asyncRetry(async () => {
+        const taskUUID = getUUID();
+
+        if (typeof file === "string" && isValidUUID(file)) {
+          return {
+            mediaURL: file,
+            mediaUUID: file,
+            taskUUID,
+            taskType: ETaskType.MEDIA_STORAGE,
+          };
+        }
+
+        const mediaBase64 =
+          typeof file === "string" ? file : await fileToBase64(file);
+
+        return {
+          mediaURL: mediaBase64,
+          mediaUUID: mediaBase64,
+          taskUUID,
+          taskType: ETaskType.MEDIA_STORAGE,
         };
       });
     } catch (e) {
@@ -813,11 +847,19 @@ export class RunwareBase {
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const { skipResponse, ...rest } = payload;
+    const { skipResponse, inputAudio, ...rest } = payload;
     try {
+      let audioUUID: string | null = null;
+      if (inputAudio) {
+        const uploadedAudio = await this.uploadMedia(inputAudio);
+        if (!uploadedAudio) return [];
+        audioUUID = uploadedAudio.mediaUUID;
+      }
+
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
+          ...(audioUUID ? { inputAudio: audioUUID } : {}),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },
@@ -1237,6 +1279,18 @@ export class RunwareBase {
         taskType: ETaskType.IMAGE_UPLOAD,
       },
       debugKey: "image-upload",
+    });
+  };
+
+  mediaUpload = async (
+    payload: TMediaStorage
+  ): Promise<TMediaStorageResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.MEDIA_STORAGE,
+      },
+      debugKey: "media-storage",
     });
   };
 

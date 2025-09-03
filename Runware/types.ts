@@ -11,6 +11,7 @@ export enum SdkType {
 export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
+  MEDIA_STORAGE = "mediaStorage",
   IMAGE_UPSCALE = "imageUpscale",
   IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
   VIDEO_INFERENCE = "videoInference",
@@ -354,6 +355,14 @@ export type UploadImageType = {
   taskUUID: string;
   taskType: ETaskType;
 };
+
+export type UploadMediaType = {
+  mediaURL: string;
+  mediaUUID: string;
+  taskUUID: string;
+  taskType: ETaskType.MEDIA_STORAGE;
+};
+
 
 export type GetWithPromiseCallBackType = ({
   resolve,
@@ -702,6 +711,19 @@ export type TImageUploadResponse = {
   taskUUID: string;
   imageUUID: number;
   imageURL: string;
+};
+
+export type TMediaStorage = {
+  media: string;
+  type: "image" | "audio";
+  customTaskUUID?: string;
+  retry?: number;
+};
+
+export type TMediaStorageResponse = {
+  taskUUID: string;
+  mediaUUID: string;
+  mediaURL: string;
 };
 
 export type TImageMaskingResponse = {
