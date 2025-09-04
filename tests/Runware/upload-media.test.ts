@@ -15,8 +15,15 @@ vi.mock("../../Runware/utils", async () => {
 describe("When user uploads media (e.g., audio):", async () => {
   const { mockServer, runware } = await startMockServer();
 
+   // Mock the private getFileSize method before tests run
+  const getFileSizeSpy = vi
+    .spyOn(runware as any, "getFileSize")
+    .mockResolvedValue(1000); // Mock a file size of 1000 bytes
+
   afterEach(() => {
     vi.clearAllMocks();
+    // Restore the spy to its original implementation after each test
+    getFileSizeSpy.mockResolvedValue(1000);
   });
 
   beforeEach(() => {
