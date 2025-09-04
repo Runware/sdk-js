@@ -20,10 +20,16 @@ describe("When user uploads media (e.g., audio):", async () => {
     .spyOn(runware as any, "getFileSize")
     .mockResolvedValue(1000); // Mock a file size of 1000 bytes
 
+    // Mock the private isAudioFile method
+  const isAudioFileSpy = vi
+    .spyOn(runware as any, "isAudioFile")
+    .mockReturnValue(true);
+
   afterEach(() => {
     vi.clearAllMocks();
     // Restore the spy to its original implementation after each test
     getFileSizeSpy.mockResolvedValue(1000);
+    isAudioFileSpy.mockReturnValue(true);
   });
 
   beforeEach(() => {
@@ -48,5 +54,19 @@ describe("When user uploads media (e.g., audio):", async () => {
     });
     await runware["uploadMedia"](mockAudioFile);
     expect(fileToBase64).toHaveBeenCalledWith(mockAudioFile);
+  });
+
+  test("it should throw an error if the file size is over 5MB", async () => {
+    // 6MB in bytes
+    const largeFileSize = 6 * 1024 * 1024;
+    getFileSizeSpy.mockResolvedValue(largeFileSize);
+
+    const mockAudioFile = new File(["dummy audio"], "large-test.mp3", {
+      type: "audio/mp3",
+    });
+
+    await expect(runware["uploadMedia"](mockAudioFile)).rejects.toThrow(
+      "File size (6MB) exceeds the 5MB limit."
+    );
   });
 });
