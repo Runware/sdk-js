@@ -60,7 +60,6 @@ import {
   removeListener,
 } from "./utils";
 
-import { promises as fs } from "fs";
 
 // let allImages: IImage[] = [];
 
@@ -274,7 +273,9 @@ export class RunwareBase {
     // Server-side (Node.js) environment
     else if (typeof file === "string") {
       try {
-        const stats = await fs.stat(file);
+        // Dynamically import 'fs' only for Node.js environment
+        const fs = await import("fs");
+        const stats = await fs.promises.stat(file);
         return stats.size; // Returns size in bytes
       } catch (error) {
         console.error("Error getting file stats on server:", error);
