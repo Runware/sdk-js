@@ -716,7 +716,7 @@ export type TImageUploadResponse = {
 
 export type TMediaStorage = {
   media: string;
-  type: "image" | "audio";
+  type: "audio";
   customTaskUUID?: string;
   retry?: number;
 };

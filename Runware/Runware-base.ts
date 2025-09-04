@@ -47,6 +47,7 @@ import {
   LISTEN_TO_IMAGES_KEY,
   TIMEOUT_DURATION,
   accessDeepObject,
+  convertBytesToMB,
   delay,
   evaluateNonTrue,
   fileToBase64,
@@ -59,7 +60,11 @@ import {
   removeListener,
 } from "./utils";
 
+import { promises as fs } from "fs";
+
 // let allImages: IImage[] = [];
+
+const MAX_AUDIO_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export class RunwareBase {
   _ws: ReconnectingWebsocketProps | any;
@@ -237,6 +242,48 @@ export class RunwareBase {
     removeFromAray(this._listeners, lis);
   }
 
+  private isAudioFile = (file: File | string): boolean => {
+    // Client-side (browser) check using MIME type
+    if (typeof window !== "undefined" && file instanceof File) {
+      return file.type.startsWith("audio/");
+    }
+    // Server-side (Node.js) check using file extension
+    else if (typeof file === "string") {
+      const audioExtensions = [
+        ".mp3",
+        ".wav",
+        ".flac",
+        ".aac",
+        ".ogg",
+        ".m4a",
+        ".wma",
+      ];
+      const lowercasedFile = file.toLowerCase();
+      return audioExtensions.some((ext) => lowercasedFile.endsWith(ext));
+    }
+    return false;
+  };
+
+  private getFileSize = async (
+    file: File | string
+  ): Promise<number> => {
+    // Client-side (browser) environment
+    if (typeof window !== "undefined" && file instanceof File) {
+      return file.size; // Returns size in bytes
+    }
+    // Server-side (Node.js) environment
+    else if (typeof file === "string") {
+      try {
+        const stats = await fs.stat(file);
+        return stats.size; // Returns size in bytes
+      } catch (error) {
+        console.error("Error getting file stats on server:", error);
+        throw new Error(`Could not find or access file at path: ${file}`);
+      }
+    }
+    throw new Error("Unsupported file type for getting file size.");
+  };
+
   private uploadImage = async (
     file: File | string
   ): Promise<UploadImageType | null> => {
@@ -283,6 +330,24 @@ export class RunwareBase {
             taskType: ETaskType.MEDIA_STORAGE,
           };
         }
+
+        const fileSize = await this.getFileSize(file);
+        if (this.isAudioFile(file) && fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
+          throw new Error(
+            `File size (${convertBytesToMB(fileSize)}MB) exceeds the ${convertBytesToMB(MAX_AUDIO_FILE_SIZE_BYTES)}MB limit.`
+          );
+        }
+
+        // TODO: For direct upload to media storage endpoint
+        // if (file instanceof File) {
+        //   const response = await this.mediaStorage({ media: file });
+        //   return {
+        //     mediaURL: response.mediaUUID,
+        //     mediaUUID: response.mediaUUID,
+        //     taskUUID,
+        //     taskType: ETaskType.MEDIA_STORAGE,
+        //   };
+        // }
 
         const mediaBase64 =
           typeof file === "string" ? file : await fileToBase64(file);
