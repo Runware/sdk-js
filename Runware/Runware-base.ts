@@ -54,6 +54,7 @@ import {
   isValidUUID,
   removeFromAray,
   removeListener,
+  isUrl,
 } from "./utils";
 
 // let allImages: IImage[] = [];
@@ -813,11 +814,22 @@ export class RunwareBase {
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const { skipResponse, ...rest } = payload;
+    const { skipResponse, inputAudios, ...rest } = payload;
     try {
+      if (inputAudios?.length) {
+        for (const audio of inputAudios) {
+          if (!isUrl(audio) && !isValidUUID(audio)) {
+            throw new Error(
+              `Invalid audio source: "${audio}". Only public URLs or media UUIDs are supported for audio.`
+            );
+          }
+        }
+      }
+
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
+          ...(inputAudios?.length ? { inputAudios } : {}),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },

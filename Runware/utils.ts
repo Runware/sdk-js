@@ -320,3 +320,11 @@ export const getIntervalAsyncWithPromise = (
     }, pollingInterval);
   });
 };
+
+export const isUrl = (value: any): value is string => {
+  return (
+    typeof value === "string" &&
+    (value.startsWith("http:") ||
+      value.startsWith("https:"))
+  );
+};
