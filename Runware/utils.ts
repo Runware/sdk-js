@@ -325,3 +325,12 @@ export const convertBytesToMB = (bytes: number): number => {
   if (bytes <= 0) return 0;
   return parseFloat((bytes / (1024 * 1024)).toFixed(2));
 };
+
+export const isUrlOrDataUri = (value: any): value is string => {
+  return (
+    typeof value === "string" &&
+    (value.startsWith("data:") ||
+      value.startsWith("http:") ||
+      value.startsWith("https:"))
+  );
+};

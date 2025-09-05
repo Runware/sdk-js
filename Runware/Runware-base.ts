@@ -58,8 +58,8 @@ import {
   isValidUUID,
   removeFromAray,
   removeListener,
+  isUrlOrDataUri,
 } from "./utils";
-
 
 // let allImages: IImage[] = [];
 
@@ -332,11 +332,17 @@ export class RunwareBase {
           };
         }
 
-        const fileSize = await this.getFileSize(file);
-        if (this.isAudioFile(file) && fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
-          throw new Error(
-            `File size (${convertBytesToMB(fileSize)}MB) exceeds the ${convertBytesToMB(MAX_AUDIO_FILE_SIZE_BYTES)}MB limit.`
-          );
+        if (!isUrlOrDataUri(file)) {
+          const fileSize = await this.getFileSize(file);
+          if (this.isAudioFile(file) && fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
+            throw new Error(
+              `File size (${convertBytesToMB(
+                fileSize
+              )}MB) exceeds the ${convertBytesToMB(
+                MAX_AUDIO_FILE_SIZE_BYTES
+              )}MB limit.`
+            );
+          }
         }
 
         // TODO: For direct upload to media storage endpoint
@@ -934,8 +940,14 @@ export class RunwareBase {
       let audioUUIDs: string[] = [];
 
       if (inputAudios?.length) {
-        for (const inputAudio of inputAudios) {
-          this._warnOnUpload(inputAudio, "audio");
+        if (
+          inputAudios.some(
+            (media) =>
+              media instanceof File ||
+              (typeof media === "string" && !isValidUUID(media))
+          )
+        ) {
+          this._warnOnUpload(inputAudios[0], "audio");
         }
 
         const uploadedAudios = await Promise.all(
