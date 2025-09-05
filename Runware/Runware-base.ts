@@ -38,16 +38,12 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
-  UploadMediaType,
-  TMediaStorage,
-  TMediaStorageResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
   LISTEN_TO_IMAGES_KEY,
   TIMEOUT_DURATION,
   accessDeepObject,
-  convertBytesToMB,
   delay,
   evaluateNonTrue,
   fileToBase64,
@@ -58,12 +54,10 @@ import {
   isValidUUID,
   removeFromAray,
   removeListener,
-  isUrlOrDataUri,
+  isUrl,
 } from "./utils";
 
 // let allImages: IImage[] = [];
-
-const MAX_AUDIO_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export class RunwareBase {
   _ws: ReconnectingWebsocketProps | any;
@@ -241,50 +235,6 @@ export class RunwareBase {
     removeFromAray(this._listeners, lis);
   }
 
-  private isAudioFile = (file: File | string): boolean => {
-    // Client-side (browser) check using MIME type
-    if (typeof window !== "undefined" && file instanceof File) {
-      return file.type.startsWith("audio/");
-    }
-    // Server-side (Node.js) check using file extension
-    else if (typeof file === "string") {
-      const audioExtensions = [
-        ".mp3",
-        ".wav",
-        ".flac",
-        ".aac",
-        ".ogg",
-        ".m4a",
-        ".wma",
-      ];
-      const lowercasedFile = file.toLowerCase();
-      return audioExtensions.some((ext) => lowercasedFile.endsWith(ext));
-    }
-    return false;
-  };
-
-  private getFileSize = async (
-    file: File | string
-  ): Promise<number> => {
-    // Client-side (browser) environment
-    if (typeof window !== "undefined" && file instanceof File) {
-      return file.size; // Returns size in bytes
-    }
-    // Server-side (Node.js) environment
-    else if (typeof file === "string") {
-      try {
-        // Dynamically import 'fs' only for Node.js environment
-        const fs = await import("fs");
-        const stats = await fs.promises.stat(file);
-        return stats.size; // Returns size in bytes
-      } catch (error) {
-        console.error("Error getting file stats on server:", error);
-        throw new Error(`Could not find or access file at path: ${file}`);
-      }
-    }
-    throw new Error("Unsupported file type for getting file size.");
-  };
-
   private uploadImage = async (
     file: File | string
   ): Promise<UploadImageType | null> => {
@@ -313,80 +263,6 @@ export class RunwareBase {
       });
     } catch (e) {
       throw e;
-    }
-  };
-
-  private uploadMedia = async (
-    file: File | string
-  ): Promise<UploadMediaType | null> => {
-    try {
-      return await asyncRetry(async () => {
-        const taskUUID = getUUID();
-
-        if (typeof file === "string" && isValidUUID(file)) {
-          return {
-            mediaURL: file,
-            mediaUUID: file,
-            taskUUID,
-            taskType: ETaskType.MEDIA_STORAGE,
-          };
-        }
-
-        if (!isUrlOrDataUri(file)) {
-          const fileSize = await this.getFileSize(file);
-          if (this.isAudioFile(file) && fileSize > MAX_AUDIO_FILE_SIZE_BYTES) {
-            throw new Error(
-              `File size (${convertBytesToMB(
-                fileSize
-              )}MB) exceeds the ${convertBytesToMB(
-                MAX_AUDIO_FILE_SIZE_BYTES
-              )}MB limit.`
-            );
-          }
-        }
-
-        // TODO: For direct upload to media storage endpoint
-        // if (file instanceof File) {
-        //   const response = await this.mediaStorage({ media: file });
-        //   return {
-        //     mediaURL: response.mediaUUID,
-        //     mediaUUID: response.mediaUUID,
-        //     taskUUID,
-        //     taskType: ETaskType.MEDIA_STORAGE,
-        //   };
-        // }
-
-        const mediaBase64 =
-          typeof file === "string" ? file : await fileToBase64(file);
-
-        return {
-          mediaURL: mediaBase64,
-          mediaUUID: mediaBase64,
-          taskUUID,
-          taskType: ETaskType.MEDIA_STORAGE,
-        };
-      });
-    } catch (e) {
-      throw e;
-    }
-  };
-
-  private _warnOnUpload = (
-    media: (File | string)[] | File | string | undefined,
-    mediaType: "audio" | "video"
-  ) => {
-    if (!media) return;
-
-    const mediaArray = Array.isArray(media) ? media : [media];
-
-    if (
-      mediaArray.some(
-        (m) => m instanceof File || (typeof m === "string" && !isValidUUID(m))
-      )
-    ) {
-      console.warn(
-        `Longer time for inference because of ${mediaType} upload, we advise you upload the media separately and supply the uuid to have a faster inference`
-      );
     }
   };
 
@@ -942,7 +818,7 @@ export class RunwareBase {
     try {
       if (inputAudios?.length) {
         for (const audio of inputAudios) {
-          if (!isUrlOrDataUri(audio) && !isValidUUID(audio)) {
+          if (!isUrl(audio) && !isValidUUID(audio)) {
             throw new Error(
               `Invalid audio source: "${audio}". Only public URLs or media UUIDs are supported for audio.`
             );
@@ -1375,18 +1251,6 @@ export class RunwareBase {
       debugKey: "image-upload",
     });
   };
-
-  // mediaStorage = async (
-  //   payload: TMediaStorage
-  // ): Promise<TMediaStorageResponse> => {
-  //   return this.baseSingleRequest({
-  //     payload: {
-  //       ...payload,
-  //       taskType: ETaskType.MEDIA_STORAGE,
-  //     },
-  //     debugKey: "media-storage",
-  //   });
-  // };
 
   protected baseSingleRequest = async <T>({
     payload,

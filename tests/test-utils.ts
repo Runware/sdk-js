@@ -7,7 +7,6 @@ export const mockTaskUUID = "UNIQUE_UID";
 export const mockTextImageUpload = "IMAGE_UPLOAD";
 export const mockFileToBase64 = "FILE_TO_BASE_64";
 export const mockNewImageUID = "NEW_IMAGE_UID";
-export const mockNewMediaUID = "NEW_MEDIA_UID";
 
 export const mockUploadFile = new MockFile().create(
   "pic.jpg",
@@ -39,12 +38,6 @@ export const testExamples = {
     imageURL: "data:image/png;base64,iVBORw0KGgoAAAA...",
     taskUUID: "50836053-a0ee-4cf5-b9d6-ae7c5d140ada",
     taskType: ETaskType.IMAGE_UPLOAD,
-  },
-  mediaStorageRes: {
-    mediaUUID: mockNewMediaUID,
-    mediaURL: "data:audio/mp3;base64,iVBORw0KGgoAAAA...",
-    taskUUID: "50836053-a0ee-4cf5-b9d6-ae7c5d140ada",
-    taskType: ETaskType.MEDIA_STORAGE,
   },
   controlNet: {
     endStep: 20,
