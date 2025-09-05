@@ -372,14 +372,17 @@ export class RunwareBase {
   };
 
   private _warnOnUpload = (
-    media: File | string | undefined,
+    media: (File | string)[] | File | string | undefined,
     mediaType: "audio" | "video"
   ) => {
     if (!media) return;
 
+    const mediaArray = Array.isArray(media) ? media : [media];
+
     if (
-      media instanceof File ||
-      (typeof media === "string" && !isValidUUID(media))
+      mediaArray.some(
+        (m) => m instanceof File || (typeof m === "string" && !isValidUUID(m))
+      )
     ) {
       console.warn(
         `Longer time for inference because of ${mediaType} upload, we advise you upload the media separately and supply the uuid to have a faster inference`
@@ -940,15 +943,7 @@ export class RunwareBase {
       let audioUUIDs: string[] = [];
 
       if (inputAudios?.length) {
-        if (
-          inputAudios.some(
-            (media) =>
-              media instanceof File ||
-              (typeof media === "string" && !isValidUUID(media))
-          )
-        ) {
-          this._warnOnUpload(inputAudios[0], "audio");
-        }
+        this._warnOnUpload(inputAudios, "audio");
 
         const uploadedAudios = await Promise.all(
           inputAudios.map((audio) => this.uploadMedia(audio))
