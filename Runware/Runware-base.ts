@@ -940,24 +940,20 @@ export class RunwareBase {
   ): Promise<IVideoToImage[] | IVideoToImage> => {
     const { skipResponse, inputAudios, ...rest } = payload;
     try {
-      let audioUUIDs: string[] = [];
-
       if (inputAudios?.length) {
-        this._warnOnUpload(inputAudios, "audio");
-
-        const uploadedAudios = await Promise.all(
-          inputAudios.map((audio) => this.uploadMedia(audio))
-        );
-
-        audioUUIDs = uploadedAudios
-          .map((uploaded) => uploaded?.mediaUUID)
-          .filter((uuid): uuid is string => !!uuid);
+        for (const audio of inputAudios) {
+          if (!isUrlOrDataUri(audio) && !isValidUUID(audio)) {
+            throw new Error(
+              `Invalid audio source: "${audio}". Only public URLs or media UUIDs are supported for audio.`
+            );
+          }
+        }
       }
 
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
-          ...(audioUUIDs.length ? { inputAudios: audioUUIDs } : {}),
+          ...(inputAudios?.length ? { inputAudios } : {}),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },
@@ -1380,17 +1376,17 @@ export class RunwareBase {
     });
   };
 
-  mediaStorage = async (
-    payload: TMediaStorage
-  ): Promise<TMediaStorageResponse> => {
-    return this.baseSingleRequest({
-      payload: {
-        ...payload,
-        taskType: ETaskType.MEDIA_STORAGE,
-      },
-      debugKey: "media-storage",
-    });
-  };
+  // mediaStorage = async (
+  //   payload: TMediaStorage
+  // ): Promise<TMediaStorageResponse> => {
+  //   return this.baseSingleRequest({
+  //     payload: {
+  //       ...payload,
+  //       taskType: ETaskType.MEDIA_STORAGE,
+  //     },
+  //     debugKey: "media-storage",
+  //   });
+  // };
 
   protected baseSingleRequest = async <T>({
     payload,
