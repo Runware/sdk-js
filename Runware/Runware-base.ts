@@ -929,22 +929,28 @@ export class RunwareBase {
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const { skipResponse, inputAudio, ...rest } = payload;
+    const { skipResponse, inputAudios, ...rest } = payload;
     try {
-      let audioUUID: string | null = null;
-      if (inputAudio) {
-        this._warnOnUpload(inputAudio, "audio");
+      let audioUUIDs: string[] = [];
 
-        const uploadedAudio = await this.uploadMedia(inputAudio);
-        if (uploadedAudio) {
-          audioUUID = uploadedAudio.mediaUUID;
+      if (inputAudios?.length) {
+        for (const inputAudio of inputAudios) {
+          this._warnOnUpload(inputAudio, "audio");
         }
+
+        const uploadedAudios = await Promise.all(
+          inputAudios.map((audio) => this.uploadMedia(audio))
+        );
+
+        audioUUIDs = uploadedAudios
+          .map((uploaded) => uploaded?.mediaUUID)
+          .filter((uuid): uuid is string => !!uuid);
       }
 
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
-          ...(audioUUID ? { inputAudio: audioUUID } : {}),
+          ...(audioUUIDs.length ? { inputAudios: audioUUIDs } : {}),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },

@@ -294,7 +294,7 @@ export interface IRequestVideo extends IRequestImageToText {
   width?: number;
   height?: number;
   numberResults?: number;
-  inputAudio?: File | string;
+  inputAudios?: (File | string)[];
 
   skipResponse?: boolean;
   customTaskUUID?: string;
