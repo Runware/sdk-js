@@ -282,7 +282,7 @@ export interface IRequestVideo extends IRequestImageToText {
   uploadEndpoint?: string;
   checkNSFW?: boolean;
   includeCost?: boolean;
-  positivePrompt: string;
+  positivePrompt?: string;
   negativePrompt?: string;
   model: string;
   steps?: number;
@@ -294,6 +294,11 @@ export interface IRequestVideo extends IRequestImageToText {
   height?: number;
   numberResults?: number;
   inputAudios?: string[];
+  referenceVideos?: string[];
+  speech?: {
+    voice: string;
+    text: string;
+  }
 
   skipResponse?: boolean;
   customTaskUUID?: string;
