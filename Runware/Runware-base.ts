@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  TAudioInference,
+  TAudioInferenceResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -723,6 +725,8 @@ export class RunwareBase {
     retry,
     includePayload,
     includeGenerationTime,
+    inputImages,
+    ...rest
   }: IRequestImageToText): Promise<IImageToText> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
@@ -737,13 +741,33 @@ export class RunwareBase {
             ? await this.uploadImage(inputImage as File | string)
             : null;
 
+          const imagesUploaded = inputImages?.length
+            ? await Promise.all(
+                inputImages.map((image) =>
+                  this.uploadImage(image as File | string)
+                )
+              )
+            : null;
+
           const taskUUID = customTaskUUID || getUUID();
 
           const payload = {
             taskUUID,
             taskType: ETaskType.IMAGE_CAPTION,
-            inputImage: imageUploaded?.imageUUID,
+
+            ...(imageUploaded?.imageUUID
+              ? { inputImage: imageUploaded.imageUUID }
+              : {}),
+
+            ...(imagesUploaded?.length
+              ? {
+                  inputImages: imagesUploaded
+                    .map((img) => img?.imageUUID)
+                    .filter(Boolean),
+                }
+              : {}),
             ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+            ...rest,
           };
 
           this.send(payload);
@@ -850,7 +874,7 @@ export class RunwareBase {
       await getIntervalAsyncWithPromise(
         async ({ resolve, reject }) => {
           try {
-            const videos = await this.getResponse({ taskUUID });
+            const videos = await this.getResponse<IVideoToImage>({ taskUUID });
 
             // Add videos to the collection
             for (const video of videos || []) {
@@ -885,10 +909,10 @@ export class RunwareBase {
     }
   };
 
-  getResponse = async (payload: IAsyncResults): Promise<IVideoToImage[]> => {
+  getResponse = async <T>(payload: IAsyncResults): Promise<T[]> => {
     const taskUUID = payload.taskUUID;
     // const mock = getRandomTaskResponses({ count: 2, taskUUID });
-    return this.baseSingleRequest({
+    return this.baseSingleRequest<T[]>({
       payload: {
         ...payload,
         customTaskUUID: taskUUID,
@@ -910,6 +934,7 @@ export class RunwareBase {
     retry,
     includeGenerationTime,
     includePayload,
+    ...rest
   }: IUpscaleGan): Promise<IImage> => {
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
@@ -933,6 +958,7 @@ export class RunwareBase {
             ...(outputType ? { outputType } : {}),
             ...(outputQuality ? { outputQuality } : {}),
             ...(outputFormat ? { outputFormat } : {}),
+            ...rest,
           };
 
           this.send(payload);
@@ -1252,6 +1278,32 @@ export class RunwareBase {
     });
   };
 
+  audioInference = async (
+    payload: TAudioInference
+  ): Promise<TAudioInferenceResponse | TAudioInferenceResponse[]> => {
+    const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
+    try {
+      const requestMethod =
+        deliveryMethod === "sync"
+          ? this.baseSyncRequest
+          : this.baseSingleRequest;
+
+      const request = await requestMethod<TAudioInferenceResponse>({
+        payload: {
+          ...rest,
+          numberResults: rest.numberResults || 1,
+          taskType: ETaskType.AUDIO_INFERENCE,
+          deliveryMethod: deliveryMethod,
+        },
+        debugKey: "audio-inference",
+      });
+
+      return request;
+    } catch (e) {
+      throw e;
+    }
+  };
+
   protected baseSingleRequest = async <T>({
     payload,
     debugKey,
@@ -1323,6 +1375,81 @@ export class RunwareBase {
 
           lis.destroy();
           return response as T;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      throw e;
+    }
+  };
+  protected baseSyncRequest = async <T>({
+    payload,
+    debugKey,
+  }: {
+    payload: Record<string, any>;
+    debugKey: string;
+  }): Promise<T> => {
+    const {
+      retry,
+      customTaskUUID,
+      includePayload,
+      numberResults = 1,
+      onPartialRequest,
+      includeGenerationTime,
+      ...restPayload
+    } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+    let taskUUIDs: string[] = [];
+    let retryCount = 0;
+
+    const startTime = Date.now();
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          retryCount++;
+
+          const taskWithSimilarTaskUUID = this._globalImages.filter((audio) =>
+            taskUUIDs.includes(audio.taskUUID)
+          );
+
+          const taskUUID = customTaskUUID || getUUID();
+          taskUUIDs.push(taskUUID);
+          const taskRemaining = numberResults - taskWithSimilarTaskUUID.length;
+
+          const payload = {
+            ...restPayload,
+            taskUUID,
+            numberResults: taskRemaining,
+          };
+
+          this.send(payload);
+
+          lis = this.listenToImages({
+            onPartialImages: onPartialRequest,
+            taskUUID: taskUUID,
+            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_AUDIO,
+            requestPayload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
+          const promise = await this.getSimilarImages({
+            taskUUID: taskUUIDs,
+            numberResults,
+            lis,
+            debugKey,
+          });
+
+          lis.destroy();
+          return promise as T;
         },
         {
           maxRetries: totalRetry,
@@ -1437,11 +1564,13 @@ export class RunwareBase {
     numberResults,
     shouldThrowError,
     lis,
+    debugKey = "getting-images",
   }: {
     taskUUID: string | string[];
     numberResults: number;
     shouldThrowError?: boolean;
     lis: any;
+    debugKey?: string;
   }): Promise<IImage[] | IError> {
     return (await getIntervalWithPromise(
       ({ resolve, reject, intervalId }) => {
@@ -1471,7 +1600,7 @@ export class RunwareBase {
         }
       },
       {
-        debugKey: "getting images",
+        debugKey,
         shouldThrowError,
         timeoutDuration: this._timeoutDuration,
       }

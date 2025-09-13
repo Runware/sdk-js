@@ -23,6 +23,7 @@ export enum ETaskType {
   AUTHENTICATION = "authentication",
   MODEL_UPLOAD = "modelUpload",
   MODEL_SEARCH = "modelSearch",
+  AUDIO_INFERENCE = "audioInference",
 }
 
 export type RunwareBaseType = {
@@ -34,6 +35,7 @@ export type RunwareBaseType = {
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";
+export type IDeliveryType = "sync" | "async";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 export type IVideoOutputFormat = "MP4" | "WEBM" | "MOV";
 
@@ -69,6 +71,7 @@ export interface IVideoToImage {
   seed?: number;
   videoURL?: string;
 }
+
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -249,6 +252,12 @@ export interface IRequestImageToText extends IAdditionalResponsePayload {
   includeCost?: boolean;
   customTaskUUID?: string;
   retry?: number;
+
+  model?: string;
+  prompts?: string[];
+  inputImages?: string[];
+
+  [key: string]: any;
 }
 export interface IImageToText {
   taskType: ETaskType;
@@ -335,9 +344,29 @@ export interface IUpscaleGan extends IAdditionalResponsePayload {
   outputFormat?: IOutputFormat;
   includeCost?: boolean;
   outputQuality?: number;
+  revertExtra?: boolean;
+  model?: string;
 
   customTaskUUID?: string;
   retry?: number;
+
+  settings?: {
+    seed?: number;
+    controlNetWeight?: number;
+    CFGScale?: number;
+    positivePrompt?: string;
+    negativePrompt?: string;
+    scheduler?: string;
+    colorFix?: boolean;
+    tileDiffusion?: boolean;
+    clipSkip?: number;
+    steps?: number;
+    strength?: number;
+    checkNSFW?: boolean;
+    [key: string]: any;
+  };
+
+  [key: string]: any;
 }
 
 export type ReconnectingWebsocketProps = {
@@ -644,6 +673,38 @@ export type TModelSearch = {
   retry?: number;
 } & { [key: string]: any };
 
+export type TAudioInference = {
+  model: string;
+  positivePrompt: string;
+  negativePrompt?: string;
+  duration: number;
+  numberResults?: number;
+  outputFormat?: "MP3" | "WAV" | "FLAC" | "AAC" | "OGG";
+  outputType?: IOutputType;
+  webhookURL?: string;
+  deliveryMethod?: IDeliveryType;
+  uploadEndpoint?: string;
+  includeCost?: boolean;
+
+  audioSettings?: {
+    sampleRate?: number;
+    bitrate?: number;
+    [key: string]: any;
+  };
+
+  providerSettings?: {
+    elevenlabs?: {
+      music?: string;
+      [key: string]: any;
+    };
+    [key: string]: any;
+  };
+
+  // other options
+  customTaskUUID?: string;
+  retry?: number;
+} & { [key: string]: any };
+
 export type TModel = {
   air: string;
   name: string;
@@ -704,6 +765,21 @@ export type TImageUploadResponse = {
   imageUUID: number;
   imageURL: string;
 };
+export type TAudioInferenceResponse =
+  | {
+      taskType: string;
+      taskUUID: string;
+      audioUUID: string;
+      audioURL?: string;
+      audioBase64Data?: string;
+      audioDataURI?: string;
+      cost: number;
+    }
+  | {
+      taskType: string;
+      taskUUID: string;
+      status: string;
+    };
 
 export type TImageMaskingResponse = {
   taskType: string;
