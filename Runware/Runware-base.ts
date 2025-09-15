@@ -39,7 +39,7 @@ import {
   IAsyncResults,
   IVideoToImage,
   TAudioInference,
-  TAudioInferenceResponse,
+  IAudioResult,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -268,7 +268,7 @@ export class RunwareBase {
     }
   };
 
-  private listenToImages({
+  private listenToResponse({
     onPartialImages,
     taskUUID,
     groupKey,
@@ -576,7 +576,7 @@ export class RunwareBase {
 
           // const generationTime = endTime - startTime;
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
@@ -1204,7 +1204,7 @@ export class RunwareBase {
             numberResults: imageRemaining,
           });
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
@@ -1280,7 +1280,7 @@ export class RunwareBase {
 
   audioInference = async (
     payload: TAudioInference
-  ): Promise<TAudioInferenceResponse | TAudioInferenceResponse[]> => {
+  ): Promise<IAudioResult | IAudioResult[]> => {
     const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
     try {
       const requestMethod =
@@ -1288,7 +1288,7 @@ export class RunwareBase {
           ? this.baseSyncRequest
           : this.baseSingleRequest;
 
-      const request = await requestMethod<TAudioInferenceResponse>({
+      const request = await requestMethod<IAudioResult>({
         payload: {
           ...rest,
           numberResults: rest.numberResults || 1,
@@ -1399,7 +1399,7 @@ export class RunwareBase {
       customTaskUUID,
       includePayload,
       numberResults = 1,
-      onPartialRequest,
+      onPartialResponse,
       includeGenerationTime,
       ...restPayload
     } = payload;
@@ -1433,8 +1433,8 @@ export class RunwareBase {
 
           this.send(payload);
 
-          lis = this.listenToImages({
-            onPartialImages: onPartialRequest,
+          lis = this.listenToResponse({
+            onPartialImages: onPartialResponse,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_AUDIO,
             requestPayload: includePayload ? payload : undefined,

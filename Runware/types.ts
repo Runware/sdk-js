@@ -685,6 +685,7 @@ export type TAudioInference = {
   deliveryMethod?: IDeliveryType;
   uploadEndpoint?: string;
   includeCost?: boolean;
+  onPartialResponse?: (images: IImage[], error?: IError) => void;
 
   audioSettings?: {
     sampleRate?: number;
@@ -765,21 +766,22 @@ export type TImageUploadResponse = {
   imageUUID: number;
   imageURL: string;
 };
-export type TAudioInferenceResponse =
-  | {
-      taskType: string;
-      taskUUID: string;
-      audioUUID: string;
-      audioURL?: string;
-      audioBase64Data?: string;
-      audioDataURI?: string;
-      cost: number;
-    }
-  | {
-      taskType: string;
-      taskUUID: string;
-      status: string;
-    };
+
+export type IAudioSyncResult = {
+  taskType: string;
+  taskUUID: string;
+  audioUUID: string;
+  audioURL?: string;
+  audioBase64Data?: string;
+  audioDataURI?: string;
+  cost: number;
+};
+export type IAuidoAsyncResult = {
+  taskType: string;
+  taskUUID: string;
+  status: string;
+};
+export type IAudioResult = IAudioSyncResult | IAuidoAsyncResult;
 
 export type TImageMaskingResponse = {
   taskType: string;
