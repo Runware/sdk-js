@@ -252,6 +252,7 @@ export const removeAllKeyListener = ({
 
 export enum LISTEN_TO_IMAGES_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
+  REQUEST_AUDIO = "REQUEST_AUDIO",
 }
 
 export const evaluateNonTrue = ({
@@ -324,7 +325,6 @@ export const getIntervalAsyncWithPromise = (
 export const isUrl = (value: any): value is string => {
   return (
     typeof value === "string" &&
-    (value.startsWith("http:") ||
-      value.startsWith("https:"))
+    (value.startsWith("http:") || value.startsWith("https:"))
   );
 };
