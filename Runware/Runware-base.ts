@@ -818,7 +818,6 @@ export class RunwareBase {
       skipResponse,
       inputAudios,
       referenceVideos,
-      referenceImages,
       ...rest
     } = payload;
     try {
@@ -827,7 +826,6 @@ export class RunwareBase {
           ...rest,
           ...(inputAudios?.length && { inputAudios }),
           ...(referenceVideos?.length && { referenceVideos }),
-          ...(referenceImages?.length && { referenceImages }),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },
