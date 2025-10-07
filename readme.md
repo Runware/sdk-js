@@ -671,7 +671,7 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
-- Added referenceImages and inputMedia to videoInference
+- Added inputs object (image, audio, video, masks) to videoInference
 
 ### - v1.1.46
 

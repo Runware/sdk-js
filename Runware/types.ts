@@ -296,7 +296,12 @@ export interface IRequestVideo extends IRequestImageToText {
   inputAudios?: string[];
   referenceImages?: string[];
   referenceVideos?: string[];
-  inputMedia?: string[];
+  inputs?: {
+    masks?: string[];
+    audio?: string;
+    image?: string;
+    video?: string;
+  };
   speech?: {
     voice: string;
     text: string;
