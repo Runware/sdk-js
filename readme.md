@@ -667,6 +667,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.47
+
+**Added or Changed**
+
+- Added inputs object to videoInference
+
 ### - v1.1.46
 
 **Added or Changed**

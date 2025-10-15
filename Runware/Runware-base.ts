@@ -814,14 +814,18 @@ export class RunwareBase {
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const { skipResponse, inputAudios, referenceVideos, ...rest } = payload;
+    const {
+      skipResponse,
+      inputAudios,
+      referenceVideos,
+      ...rest
+    } = payload;
     try {
-
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
           ...rest,
-          ...(inputAudios?.length ? { inputAudios } : {}), 
-          ...(referenceVideos?.length ? { referenceVideos } : {}),
+          ...(inputAudios?.length && { inputAudios }),
+          ...(referenceVideos?.length && { referenceVideos }),
           deliveryMethod: "async",
           taskType: ETaskType.VIDEO_INFERENCE,
         },

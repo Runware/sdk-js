@@ -275,6 +275,8 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   retry?: number;
 }
 
+type InputsValue = string | Record<string, unknown>;
+
 export interface IRequestVideo extends IRequestImageToText {
   outputType?: IOutputType;
   outputFormat?: IVideoOutputFormat;
@@ -295,11 +297,21 @@ export interface IRequestVideo extends IRequestImageToText {
   numberResults?: number;
   inputAudios?: string[];
   referenceVideos?: string[];
+  inputs?: {
+    image?: InputsValue;
+    images?: InputsValue[];
+    audio?: InputsValue;
+    audios?: InputsValue[];
+    mask?: InputsValue[];
+    reference?: InputsValue;
+    references?: InputsValue[];
+  } & {
+    [key: string]: unknown;
+  };
   speech?: {
     voice: string;
     text: string;
-  }
-
+  };
   skipResponse?: boolean;
   customTaskUUID?: string;
   retry?: number;
