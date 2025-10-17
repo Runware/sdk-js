@@ -431,6 +431,33 @@ return interface IControlNetImage {
 
 &nbsp;
 
+### Request Caption
+
+[Read Documentation](https://docs.runware.ai/en/utilities/caption)
+
+```js
+
+const runware = new Runware({ apiKey: "API_KEY" });
+const caption = await runware.caption({
+	"model": "memories:1@1",
+	inputs: {
+		video: "https://example.com/video.mp4"
+	}
+});
+
+console.log(caption)
+
+return interface ICaption {
+  taskUUID: string;
+  taskType: string;
+  status?: string;
+  text?: string;
+  cost?: number;
+}
+```
+
+&nbsp;
+
 ### Model Upload
 
 [Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
