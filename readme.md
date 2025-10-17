@@ -419,6 +419,33 @@ return interface IControlNetImage {
 
 &nbsp;
 
+### Request Caption
+
+[Read Documentation](https://docs.runware.ai/en/utilities/caption)
+
+```js
+
+const runware = new Runware({ apiKey: "API_KEY" });
+const caption = await runware.caption({
+	"model": "memories:1@1",
+	inputs: {
+		video: "https://example.com/video.mp4"
+	}
+});
+
+console.log(caption)
+
+return interface ICaption {
+  taskUUID: string;
+  taskType: string;
+  status?: string;
+  text?: string;
+  cost?: number;
+}
+```
+
+&nbsp;
+
 ### Model Upload
 
 [Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
@@ -666,6 +693,12 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.1.48
+
+**Added or Changed**
+
+- Added caption task type
 
 ### - v1.1.47
 

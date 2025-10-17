@@ -14,6 +14,7 @@ export enum ETaskType {
   IMAGE_UPSCALE = "imageUpscale",
   IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
   VIDEO_INFERENCE = "videoInference",
+  CAPTION = "caption",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
   IMAGE_CAPTION = "imageCaption",
@@ -69,6 +70,15 @@ export interface IVideoToImage {
   seed?: number;
   videoURL?: string;
 }
+
+export interface ICaption {
+  taskUUID: string;
+  taskType: string;
+  status?: string;
+  text?: string;
+  cost?: number;
+}
+
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -316,6 +326,20 @@ export interface IRequestVideo extends IRequestImageToText {
   customTaskUUID?: string;
   retry?: number;
 
+  [key: string]: any;
+}
+
+export interface IRequestCaption {
+  model: string;
+  inputs?: {
+    video?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
+  includeCost?: boolean;
+  customTaskUUID?: string;
+
+  skipResponse?: boolean;
   [key: string]: any;
 }
 export interface IAsyncResults {
