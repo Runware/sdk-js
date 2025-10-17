@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  ICaption,
+  IRequestCaption
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -876,6 +878,58 @@ export class RunwareBase {
         }
       );
       return Array.from(allVideos.values());
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  caption = async (
+    payload: IRequestCaption
+  ): Promise<ICaption> => {
+    const {
+      skipResponse,
+      ...rest
+    } = payload;
+    try {
+      const request = await this.baseSingleRequest<ICaption>({
+        payload: {
+          ...rest,
+          deliveryMethod: "async",
+          taskType: ETaskType.CAPTION,
+        },
+
+        debugKey: ETaskType.CAPTION,
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      const taskUUID = request?.taskUUID;
+      
+      let result: ICaption | undefined;
+
+      await getIntervalAsyncWithPromise(
+        async ({ resolve, reject }) => {
+          try {
+            const result = await this.getResponse({ taskUUID });
+            if (result) {
+              resolve(result);
+              return true;
+            }
+            return false;
+          } catch (err) {
+            reject(err);
+            return true;
+          }
+        },
+        {
+          debugKey: "async-response",
+          pollingInterval: 2 * 1000,
+          timeoutDuration: 10 * 60 * 1000,
+        }
+      );
+    return result!;
     } catch (e) {
       throw e;
     }
