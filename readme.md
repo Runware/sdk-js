@@ -667,6 +667,13 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.48
+
+**Added or Changed**
+
+- Added mediaStorage taskType
+- Add compatibility with taskUUID
+
 ### - v1.1.47
 
 **Added or Changed**
