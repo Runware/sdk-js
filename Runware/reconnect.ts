@@ -58,16 +58,28 @@ const updateReconnectionDelay = (config: Options, previousDelay: number) => {
 const LEVEL_0_EVENTS = ["onopen", "onclose", "onmessage", "onerror"];
 
 const reassignEventListeners = (ws: WebSocket, oldWs, listeners) => {
+  // Clean up old WebSocket if it exists
+  if (oldWs) {
+    // Remove all stored event listeners from old WebSocket
+    Object.keys(listeners).forEach((type) => {
+      listeners[type].forEach(([listener, options]) => {
+        try { oldWs.removeEventListener(type, listener, options); } catch {}
+      });
+    });
+
+    // Copy Level 0 event handlers
+    LEVEL_0_EVENTS.forEach((name) => {
+      ws[name] = oldWs[name];
+      oldWs[name] = null; // Clear old reference
+    });
+  }
+
+  // Add listeners to new WebSocket
   Object.keys(listeners).forEach((type) => {
     listeners[type].forEach(([listener, options]) => {
       ws.addEventListener(type, listener, options);
     });
   });
-  if (oldWs) {
-    LEVEL_0_EVENTS.forEach((name) => {
-      ws[name] = oldWs[name];
-    });
-  }
 };
 
 const ReconnectingWebsocket = function (
