@@ -667,7 +667,7 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
-### - v1.1.47
+### - v1.1.48
 
 **Added or Changed**
 
