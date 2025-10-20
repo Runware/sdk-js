@@ -671,6 +671,13 @@ export type TImageMaskingResponse = {
 
 **Added or Changed**
 
+- Added mediaStorage taskType
+- Add compatibility with taskUUID
+
+### - v1.1.47
+
+**Added or Changed**
+
 - Added inputs object to videoInference
 
 ### - v1.1.46

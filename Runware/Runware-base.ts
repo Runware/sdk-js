@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  TMediaStorage,
+  TMediaStorageResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -422,6 +424,7 @@ export class RunwareBase {
       onPartialImages,
       includeCost,
       customTaskUUID,
+      taskUUID: _taskUUID,
       retry,
       refiner,
       maskMargin,
@@ -559,7 +562,7 @@ export class RunwareBase {
             taskUUIDs.includes(img.taskUUID)
           );
 
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
           taskUUIDs.push(taskUUID);
 
@@ -620,6 +623,7 @@ export class RunwareBase {
     includeCost,
     outputQuality,
     customTaskUUID,
+    taskUUID: _taskUUID,
     retry,
     includeGenerationTime,
     includePayload,
@@ -636,7 +640,7 @@ export class RunwareBase {
           const image = await this.uploadImage(inputImage);
           if (!image?.imageUUID) return null;
 
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
           const payload = {
             inputImage: image.imageUUID,
             taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
@@ -720,6 +724,7 @@ export class RunwareBase {
     inputImage,
     includeCost,
     customTaskUUID,
+    taskUUID: _taskUUID,
     retry,
     includePayload,
     includeGenerationTime,
@@ -737,7 +742,7 @@ export class RunwareBase {
             ? await this.uploadImage(inputImage as File | string)
             : null;
 
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
           const payload = {
             taskUUID,
@@ -814,12 +819,7 @@ export class RunwareBase {
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const {
-      skipResponse,
-      inputAudios,
-      referenceVideos,
-      ...rest
-    } = payload;
+    const { skipResponse, inputAudios, referenceVideos, ...rest } = payload;
     try {
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
@@ -903,6 +903,7 @@ export class RunwareBase {
     includeCost,
     outputQuality,
     customTaskUUID,
+    taskUUID: _taskUUID,
     retry,
     includeGenerationTime,
     includePayload,
@@ -919,7 +920,7 @@ export class RunwareBase {
 
           imageUploaded = await this.uploadImage(inputImage as File | string);
 
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
           const payload = {
             taskUUID,
             inputImage: imageUploaded?.imageUUID,
@@ -984,6 +985,7 @@ export class RunwareBase {
     promptVersions = 1,
     includeCost,
     customTaskUUID,
+    taskUUID: _taskUUID,
     retry,
     includeGenerationTime,
     includePayload,
@@ -997,7 +999,7 @@ export class RunwareBase {
       return await asyncRetry(
         async () => {
           await this.ensureConnection();
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
           const payload = {
             prompt,
@@ -1059,8 +1061,13 @@ export class RunwareBase {
 
   modelUpload = async (payload: TAddModel) => {
     // This is written to destructure the payload from the additional parameters
-    const { onUploadStream, retry, customTaskUUID, ...addModelPayload } =
-      payload;
+    const {
+      onUploadStream,
+      retry,
+      customTaskUUID,
+      taskUUID: _taskUUID,
+      ...addModelPayload
+    } = payload;
 
     const totalRetry = retry || this._globalMaxRetries;
     let lis: any = undefined;
@@ -1069,7 +1076,7 @@ export class RunwareBase {
       return await asyncRetry(
         async () => {
           await this.ensureConnection();
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
           this.send({
             ...addModelPayload,
@@ -1131,6 +1138,7 @@ export class RunwareBase {
       onPartialImages,
       retry,
       customTaskUUID,
+      taskUUID: _taskUUID,
       numberResults,
       includeGenerationTime,
       includePayload,
@@ -1153,7 +1161,7 @@ export class RunwareBase {
             taskUUIDs.includes(img.taskUUID)
           );
 
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
           taskUUIDs.push(taskUUID);
 
           const imageRemaining = numberResults - imagesWithSimilarTask.length;
@@ -1248,6 +1256,19 @@ export class RunwareBase {
     });
   };
 
+  mediaStorage = async (
+    payload: TMediaStorage
+  ): Promise<TMediaStorageResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        operation: payload.operation || "upload",
+        taskType: ETaskType.MEDIA_STORAGE,
+      },
+      debugKey: "media-storage",
+    });
+  };
+
   protected baseSingleRequest = async <T>({
     payload,
     debugKey,
@@ -1260,6 +1281,7 @@ export class RunwareBase {
     const {
       retry,
       customTaskUUID,
+      taskUUID: _taskUUID,
       includePayload,
       includeGenerationTime,
       ...restPayload
@@ -1274,7 +1296,7 @@ export class RunwareBase {
       return await asyncRetry(
         async () => {
           await this.ensureConnection();
-          const taskUUID = customTaskUUID || getUUID();
+          const taskUUID = _taskUUID || customTaskUUID || getUUID();
           const payload = {
             ...restPayload,
             taskUUID,
