@@ -667,6 +667,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.48
+
+**Added or Changed**
+
+- Add removeBackground task type
+
 ### - v1.1.47
 
 **Added or Changed**

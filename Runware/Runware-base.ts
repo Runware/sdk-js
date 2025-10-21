@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  IRequestRemoveBackground,
+  IMedia,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -89,6 +91,58 @@ export class RunwareBase {
     this._shouldReconnect = shouldReconnect;
     this._globalMaxRetries = globalMaxRetries;
     this._timeoutDuration = timeoutDuration;
+  }
+
+  /**
+   * Shared polling logic for async results.
+   * @param taskUUID - The task UUID to poll for.
+   * @param numberResults - Number of results expected.
+   * @param resultKey - Key to identify results (default is "mediaUUID" - "videoUUID" is legacy).
+   * @returns Promise resolving to array of results.
+   */
+  private async pollForAsyncResults({
+    taskUUID,
+    numberResults,
+    resultKey = "mediaUUID"
+  }: {
+    taskUUID: string;
+    numberResults: number;
+    resultKey?: "mediaUUID" | "videoUUID";
+  }): Promise<IMedia[]> {
+    const allResults = new Map<string, any>();
+    await getIntervalAsyncWithPromise(
+      async ({ resolve, reject }) => {
+        try {
+          const results = await this.getResponse({ taskUUID });
+
+          // Add videos to the collection
+          for (const result of results || []) {
+            if (result[resultKey]) {
+              allResults.set(result[resultKey], result);
+            }
+          }
+
+          // Check completion AFTER updating the collection
+          const isComplete = allResults.size === numberResults;
+
+          if (isComplete) {
+            resolve(Array.from(allResults.values()));
+            return true; // Signal to clear the interval
+          }
+
+          return false;
+        } catch (err) {
+          reject(err);
+          return true;
+        }
+      },
+      {
+        debugKey: "async-response",
+        pollingInterval: 2 * 1000,
+        timeoutDuration: 10 * 60 * 1000,
+      }
+    );
+    return Array.from(allResults.values());
   }
 
   static async initialize(props: RunwareBaseType) {
@@ -811,6 +865,40 @@ export class RunwareBase {
     });
   };
 
+  removeBackground = async (
+    payload: IRequestRemoveBackground
+  ): Promise<IMedia[] | IMedia> => {
+    const { skipResponse, ...rest } = payload;
+    try {
+      const deliveryMethod = rest.deliveryMethod;
+      const request = await this.baseSingleRequest<IMedia>({
+        payload: {
+          ...rest,
+          taskType: ETaskType.REMOVE_BACKGROUND,
+        },
+        debugKey: "remove-background",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const numberResults = payload?.numberResults ?? 1;
+        return this.pollForAsyncResults({
+          taskUUID,
+          numberResults,
+        });
+      }
+
+      // If not async, just return the initial result
+      return request;
+    } catch (e) {
+      throw e;
+    }
+  };
+
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
@@ -838,50 +926,18 @@ export class RunwareBase {
       }
 
       const taskUUID = request?.taskUUID;
-
       const numberResults = payload?.numberResults ?? 1;
-
-      const allVideos = new Map<string, any>();
-
-      await getIntervalAsyncWithPromise(
-        async ({ resolve, reject }) => {
-          try {
-            const videos = await this.getResponse({ taskUUID });
-
-            // Add videos to the collection
-            for (const video of videos || []) {
-              if (video.videoUUID) {
-                allVideos.set(video.videoUUID, video);
-              }
-            }
-
-            // Check completion AFTER updating the collection
-            const isComplete = allVideos.size === numberResults;
-
-            if (isComplete) {
-              resolve(Array.from(allVideos.values()));
-              return true; // Signal to clear the interval
-            }
-
-            return false; // Continue polling
-          } catch (err) {
-            reject(err);
-            return true; // Signal to clear the interval on error
-          }
-        },
-        {
-          debugKey: "async-response",
-          pollingInterval: 2 * 1000,
-          timeoutDuration: 10 * 60 * 1000,
-        }
-      );
-      return Array.from(allVideos.values());
+      return this.pollForAsyncResults({
+        taskUUID,
+        numberResults,
+        resultKey: "videoUUID"
+      });
     } catch (e) {
       throw e;
     }
   };
 
-  getResponse = async (payload: IAsyncResults): Promise<IVideoToImage[]> => {
+  getResponse = async (payload: IAsyncResults): Promise<IMedia[]> => {
     const taskUUID = payload.taskUUID;
     // const mock = getRandomTaskResponses({ count: 2, taskUUID });
     return this.baseSingleRequest({
