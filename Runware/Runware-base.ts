@@ -115,10 +115,11 @@ export class RunwareBase {
         try {
           const results = await this.getResponse({ taskUUID });
 
-          // Add videos to the collection
+          // Add results to the collection
           for (const result of results || []) {
-            if (result[resultKey]) {
-              allResults.set(result[resultKey], result);
+            const key = result[resultKey];
+            if (typeof key === "string") {
+              allResults.set(key, result);
             }
           }
 
