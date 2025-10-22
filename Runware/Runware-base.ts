@@ -40,6 +40,8 @@ import {
   IVideoToImage,
   IRequestRemoveBackground,
   IMedia,
+  IRequestUpscale,
+  IUpscaledMedia,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -100,15 +102,15 @@ export class RunwareBase {
    * @param resultKey - Key to identify results (default is "mediaUUID" - "videoUUID" is legacy).
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults({
+  private async pollForAsyncResults<T = IMedia[]>({
     taskUUID,
-    numberResults,
+    numberResults = 1,
     resultKey = "mediaUUID"
   }: {
     taskUUID: string;
-    numberResults: number;
+    numberResults?: number;
     resultKey?: "mediaUUID" | "videoUUID";
-  }): Promise<IMedia[]> {
+  }): Promise<T[]> {
     const allResults = new Map<string, any>();
     await getIntervalAsyncWithPromise(
       async ({ resolve, reject }) => {
@@ -1030,6 +1032,39 @@ export class RunwareBase {
           },
         }
       );
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  upscale = async (
+    payload: IRequestUpscale
+  ): Promise<IUpscaledMedia> => {
+    const { skipResponse, ...rest } = payload;
+    try {
+      const deliveryMethod = rest.deliveryMethod;
+      const request = await this.baseSingleRequest<IUpscaledMedia>({
+        payload: {
+          ...rest,
+          taskType: ETaskType.UPSCALE,
+        },
+        debugKey: "upscale",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const result = await this.pollForAsyncResults<IUpscaledMedia>({
+          taskUUID,
+        });
+        return result[0];
+      }
+
+      // If not async, just return the initial result
+      return request;
     } catch (e) {
       throw e;
     }
