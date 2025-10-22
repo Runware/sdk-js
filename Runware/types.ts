@@ -12,6 +12,7 @@ export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
   IMAGE_UPSCALE = "imageUpscale",
+  UPSCALE = "upscale",
   IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
   REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
@@ -376,6 +377,34 @@ export interface IUpscaleGan extends IAdditionalResponsePayload {
 
   customTaskUUID?: string;
   retry?: number;
+}
+
+export type IRequestUpscale = {
+  model: string;
+  upscaleFactor: number;
+  outputType?: IOutputType;
+  outputFormat?: "MP4" | "WEBM" | "MOV";
+  includeCost?: boolean;
+  outputQuality?: number;
+  inputs?: {
+    video?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
+  skipResponse?: boolean;
+  deliveryMethod?: string;
+  [key: string]: unknown;
+}
+
+export interface IUpscaledMedia {
+  taskType: ETaskType.UPSCALE;
+  taskUUID: string;
+  mediaUUID: string;
+  mediaURL?: string;
+  mediaBase64Data?: string;
+  mediaDataURI?: string;
+  cost?: number;
+  inputMediaUUID?: string;
 }
 
 export type ReconnectingWebsocketProps = {

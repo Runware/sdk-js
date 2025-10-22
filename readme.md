@@ -667,6 +667,12 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.49
+
+**Added or Changed**
+
+- Add upscale task type (limited to video)
+
 ### - v1.1.48
 
 **Added or Changed**
