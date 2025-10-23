@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  TVectorize,
+  TVectorizeResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -811,15 +813,20 @@ export class RunwareBase {
     });
   };
 
+  vectorize = async (payload: TVectorize): Promise<TVectorizeResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.VECTORIZE,
+      },
+      debugKey: "vectorize",
+    });
+  };
+
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const {
-      skipResponse,
-      inputAudios,
-      referenceVideos,
-      ...rest
-    } = payload;
+    const { skipResponse, inputAudios, referenceVideos, ...rest } = payload;
     try {
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
