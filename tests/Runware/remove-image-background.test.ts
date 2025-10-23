@@ -56,4 +56,9 @@ describe("When user request to remove image background", async () => {
       taskUUID: mockTaskUUID,
     });
   });
+
+  test("removeBackground delegates to removeImageBackground", async () => {
+    const result = await runware.removeBackground({ inputImage: mockUploadFile });
+    expect(result).toEqual(await runware.removeImageBackground({ inputImage: mockUploadFile }));
+  });
 });
