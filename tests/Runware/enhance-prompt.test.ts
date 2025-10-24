@@ -79,4 +79,10 @@ describe("When user request to enhance prompt", async () => {
       taskUUID: mockTaskUUID,
     });
   });
+
+  test("promptEnhance delegates to enhancePrompt", async () => {
+    const params = { prompt: "Mock prompt", promptMaxLength: 200, promptVersions: 4 };
+    const result = await runware.promptEnhance(params);
+    expect(result).toEqual(await runware.enhancePrompt(params));
+  });
 });
