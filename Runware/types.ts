@@ -71,11 +71,6 @@ export interface IVideoToImage {
   videoURL?: string;
 }
 
-export interface IMedia extends IVideoToImage {
-  mediaUUID?: string;
-  mediaURL?: string;
-}
-
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -266,8 +261,12 @@ export interface IImageToText {
 
 export interface IRemoveImageBackground extends IRequestImageToText {
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IOutputFormat| "MP4" | "WEBM" | "MOV";
   model: string;
+  inputs?: {
+    video?: InputsValue;
+    image?: InputsValue;
+  }
   settings?: {
     rgba?: number[];
     postProcessMask?: boolean;
@@ -280,19 +279,9 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   includeCost?: boolean;
   outputQuality?: number;
   retry?: number;
-}
 
-export type IRequestRemoveBackground = Omit<IRemoveImageBackground, "outputFormat"> & {
-  outputFormat?: IOutputFormat | "MP4" | "WEBM" | "MOV";
-  inputs?: {
-    video?: InputsValue;
-  } & {
-    [key: string]: unknown;
-  };
-  numberResults?: number;
   skipResponse?: boolean;
   deliveryMethod?: string;
-  [key: string]: unknown;
 }
 
 
@@ -347,7 +336,9 @@ export interface IAsyncResults {
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
-  imageUUID: string;
+  imageUUID?: string;
+  mediaUUID?: string;
+  videoUUID?: string;
   inputImageUUID: string;
   imageURL?: string;
   imageBase64Data?: string;

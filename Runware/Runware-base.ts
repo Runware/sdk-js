@@ -38,8 +38,6 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
-  IRequestRemoveBackground,
-  IMedia,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -93,33 +91,40 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
+  private getResultUUID(result: any): string | undefined {
+    // Find the UUID for a given input type
+    // mediaUUID = generic input
+    // Others = specific input types
+    for (const key of ["mediaUUID", "imageUUID", "videoUUID"]) {
+      if (typeof result[key] === "string") return result[key];
+    }
+    return undefined;
+  }
+
   /**
    * Shared polling logic for async results.
    * @param taskUUID - The task UUID to poll for.
    * @param numberResults - Number of results expected.
-   * @param resultKey - Key to identify results (default is "mediaUUID" - "videoUUID" is legacy).
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults({
+  private async pollForAsyncResults<T extends {mediaUUID?: string; imageUUID?: string; videoUUID?: string;}>({
     taskUUID,
-    numberResults,
-    resultKey = "mediaUUID"
+    numberResults = 1,
   }: {
     taskUUID: string;
-    numberResults: number;
-    resultKey?: "mediaUUID" | "videoUUID";
-  }): Promise<IMedia[]> {
-    const allResults = new Map<string, any>();
+    numberResults?: number;
+  }): Promise<T[]> {
+    const allResults = new Map<string, T>();
     await getIntervalAsyncWithPromise(
       async ({ resolve, reject }) => {
         try {
-          const results = await this.getResponse({ taskUUID });
+          const results = await this.getResponse<T>({ taskUUID });
 
           // Add results to the collection
           for (const result of results || []) {
-            const key = result[resultKey];
-            if (typeof key === "string") {
-              allResults.set(key, result);
+            const resultUUID = this.getResultUUID(result);
+            if (resultUUID) {
+              allResults.set(resultUUID, result);
             }
           }
 
@@ -857,22 +862,11 @@ export class RunwareBase {
   removeImageBackground = async (
     payload: IRemoveImageBackground
   ): Promise<IRemoveImage> => {
-    return this.baseSingleRequest({
-      payload: {
-        ...payload,
-        taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
-      },
-      debugKey: "remove-image-background",
-    });
-  };
-
-  removeBackground = async (
-    payload: IRequestRemoveBackground
-  ): Promise<IMedia[] | IMedia> => {
     const { skipResponse, ...rest } = payload;
+
     try {
       const deliveryMethod = rest.deliveryMethod;
-      const request = await this.baseSingleRequest<IMedia>({
+      const request = await this.baseSingleRequest<IRemoveImage>({
         payload: {
           ...rest,
           taskType: ETaskType.REMOVE_BACKGROUND,
@@ -886,11 +880,10 @@ export class RunwareBase {
 
       if (deliveryMethod === "async") {
         const taskUUID = request?.taskUUID;
-        const numberResults = payload?.numberResults ?? 1;
-        return this.pollForAsyncResults({
+        const results = await this.pollForAsyncResults<IRemoveImage>({
           taskUUID,
-          numberResults,
         });
+        return results[0];
       }
 
       // If not async, just return the initial result
@@ -927,18 +920,16 @@ export class RunwareBase {
       }
 
       const taskUUID = request?.taskUUID;
-      const numberResults = payload?.numberResults ?? 1;
       return this.pollForAsyncResults({
         taskUUID,
-        numberResults,
-        resultKey: "videoUUID"
+        numberResults: payload?.numberResults,
       });
     } catch (e) {
       throw e;
     }
   };
 
-  getResponse = async (payload: IAsyncResults): Promise<IMedia[]> => {
+  getResponse = async <T>(payload: IAsyncResults): Promise<T[]> => {
     const taskUUID = payload.taskUUID;
     // const mock = getRandomTaskResponses({ count: 2, taskUUID });
     return this.baseSingleRequest({
