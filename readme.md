@@ -679,13 +679,16 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.50
+
+- Added mediaStorage taskType
+- Add compatibility with taskUUID
+
 ### - v1.1.49
 
 - Add support for vectorize taskType
 
 **Added or Changed**
-
-- Added inputs object to videoInference
 
 ### - v1.1.48
 
