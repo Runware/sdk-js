@@ -66,7 +66,6 @@ await runware.disconnect();
 
 ### Request Image
 
-
 [Read Documentation](https://docs.runware.ai/en/image-inference/api-reference)
 
 NB: All errors can be caught in the catch block of each request
@@ -680,17 +679,25 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.49
+
+- Add support for vectorize taskType
+
+**Added or Changed**
+
+- Added inputs object to videoInference
+
 ### - v1.1.48
 
 **Added or Changed**
 
 - Added method aliases so task types match those of official API. It is recommended to use these new aliases going forward:
 
-	- imageInference > requestImages
-	- controlNetPreprocess > controlNetPreProcess
-	- caption > requestImageToText
-	- upscale > upscaleGan
-	- promptEnhance > ehancePrompt
+  - imageInference > requestImages
+  - controlNetPreprocess > controlNetPreProcess
+  - caption > requestImageToText
+  - upscale > upscaleGan
+  - promptEnhance > ehancePrompt
 
 ### - v1.1.47
 

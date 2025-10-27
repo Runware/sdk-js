@@ -38,6 +38,8 @@ import {
   IRequestVideo,
   IAsyncResults,
   IVideoToImage,
+  TVectorize,
+  TVectorizeResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -608,11 +610,12 @@ export class RunwareBase {
   }
 
   // Alias for requestImages
-  async imageInference(params: IRequestImage,
-    moreOptions?: Record<string, any>): Promise<ITextToImage[] | undefined> {
+  async imageInference(
+    params: IRequestImage,
+    moreOptions?: Record<string, any>
+  ): Promise<ITextToImage[] | undefined> {
     return this.requestImages(params, moreOptions);
   }
-
 
   controlNetPreProcess = async ({
     inputImage,
@@ -724,9 +727,11 @@ export class RunwareBase {
   };
 
   // Alias for controlNetPreProcess
-  controlNetPreprocess = async (params: IControlNetPreprocess): Promise<IControlNetImage | null> => {
+  controlNetPreprocess = async (
+    params: IControlNetPreprocess
+  ): Promise<IControlNetImage | null> => {
     return this.controlNetPreProcess(params);
-  }
+  };
 
   requestImageToText = async ({
     inputImage,
@@ -812,9 +817,9 @@ export class RunwareBase {
   };
 
   // Alias for requestImageToText
-  caption = async(params: IRequestImageToText): Promise<IImageToText> => {
+  caption = async (params: IRequestImageToText): Promise<IImageToText> => {
     return this.requestImageToText(params);
-  }
+  };
 
   removeImageBackground = async (
     payload: IRemoveImageBackground
@@ -829,19 +834,26 @@ export class RunwareBase {
   };
 
   // Alias for removeImageBackground
-  removeBackground = async (payload: IRemoveImageBackground): Promise<IRemoveImage> => {
+  removeBackground = async (
+    payload: IRemoveImageBackground
+  ): Promise<IRemoveImage> => {
     return this.removeImageBackground(payload);
+  };
+
+  vectorize = async (payload: TVectorize): Promise<TVectorizeResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.VECTORIZE,
+      },
+      debugKey: "vectorize",
+    });
   };
 
   videoInference = async (
     payload: IRequestVideo
   ): Promise<IVideoToImage[] | IVideoToImage> => {
-    const {
-      skipResponse,
-      inputAudios,
-      referenceVideos,
-      ...rest
-    } = payload;
+    const { skipResponse, inputAudios, referenceVideos, ...rest } = payload;
     try {
       const request = await this.baseSingleRequest<IVideoToImage>({
         payload: {
@@ -1003,7 +1015,7 @@ export class RunwareBase {
   // Alias for upscaleGan
   upscale = async (params: IUpscaleGan): Promise<IImage> => {
     return this.upscaleGan(params);
-  }
+  };
 
   enhancePrompt = async ({
     prompt,
@@ -1085,9 +1097,11 @@ export class RunwareBase {
   };
 
   // Alias for enhancePrompt
-  promptEnhance = async (params: IPromptEnhancer): Promise<IEnhancedPrompt[]> => {
+  promptEnhance = async (
+    params: IPromptEnhancer
+  ): Promise<IEnhancedPrompt[]> => {
     return this.enhancePrompt(params);
-  }
+  };
 
   modelUpload = async (payload: TAddModel) => {
     // This is written to destructure the payload from the additional parameters
