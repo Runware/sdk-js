@@ -70,11 +70,13 @@ await runware.disconnect();
 
 NB: All errors can be caught in the catch block of each request
 
+Legacy alias: `requestImages()`
+
 ```js
 import { Runware } from "@runware/sdk-js";
 
 const  runware  =  new  Runware({ apiKey: "API_KEY" });
-const images = await runware.requestImages({
+const images = await runware.imageInference({
 	positivePrompt: string;
 	negativePrompt?: string;
 	width: number;
@@ -126,7 +128,7 @@ return interface ITextToImage {
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 
 const [firstImagesRequest, secondImagesRequest] = await Promise.all([
-	runware.requestImages({
+	runware.imageInference({
 		positivePrompt: string;
 		width: number;
 		height: number;
@@ -135,7 +137,7 @@ const [firstImagesRequest, secondImagesRequest] = await Promise.all([
 		negativePrompt?: string;
 		onPartialImages?: (images: IImage[], error: IError) =>  void;
 	}),
-	runware.requestImages({
+	runware.imageInference({
 		positivePrompt: string;
 		width: number;
 		height: number;
@@ -228,10 +230,12 @@ return interface ITextToImage {
 
 [Read Documentation](https://docs.runware.ai/en/utilities/image-to-text)
 
+Legacy alias: `requestImageToText()`
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
-const imageToText = await runware.requestImageToText({
+const imageToText = await runware.caption({
 	inputImage: string | File
 })
 console.log(imageToText)
@@ -256,10 +260,12 @@ return interface IImageToText {
 
 [Read Documentation](https://docs.runware.ai/en/image-editing/background-removal)
 
+Legacy alias: `removeImageBackground()`
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
-const image = await runware.removeImageBackground({
+const image = await runware.removeBackground({
 	inputImage: string | File
 	outputType?: IOutputType;
 	outputFormat?: IOutputFormat;
@@ -305,10 +311,12 @@ return interface IImage {
 
 [Read Documentation](https://docs.runware.ai/en/image-editing/upscaling)
 
+Legacy alias: `upscaleGan()`
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
-const image = await runware.upscaleGan({
+const image = await runware.upscale({
 	inputImage: File | string;
 	upscaleFactor: number;
 	outputType?: IOutputType;
@@ -345,10 +353,12 @@ return interface IImage {
 
 [Read Documentation](https://docs.runware.ai/en/utilities/prompt-enhancer)
 
+Legacy alias: `enhancePrompt()`
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
-const enhancedPrompt = await runware.enhancePrompt({
+const enhancedPrompt = await runware.promptEnhance({
 	prompt: string;
 	promptMaxLength?: number;
 	promptVersions?: number;
@@ -376,10 +386,12 @@ return interface IEnhancedPrompt {
 
 [Read Documentation](https://docs.runware.ai/en/image-editing/controlnet-tools)
 
+Legacy alias: `controlNetPreProcess()`
+
 ```js
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
-const controlNetPreProcessed = await runware.controlNetPreProcess({
+const controlNetPreProcessed = await runware.controlNetPreprocess({
 	inputImage: string | File;
 	preProcessorType: EPreProcessor;
 	height?: number;
@@ -621,7 +633,7 @@ export type TModel = {
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 
-const imageMasking = await runware.imageMask({
+const imageMasking = await runware.imageMasking({
   model: string;
   inputImage: string;
   confidence?: number;
@@ -667,12 +679,28 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.1.50
+
+- Added mediaStorage taskType
+- Add compatibility with taskUUID
+
+### - v1.1.49
+
+- Add support for vectorize taskType
+
+**Added or Changed**
+
 ### - v1.1.48
 
 **Added or Changed**
 
-- Added mediaStorage taskType
-- Add compatibility with taskUUID
+- Added method aliases so task types match those of official API. It is recommended to use these new aliases going forward:
+
+  - imageInference > requestImages
+  - controlNetPreprocess > controlNetPreProcess
+  - caption > requestImageToText
+  - upscale > upscaleGan
+  - promptEnhance > ehancePrompt
 
 ### - v1.1.47
 

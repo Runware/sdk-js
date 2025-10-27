@@ -56,4 +56,9 @@ describe("When user request image to text", async () => {
       taskUUID: mockTaskUUID,
     });
   });
+
+  test("caption delegates to requestImageToText", async () => {
+    const result = await runware.caption({ inputImage: mockUploadFile });
+    expect(result).toEqual(await runware.requestImageToText({ inputImage: mockUploadFile }));
+  });
 });
