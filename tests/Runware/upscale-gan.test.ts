@@ -60,4 +60,10 @@ describe("When user request to upscale gan", async () => {
       taskUUID: mockTaskUUID,
     });
   });
+
+  test("upscale delegates to upscaleGan", async () => {
+    const params = { inputImage: mockUploadFile, upscaleFactor: 2 };
+    const result = await runware.upscale(params);
+    expect(result).toEqual(await runware.upscaleGan(params));
+  });
 });

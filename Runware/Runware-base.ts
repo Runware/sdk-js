@@ -609,6 +609,14 @@ export class RunwareBase {
     }
   }
 
+  // Alias for requestImages
+  async imageInference(
+    params: IRequestImage,
+    moreOptions?: Record<string, any>
+  ): Promise<ITextToImage[] | undefined> {
+    return this.requestImages(params, moreOptions);
+  }
+
   controlNetPreProcess = async ({
     inputImage,
     preProcessorType,
@@ -718,6 +726,13 @@ export class RunwareBase {
     }
   };
 
+  // Alias for controlNetPreProcess
+  controlNetPreprocess = async (
+    params: IControlNetPreprocess
+  ): Promise<IControlNetImage | null> => {
+    return this.controlNetPreProcess(params);
+  };
+
   requestImageToText = async ({
     inputImage,
     includeCost,
@@ -801,6 +816,11 @@ export class RunwareBase {
     }
   };
 
+  // Alias for requestImageToText
+  caption = async (params: IRequestImageToText): Promise<IImageToText> => {
+    return this.requestImageToText(params);
+  };
+
   removeImageBackground = async (
     payload: IRemoveImageBackground
   ): Promise<IRemoveImage> => {
@@ -811,6 +831,13 @@ export class RunwareBase {
       },
       debugKey: "remove-image-background",
     });
+  };
+
+  // Alias for removeImageBackground
+  removeBackground = async (
+    payload: IRemoveImageBackground
+  ): Promise<IRemoveImage> => {
+    return this.removeImageBackground(payload);
   };
 
   vectorize = async (payload: TVectorize): Promise<TVectorizeResponse> => {
@@ -985,6 +1012,11 @@ export class RunwareBase {
     }
   };
 
+  // Alias for upscaleGan
+  upscale = async (params: IUpscaleGan): Promise<IImage> => {
+    return this.upscaleGan(params);
+  };
+
   enhancePrompt = async ({
     prompt,
     promptMaxLength = 380,
@@ -1062,6 +1094,13 @@ export class RunwareBase {
     } catch (e) {
       throw e;
     }
+  };
+
+  // Alias for enhancePrompt
+  promptEnhance = async (
+    params: IPromptEnhancer
+  ): Promise<IEnhancedPrompt[]> => {
+    return this.enhancePrompt(params);
   };
 
   modelUpload = async (payload: TAddModel) => {

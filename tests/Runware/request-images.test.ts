@@ -166,4 +166,9 @@ describe("When user request an image", async () => {
       providerSettings
     });
   });
+
+  test("imageInference delegates to requestImages", async () => {
+    const result = await runware.imageInference(testExamples.imageReq);
+    expect(result).toEqual(await runware.requestImages(testExamples.imageReq));
+  });
 });
