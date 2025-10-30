@@ -12,7 +12,6 @@ export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
   IMAGE_UPSCALE = "imageUpscale",
-  IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
   REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
   GET_RESPONSE = "getResponse",
