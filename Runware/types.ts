@@ -341,6 +341,7 @@ export interface IRemoveImage {
   taskUUID: string;
   imageUUID?: string;
   mediaUUID?: string;
+  mediaURL?: string;
   videoUUID?: string;
   inputImageUUID: string;
   imageURL?: string;

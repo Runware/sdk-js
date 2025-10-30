@@ -886,6 +886,15 @@ export class RunwareBase {
     return this.requestImageToText(params);
   };
 
+  /**
+   * Remove the background from an image or video.
+   * @remark This method now supports the removeBackground type which can handle multiple media types such as image and video.
+   * If you pass an `inputs` object with `inputs.image` or `inputs.video`, the response will contain `mediaUUID` and `mediaURL`.
+   * If you pass `inputImage`, the response will contain `imageUUID` and `imageURL`.
+   * @remark `imageUUID` is no longer guaranteed in the response. Use `mediaUUID` for new implementations.
+   * @since 1.2.0
+   * @returns {Promise<IRemoveImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
+   */
   removeImageBackground = async (
     payload: IRemoveImageBackground
   ): Promise<IRemoveImage> => {
