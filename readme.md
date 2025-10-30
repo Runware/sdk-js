@@ -66,7 +66,6 @@ await runware.disconnect();
 
 ### Request Image
 
-
 [Read Documentation](https://docs.runware.ai/en/image-inference/api-reference)
 
 NB: All errors can be caught in the catch block of each request
@@ -680,17 +679,34 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.0
+
+- Change removeImageBackground taskType from `removeImageBackground` to `removeBackground` -- removeBackground is compatible with removeImageBackground but it also supports other media inputs such as removing backgrounds from videos
+
+Breaking change: `imageUUID` can now be undefined when using removeBackground and removeImageBackground.
+
+### - v1.1.50
+
+- Added mediaStorage taskType
+- Add compatibility with taskUUID
+
+### - v1.1.49
+
+- Add support for vectorize taskType
+
+**Added or Changed**
+
 ### - v1.1.48
 
 **Added or Changed**
 
 - Added method aliases so task types match those of official API. It is recommended to use these new aliases going forward:
 
-	- imageInference > requestImages
-	- controlNetPreprocess > controlNetPreProcess
-	- caption > requestImageToText
-	- upscale > upscaleGan
-	- promptEnhance > ehancePrompt
+  - imageInference > requestImages
+  - controlNetPreprocess > controlNetPreProcess
+  - caption > requestImageToText
+  - upscale > upscaleGan
+  - promptEnhance > ehancePrompt
 
 ### - v1.1.47
 

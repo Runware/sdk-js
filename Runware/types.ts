@@ -23,6 +23,8 @@ export enum ETaskType {
   AUTHENTICATION = "authentication",
   MODEL_UPLOAD = "modelUpload",
   MODEL_SEARCH = "modelSearch",
+  MEDIA_STORAGE = "mediaStorage",
+  VECTORIZE = "vectorize",
 }
 
 export type RunwareBaseType = {
@@ -115,6 +117,7 @@ export type IControlNetPreprocess = {
   outputQuality?: number;
 
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
 } & IAdditionalResponsePayload;
 
@@ -249,6 +252,7 @@ export interface IRequestImageToText extends IAdditionalResponsePayload {
   inputImage?: File | string;
   includeCost?: boolean;
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
 }
 export interface IImageToText {
@@ -351,6 +355,7 @@ export interface IPromptEnhancer extends IAdditionalResponsePayload {
   prompt: string;
   includeCost?: boolean;
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
 }
 
@@ -365,6 +370,7 @@ export interface IUpscaleGan extends IAdditionalResponsePayload {
   outputQuality?: number;
 
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
 }
 
@@ -519,6 +525,7 @@ export type TAddModelBaseType = {
 
   // Custom parameters
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
   onUploadStream?: (
     response?: IAddModelResponse,
@@ -575,6 +582,7 @@ export type TPhotoMaker = {
 
   // other options
   customTaskUUID?: string;
+  taskUUID?: string;
   retry?: number;
   onPartialImages?: (images: IImage[], error?: IError) => void;
 } & IAdditionalResponsePayload;
@@ -718,12 +726,43 @@ export type TImageMasking = {
   customTaskUUID?: string;
   retry?: number;
 };
+export type TVectorize = {
+  model: string;
+  outputFormat?: string;
+  outputType?: string;
+  includeCost?: boolean;
+  inputs: {
+    image: string;
+  };
+
+  customTaskUUID?: string;
+  retry?: number;
+};
+
+export type TVectorizeResponse = {
+  taskType: string;
+  taskUUID: string;
+  cost: number;
+  imageURL: string;
+};
 
 export type TImageUpload = {
   image: string;
 
   customTaskUUID?: string;
   retry?: number;
+};
+
+export type TMediaStorage = {
+  media: string;
+  operation?: string;
+  customTaskUUID?: string;
+  retry?: number;
+};
+export type TMediaStorageResponse = {
+  taskType: string;
+  taskUUID: string;
+  mediaUUID: string;
 };
 
 export type TImageUploadResponse = {
