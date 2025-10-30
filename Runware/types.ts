@@ -12,7 +12,7 @@ export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
   IMAGE_UPSCALE = "imageUpscale",
-  IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
+  REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
@@ -71,6 +71,7 @@ export interface IVideoToImage {
   seed?: number;
   videoURL?: string;
 }
+
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -263,8 +264,12 @@ export interface IImageToText {
 
 export interface IRemoveImageBackground extends IRequestImageToText {
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IOutputFormat| "MP4" | "WEBM" | "MOV";
   model: string;
+  inputs?: {
+    video?: InputsValue;
+    image?: InputsValue;
+  }
   settings?: {
     rgba?: number[];
     postProcessMask?: boolean;
@@ -277,7 +282,11 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   includeCost?: boolean;
   outputQuality?: number;
   retry?: number;
+
+  skipResponse?: boolean;
+  deliveryMethod?: string;
 }
+
 
 type InputsValue = string | Record<string, unknown>;
 
@@ -330,7 +339,10 @@ export interface IAsyncResults {
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
-  imageUUID: string;
+  imageUUID?: string;
+  mediaUUID?: string;
+  mediaURL?: string;
+  videoUUID?: string;
   inputImageUUID: string;
   imageURL?: string;
   imageBase64Data?: string;
