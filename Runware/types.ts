@@ -11,7 +11,7 @@ export enum SdkType {
 export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
-  IMAGE_UPSCALE = "imageUpscale",
+  UPSCALE = "upscale",
   REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
   GET_RESPONSE = "getResponse",
@@ -46,7 +46,7 @@ export interface IAdditionalResponsePayload {
 
 export interface IImage {
   taskType: ETaskType;
-  imageUUID: string;
+  imageUUID?: string;
   inputImageUUID?: string;
   taskUUID: string;
   imageURL?: string;
@@ -55,6 +55,8 @@ export interface IImage {
   NSFWContent?: boolean;
   cost?: number;
   seed: number;
+  mediaUUID?: string;
+  mediaURL?: string;
 }
 
 export interface ITextToImage extends IImage {
@@ -363,16 +365,27 @@ export interface IPromptEnhancer extends IAdditionalResponsePayload {
 export interface IEnhancedPrompt extends IImageToText {}
 
 export interface IUpscaleGan extends IAdditionalResponsePayload {
-  inputImage: File | string;
+  inputImage?: File | string;
   upscaleFactor: number;
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IOutputFormat | "MP4" | "WEBM" | "MOV";
   includeCost?: boolean;
   outputQuality?: number;
+
+  inputs?: {
+    video?: InputsValue;
+    image?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  }
+  model?: string;
 
   customTaskUUID?: string;
   taskUUID?: string;
   retry?: number;
+
+  skipResponse?: boolean;
+  deliveryMethod?: string;
 }
 
 export type ReconnectingWebsocketProps = {
