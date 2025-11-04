@@ -17,7 +17,6 @@ export enum ETaskType {
   CAPTION = "caption",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
-  IMAGE_CAPTION = "imageCaption",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
   IMAGE_MASKING = "imageMasking",
   PROMPT_ENHANCE = "promptEnhance",
@@ -252,11 +251,20 @@ export interface IRefiner {
   startStepPercentage?: number;
 }
 export interface IRequestImageToText extends IAdditionalResponsePayload {
+  model?: string;
   inputImage?: File | string;
+  inputs?: {
+    video?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
   includeCost?: boolean;
   customTaskUUID?: string;
   taskUUID?: string;
   retry?: number;
+
+  deliveryMethod?: string;
+  skipResponse?: boolean;
 }
 export interface IImageToText {
   taskType: ETaskType;
