@@ -116,7 +116,7 @@ export class RunwareBase {
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T extends {mediaUUID?: string; imageUUID?: string; videoUUID?: string; text?: string}>({
+  private async pollForAsyncResults<T>({
     taskUUID,
     resultKeys,
     numberResults = 1,
@@ -1422,8 +1422,6 @@ export class RunwareBase {
               timeoutDuration: this._timeoutDuration,
             }
           );
-
-          console.log("payload", payload);
 
           this.insertAdditionalResponse({
             response: response,
