@@ -447,11 +447,10 @@ const caption = await runware.caption({
 
 console.log(caption)
 
-return interface ICaption {
+return interface IImageToText {
+  taskType: ETaskType;
   taskUUID: string;
-  taskType: string;
-  status?: string;
-  text?: string;
+  text: string;
   cost?: number;
 }
 ```
