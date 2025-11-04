@@ -343,19 +343,6 @@ export interface IRequestVideo extends IRequestImageToText {
   [key: string]: any;
 }
 
-export interface IRequestCaption {
-  model: string;
-  inputs?: {
-    video?: InputsValue;
-  } & {
-    [key: string]: unknown;
-  };
-  includeCost?: boolean;
-  customTaskUUID?: string;
-
-  skipResponse?: boolean;
-  [key: string]: any;
-}
 export interface IAsyncResults {
   taskUUID: string;
   onPartialImages?: (images: IImage[], error?: IError) => void;
