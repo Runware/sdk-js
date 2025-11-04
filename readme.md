@@ -679,6 +679,13 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.0
+
+- Change removeImageBackground taskType from `removeImageBackground` to `removeBackground` -- removeBackground is compatible with removeImageBackground but it also supports other media inputs such as removing backgrounds from videos
+- Change upscaleGan taskType from `upscaleImage` to `upscale` -- upscale is compatible with upscaleImage but it also supports other media inputs such as upscaling video.
+
+Breaking change: `imageUUID` can now be undefined when using removeBackground/removeImageBackground and upscale/upscaleGan.
+
 ### - v1.1.50
 
 - Added mediaStorage taskType

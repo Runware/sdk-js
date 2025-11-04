@@ -50,7 +50,7 @@ describe("When user request to remove image background", async () => {
     expect(sendSpy).toHaveBeenCalledWith({
       inputImage: testExamples.imageUploadRes.imageUUID,
       taskUUID: mockTaskUUID,
-      taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
+      taskType: ETaskType.REMOVE_BACKGROUND,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
       taskUUID: mockTaskUUID,

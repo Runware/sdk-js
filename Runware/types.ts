@@ -11,8 +11,8 @@ export enum SdkType {
 export enum ETaskType {
   IMAGE_INFERENCE = "imageInference",
   IMAGE_UPLOAD = "imageUpload",
-  IMAGE_UPSCALE = "imageUpscale",
-  IMAGE_BACKGROUND_REMOVAL = "imageBackgroundRemoval",
+  UPSCALE = "upscale",
+  REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
@@ -46,7 +46,7 @@ export interface IAdditionalResponsePayload {
 
 export interface IImage {
   taskType: ETaskType;
-  imageUUID: string;
+  imageUUID?: string;
   inputImageUUID?: string;
   taskUUID: string;
   imageURL?: string;
@@ -55,6 +55,8 @@ export interface IImage {
   NSFWContent?: boolean;
   cost?: number;
   seed: number;
+  mediaUUID?: string;
+  mediaURL?: string;
 }
 
 export interface ITextToImage extends IImage {
@@ -71,6 +73,7 @@ export interface IVideoToImage {
   seed?: number;
   videoURL?: string;
 }
+
 export interface IControlNetImage {
   taskUUID: string;
   inputImageUUID: string;
@@ -263,8 +266,12 @@ export interface IImageToText {
 
 export interface IRemoveImageBackground extends IRequestImageToText {
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IOutputFormat| "MP4" | "WEBM" | "MOV";
   model: string;
+  inputs?: {
+    video?: InputsValue;
+    image?: InputsValue;
+  }
   settings?: {
     rgba?: number[];
     postProcessMask?: boolean;
@@ -277,7 +284,11 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   includeCost?: boolean;
   outputQuality?: number;
   retry?: number;
+
+  skipResponse?: boolean;
+  deliveryMethod?: string;
 }
+
 
 type InputsValue = string | Record<string, unknown>;
 
@@ -330,7 +341,10 @@ export interface IAsyncResults {
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
-  imageUUID: string;
+  imageUUID?: string;
+  mediaUUID?: string;
+  mediaURL?: string;
+  videoUUID?: string;
   inputImageUUID: string;
   imageURL?: string;
   imageBase64Data?: string;
@@ -351,16 +365,27 @@ export interface IPromptEnhancer extends IAdditionalResponsePayload {
 export interface IEnhancedPrompt extends IImageToText {}
 
 export interface IUpscaleGan extends IAdditionalResponsePayload {
-  inputImage: File | string;
+  inputImage?: File | string;
   upscaleFactor: number;
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat;
+  outputFormat?: IOutputFormat | "MP4" | "WEBM" | "MOV";
   includeCost?: boolean;
   outputQuality?: number;
+
+  inputs?: {
+    video?: InputsValue;
+    image?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  }
+  model?: string;
 
   customTaskUUID?: string;
   taskUUID?: string;
   retry?: number;
+
+  skipResponse?: boolean;
+  deliveryMethod?: string;
 }
 
 export type ReconnectingWebsocketProps = {

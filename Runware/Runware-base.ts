@@ -95,6 +95,66 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
+  private getResultUUID(result: any): string | undefined {
+    // Find the UUID for a given input type
+    // mediaUUID = generic input
+    // Others = specific input types
+    for (const key of ["mediaUUID", "imageUUID", "videoUUID"]) {
+      if (typeof result[key] === "string") return result[key];
+    }
+    return undefined;
+  }
+
+  /**
+   * Shared polling logic for async results.
+   * @param taskUUID - The task UUID to poll for.
+   * @param numberResults - Number of results expected.
+   * @returns Promise resolving to array of results.
+   */
+  private async pollForAsyncResults<T extends {mediaUUID?: string; imageUUID?: string; videoUUID?: string;}>({
+    taskUUID,
+    numberResults = 1,
+  }: {
+    taskUUID: string;
+    numberResults?: number;
+  }): Promise<T[]> {
+    const allResults = new Map<string, T>();
+    await getIntervalAsyncWithPromise(
+      async ({ resolve, reject }) => {
+        try {
+          const results = await this.getResponse<T>({ taskUUID });
+
+          // Add results to the collection
+          for (const result of results || []) {
+            const resultUUID = this.getResultUUID(result);
+            if (resultUUID) {
+              allResults.set(resultUUID, result);
+            }
+          }
+
+          // Check completion AFTER updating the collection
+          const isComplete = allResults.size === numberResults;
+
+          if (isComplete) {
+            resolve(Array.from(allResults.values()));
+            return true; // Signal to clear the interval
+          }
+
+          return false;
+        } catch (err) {
+          reject(err);
+          return true;
+        }
+      },
+      {
+        debugKey: "async-response",
+        pollingInterval: 2 * 1000,
+        timeoutDuration: 10 * 60 * 1000,
+      }
+    );
+    return Array.from(allResults.values());
+  }
+
   static async initialize(props: RunwareBaseType) {
     try {
       const instance = new this(props);
@@ -826,16 +886,47 @@ export class RunwareBase {
     return this.requestImageToText(params);
   };
 
+  /**
+   * Remove the background from an image or video.
+   * @remark This method now supports the removeBackground type which can handle multiple media types such as image and video.
+   * If you pass an `inputs` object with `inputs.image` or `inputs.video`, the response will contain `mediaUUID` and `mediaURL`.
+   * If you pass `inputImage`, the response will contain `imageUUID` and `imageURL`.
+   * @remark `imageUUID` is no longer guaranteed in the response. Use `mediaUUID` for new implementations.
+   * @since 1.2.0
+   * @returns {Promise<IRemoveImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
+   */
   removeImageBackground = async (
     payload: IRemoveImageBackground
   ): Promise<IRemoveImage> => {
-    return this.baseSingleRequest({
-      payload: {
-        ...payload,
-        taskType: ETaskType.IMAGE_BACKGROUND_REMOVAL,
-      },
-      debugKey: "remove-image-background",
-    });
+    const { skipResponse, ...rest } = payload;
+
+    try {
+      const deliveryMethod = rest.deliveryMethod;
+      const request = await this.baseSingleRequest<IRemoveImage>({
+        payload: {
+          ...rest,
+          taskType: ETaskType.REMOVE_BACKGROUND,
+        },
+        debugKey: "remove-background",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const results = await this.pollForAsyncResults<IRemoveImage>({
+          taskUUID,
+        });
+        return results[0];
+      }
+
+      // If not async, just return the initial result
+      return request;
+    } catch (e) {
+      throw e;
+    }
   };
 
   // Alias for removeImageBackground
@@ -877,50 +968,16 @@ export class RunwareBase {
       }
 
       const taskUUID = request?.taskUUID;
-
-      const numberResults = payload?.numberResults ?? 1;
-
-      const allVideos = new Map<string, any>();
-
-      await getIntervalAsyncWithPromise(
-        async ({ resolve, reject }) => {
-          try {
-            const videos = await this.getResponse({ taskUUID });
-
-            // Add videos to the collection
-            for (const video of videos || []) {
-              if (video.videoUUID) {
-                allVideos.set(video.videoUUID, video);
-              }
-            }
-
-            // Check completion AFTER updating the collection
-            const isComplete = allVideos.size === numberResults;
-
-            if (isComplete) {
-              resolve(Array.from(allVideos.values()));
-              return true; // Signal to clear the interval
-            }
-
-            return false; // Continue polling
-          } catch (err) {
-            reject(err);
-            return true; // Signal to clear the interval on error
-          }
-        },
-        {
-          debugKey: "async-response",
-          pollingInterval: 2 * 1000,
-          timeoutDuration: 10 * 60 * 1000,
-        }
-      );
-      return Array.from(allVideos.values());
+      return this.pollForAsyncResults({
+        taskUUID,
+        numberResults: payload?.numberResults,
+      });
     } catch (e) {
       throw e;
     }
   };
 
-  getResponse = async (payload: IAsyncResults): Promise<IVideoToImage[]> => {
+  getResponse = async <T>(payload: IAsyncResults): Promise<T[]> => {
     const taskUUID = payload.taskUUID;
     // const mock = getRandomTaskResponses({ count: 2, taskUUID });
     return this.baseSingleRequest({
@@ -934,8 +991,19 @@ export class RunwareBase {
     });
   };
 
+  /**
+   * Upscale an image or video
+   * @remark This method now supports the upscale type which can handle multiple media types such as image and video.
+   * If you pass an `inputs` object with `inputs.image` or `inputs.video`, the response will contain `mediaUUID` and `mediaURL`.
+   * If you pass `inputImage`, the response will contain `imageUUID` and `imageURL`.
+   * @remark `imageUUID` is no longer guaranteed in the response. Use `mediaUUID` for new implementations.
+   * @since 1.2.0
+   * @returns {Promise<IImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
+   */
   upscaleGan = async ({
     inputImage,
+    inputs,
+    model,
     upscaleFactor,
     outputType,
     outputFormat,
@@ -946,77 +1014,63 @@ export class RunwareBase {
     retry,
     includeGenerationTime,
     includePayload,
+    skipResponse,
+    deliveryMethod
   }: IUpscaleGan): Promise<IImage> => {
-    const totalRetry = retry || this._globalMaxRetries;
-    let lis: any = undefined;
-
-    const startTime = Date.now();
     try {
-      return await asyncRetry(
-        async () => {
-          await this.ensureConnection();
-          let imageUploaded;
+      let imageUploaded;
 
-          imageUploaded = await this.uploadImage(inputImage as File | string);
+      // TODO: Add support for handling all media uploads from inputs object
+      // This is legacy support for inputImage only
+      if (inputImage) {
+        imageUploaded = await this.uploadImage(inputImage as File | string);
+      }
 
-          const taskUUID = _taskUUID || customTaskUUID || getUUID();
-          const payload = {
-            taskUUID,
-            inputImage: imageUploaded?.imageUUID,
-            taskType: ETaskType.IMAGE_UPSCALE,
-            upscaleFactor,
-            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-            ...(outputType ? { outputType } : {}),
-            ...(outputQuality ? { outputQuality } : {}),
-            ...(outputFormat ? { outputFormat } : {}),
-          };
+      const taskUUID = _taskUUID || customTaskUUID || getUUID();
+      const payload = {
+        taskUUID,
+        inputImage: imageUploaded?.imageUUID,
+        taskType: ETaskType.UPSCALE,
+        inputs,
+        model,
+        upscaleFactor,
+        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+        ...(outputType ? { outputType } : {}),
+        ...(outputQuality ? { outputQuality } : {}),
+        ...(outputFormat ? { outputFormat } : {}),
+        includePayload,
+        includeGenerationTime,
+        retry,
+        deliveryMethod
+      };
 
-          this.send(payload);
-
-          lis = this.globalListener({
-            taskUUID,
-          });
-
-          const response = await getIntervalWithPromise(
-            ({ resolve, reject }) => {
-              const newUpscaleGan = this.getSingleMessage({ taskUUID });
-              if (!newUpscaleGan) return;
-
-              if (newUpscaleGan?.error) {
-                reject(newUpscaleGan);
-                return true;
-              }
-
-              if (newUpscaleGan) {
-                delete this._globalMessages[taskUUID];
-                resolve(newUpscaleGan);
-                return true;
-              }
-            },
-            { debugKey: "upscale-gan", timeoutDuration: this._timeoutDuration }
-          );
-
-          lis.destroy();
-
-          this.insertAdditionalResponse({
-            response,
-            payload: includePayload ? payload : undefined,
-            startTime: includeGenerationTime ? startTime : undefined,
-          });
-
-          return response as IImage;
+      const request = await this.baseSingleRequest<IImage>({
+        payload: {
+          ...payload,
+          taskType: ETaskType.UPSCALE,
         },
-        {
-          maxRetries: totalRetry,
-          callback: () => {
-            lis?.destroy();
-          },
-        }
-      );
+        debugKey: "upscale",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const results = await this.pollForAsyncResults<IImage>({
+          taskUUID,
+        });
+        return results[0];
+      }
+
+      // If not async, just return the initial result
+      return request;
     } catch (e) {
       throw e;
     }
   };
+
 
   // Alias for upscaleGan
   upscale = async (params: IUpscaleGan): Promise<IImage> => {
