@@ -991,8 +991,19 @@ export class RunwareBase {
     });
   };
 
+  /**
+   * Upscale an image or video
+   * @remark This method now supports the upscale type which can handle multiple media types such as image and video.
+   * If you pass an `inputs` object with `inputs.image` or `inputs.video`, the response will contain `mediaUUID` and `mediaURL`.
+   * If you pass `inputImage`, the response will contain `imageUUID` and `imageURL`.
+   * @remark `imageUUID` is no longer guaranteed in the response. Use `mediaUUID` for new implementations.
+   * @since 1.2.0
+   * @returns {Promise<IImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
+   */
   upscaleGan = async ({
     inputImage,
+    inputs,
+    model,
     upscaleFactor,
     outputType,
     outputFormat,
@@ -1003,77 +1014,63 @@ export class RunwareBase {
     retry,
     includeGenerationTime,
     includePayload,
+    skipResponse,
+    deliveryMethod
   }: IUpscaleGan): Promise<IImage> => {
-    const totalRetry = retry || this._globalMaxRetries;
-    let lis: any = undefined;
-
-    const startTime = Date.now();
     try {
-      return await asyncRetry(
-        async () => {
-          await this.ensureConnection();
-          let imageUploaded;
+      let imageUploaded;
 
-          imageUploaded = await this.uploadImage(inputImage as File | string);
+      // TODO: Add support for handling all media uploads from inputs object
+      // This is legacy support for inputImage only
+      if (inputImage) {
+        imageUploaded = await this.uploadImage(inputImage as File | string);
+      }
 
-          const taskUUID = _taskUUID || customTaskUUID || getUUID();
-          const payload = {
-            taskUUID,
-            inputImage: imageUploaded?.imageUUID,
-            taskType: ETaskType.IMAGE_UPSCALE,
-            upscaleFactor,
-            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-            ...(outputType ? { outputType } : {}),
-            ...(outputQuality ? { outputQuality } : {}),
-            ...(outputFormat ? { outputFormat } : {}),
-          };
+      const taskUUID = _taskUUID || customTaskUUID || getUUID();
+      const payload = {
+        taskUUID,
+        inputImage: imageUploaded?.imageUUID,
+        taskType: ETaskType.UPSCALE,
+        inputs,
+        model,
+        upscaleFactor,
+        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+        ...(outputType ? { outputType } : {}),
+        ...(outputQuality ? { outputQuality } : {}),
+        ...(outputFormat ? { outputFormat } : {}),
+        includePayload,
+        includeGenerationTime,
+        retry,
+        deliveryMethod
+      };
 
-          this.send(payload);
-
-          lis = this.globalListener({
-            taskUUID,
-          });
-
-          const response = await getIntervalWithPromise(
-            ({ resolve, reject }) => {
-              const newUpscaleGan = this.getSingleMessage({ taskUUID });
-              if (!newUpscaleGan) return;
-
-              if (newUpscaleGan?.error) {
-                reject(newUpscaleGan);
-                return true;
-              }
-
-              if (newUpscaleGan) {
-                delete this._globalMessages[taskUUID];
-                resolve(newUpscaleGan);
-                return true;
-              }
-            },
-            { debugKey: "upscale-gan", timeoutDuration: this._timeoutDuration }
-          );
-
-          lis.destroy();
-
-          this.insertAdditionalResponse({
-            response,
-            payload: includePayload ? payload : undefined,
-            startTime: includeGenerationTime ? startTime : undefined,
-          });
-
-          return response as IImage;
+      const request = await this.baseSingleRequest<IImage>({
+        payload: {
+          ...payload,
+          taskType: ETaskType.UPSCALE,
         },
-        {
-          maxRetries: totalRetry,
-          callback: () => {
-            lis?.destroy();
-          },
-        }
-      );
+        debugKey: "upscale",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const results = await this.pollForAsyncResults<IImage>({
+          taskUUID,
+        });
+        return results[0];
+      }
+
+      // If not async, just return the initial result
+      return request;
     } catch (e) {
       throw e;
     }
   };
+
 
   // Alias for upscaleGan
   upscale = async (params: IUpscaleGan): Promise<IImage> => {
