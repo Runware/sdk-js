@@ -465,13 +465,18 @@ return interface IImageToText {
 
 const  runware  =  new Runware({ apiKey: "API_KEY" });
 const audio = await runware.audioInference({
-	model: "elevenlabs:1@1",
-	prompt: "hip hop",
+	duration: 10,
+	outputFormat: "MP3",
+	numberResults: 2,
+	includeCost: true,
 	audioSettings: {
-    bitrate: 128,
-    sampleRate: 44100
-  },
-	duration: 10
+		bitrate: 128,
+		sampleRate: 44100
+	},
+	outputType: "URL",
+	model: "elevenlabs:1@1",
+	positivePrompt: "hip hop",
+	deliveryMethod: "async"
 })
 console.log(audio)
 
