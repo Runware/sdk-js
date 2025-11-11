@@ -42,6 +42,9 @@ import {
   TMediaStorageResponse,
   TVectorize,
   TVectorizeResponse,
+  IRequestAudio,
+  IAudio,
+  MediaUUID,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -95,13 +98,19 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
+  
+
+  private getUniqueUUID(item: MediaUUID): string | undefined {
+    return item.mediaUUID || item.audioUUID  || item.imageUUID  || item.videoUUID;
+  }
+
   /**
    * Shared polling logic for async results.
    * @param taskUUID - The task UUID to poll for.
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T extends { status: string; taskUUID: string; }>({
+  private async pollForAsyncResults<T extends { status: string; } & MediaUUID>({
     taskUUID,
     numberResults = 1,
   }: {
@@ -113,11 +122,15 @@ export class RunwareBase {
       async ({ resolve, reject }) => {
         try {
           const response = await this.getResponse<T>({ taskUUID });
+          
 
           // Add results to the collection
           for (const responseItem of response || []) {
             if (responseItem.status === "success") {
-              allResults.set(responseItem.taskUUID, responseItem);
+              const uuid = this.getUniqueUUID(responseItem);
+              if (uuid) {
+                allResults.set(uuid, responseItem);
+              }
             }
           }
 
@@ -938,6 +951,40 @@ export class RunwareBase {
         taskUUID,
         numberResults: payload?.numberResults,
       });
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  audioInference = async (
+    payload: IRequestAudio
+  ): Promise<IAudio[] | IAudio> => {
+    const { skipResponse, ...rest } = payload;
+
+    try {
+      const request = await this.baseSingleRequest<IAudio>({
+        payload: {
+          ...rest,
+          taskType: ETaskType.AUDIO_INFERENCE,
+        },
+
+        debugKey: "audio-inference",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      const taskUUID = request?.taskUUID;
+      if (rest.deliveryMethod === "async") {
+        return this.pollForAsyncResults<IAudio>({
+          taskUUID,
+          numberResults: payload?.numberResults,
+        });
+      }
+
+      // If not async, just return the initial result
+      return request;
     } catch (e) {
       throw e;
     }
