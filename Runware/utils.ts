@@ -252,6 +252,7 @@ export const removeAllKeyListener = ({
 
 export enum LISTEN_TO_IMAGES_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
+  REQUEST_AUDIO = "REQUEST_AUDIO"
 }
 
 export const evaluateNonTrue = ({

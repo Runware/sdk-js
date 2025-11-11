@@ -360,7 +360,7 @@ export interface IAudio {
 
 export interface IRequestAudio {
   model: string;
-  numberResults: number;
+  numberResults?: number;
   outputType?: IOutputType;
   outputFormat?: IAudioOutputFormat;
   uploadEndpoint?: string;

@@ -332,7 +332,7 @@ export class RunwareBase {
     }
   };
 
-  private listenToImages({
+  private listenToResponse({
     onPartialImages,
     taskUUID,
     groupKey,
@@ -641,7 +641,7 @@ export class RunwareBase {
 
           // const generationTime = endTime - startTime;
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
@@ -959,24 +959,32 @@ export class RunwareBase {
   audioInference = async (
     payload: IRequestAudio
   ): Promise<IAudio[] | IAudio> => {
-    const { skipResponse, ...rest } = payload;
+    const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
 
     try {
-      const request = await this.baseSingleRequest<IAudio>({
+      const requestMethod =
+        deliveryMethod === "sync"
+          ? this.baseSyncRequest
+          : this.baseSingleRequest;
+
+      const request = await requestMethod<IAudio>({
         payload: {
           ...rest,
+          numberResults: rest.numberResults || 1,
           taskType: ETaskType.AUDIO_INFERENCE,
+          deliveryMethod: deliveryMethod,
         },
 
         debugKey: "audio-inference",
       });
+
 
       if (skipResponse) {
         return request;
       }
 
       const taskUUID = request?.taskUUID;
-      if (rest.deliveryMethod === "async") {
+      if (deliveryMethod === "async") {
         return this.pollForAsyncResults<IAudio>({
           taskUUID,
           numberResults: payload?.numberResults,
@@ -1300,7 +1308,7 @@ export class RunwareBase {
             numberResults: imageRemaining,
           });
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
             groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
@@ -1459,6 +1467,82 @@ export class RunwareBase {
 
           lis.destroy();
           return response as T;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  protected baseSyncRequest = async <T>({
+    payload,
+    debugKey,
+  }: {
+    payload: Record<string, any>;
+    debugKey: string;
+  }): Promise<T> => {
+    const {
+      retry,
+      customTaskUUID,
+      includePayload,
+      numberResults = 1,
+      onPartialResponse,
+      includeGenerationTime,
+      ...restPayload
+    } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+    let taskUUIDs: string[] = [];
+    let retryCount = 0;
+
+    const startTime = Date.now();
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          retryCount++;
+
+          const taskWithSimilarTaskUUID = this._globalImages.filter((audio) =>
+            taskUUIDs.includes(audio.taskUUID)
+          );
+
+          const taskUUID = customTaskUUID || getUUID();
+          taskUUIDs.push(taskUUID);
+          const taskRemaining = numberResults - taskWithSimilarTaskUUID.length;
+
+          const payload = {
+            ...restPayload,
+            taskUUID,
+            numberResults: taskRemaining,
+          };
+
+          this.send(payload);
+
+          lis = this.listenToResponse({
+            onPartialImages: onPartialResponse,
+            taskUUID: taskUUID,
+            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_AUDIO,
+            requestPayload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
+          const promise = await this.getSimilarImages({
+            taskUUID: taskUUIDs,
+            numberResults,
+            lis,
+            // debugKey,
+          });
+
+          lis.destroy();
+          return promise as T;
         },
         {
           maxRetries: totalRetry,
