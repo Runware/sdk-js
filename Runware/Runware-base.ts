@@ -96,46 +96,28 @@ export class RunwareBase {
   }
 
   /**
- * Returns the first string value found in the result object for the given keys.
- * Used to extract a value (such as a UUID, text, or other result parameter) from a result object.
- * The keys provided in resultKeys may refer to UUIDs (e.g., mediaUUID, imageUUID, videoUUID) or other string fields (e.g., text for captioning).
- * @param result - The result object to search for a string value.
- * @param resultKeys - The list of keys to check in order of priority.
- * @returns The first string value found for the specified keys, or undefined if none found.
- */
-  private getResultValue(result: any, resultKeys = ["mediaUUID", "imageUUID", "videoUUID"]): string | undefined {
-    for (const key of resultKeys) {
-      if (typeof result[key] === "string") return result[key];
-    }
-    return undefined;
-  }
-
-  /**
    * Shared polling logic for async results.
    * @param taskUUID - The task UUID to poll for.
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T>({
+  private async pollForAsyncResults<T extends { status: string; taskUUID: string; }>({
     taskUUID,
-    resultKeys,
     numberResults = 1,
   }: {
     taskUUID: string;
-    resultKeys?: string[];
     numberResults?: number;
   }): Promise<T[]> {
     const allResults = new Map<string, T>();
     await getIntervalAsyncWithPromise(
       async ({ resolve, reject }) => {
         try {
-          const results = await this.getResponse<T>({ taskUUID });
+          const response = await this.getResponse<T>({ taskUUID });
 
           // Add results to the collection
-          for (const result of results || []) {
-            const resultValue = this.getResultValue(result, resultKeys);
-            if (resultValue) {
-              allResults.set(resultValue, result);
+          for (const responseItem of response || []) {
+            if (responseItem.status === "success") {
+              allResults.set(responseItem.taskUUID, responseItem);
             }
           }
 
@@ -855,7 +837,6 @@ export class RunwareBase {
         const taskUUID = request?.taskUUID;
         const results = await this.pollForAsyncResults<IImageToText>({
           taskUUID,
-          resultKeys: ["text"],
         });
         return results[0];
       }

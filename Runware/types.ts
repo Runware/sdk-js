@@ -49,6 +49,7 @@ export interface IImage {
   imageUUID?: string;
   inputImageUUID?: string;
   taskUUID: string;
+  status: string;
   imageURL?: string;
   imageBase64Data?: string;
   imageDataURI?: string;
@@ -269,6 +270,7 @@ export interface IRequestImageToText extends IAdditionalResponsePayload {
 export interface IImageToText {
   taskType: ETaskType;
   taskUUID: string;
+  status: string;
   text: string;
   cost?: number;
 }
@@ -351,6 +353,7 @@ export interface IAsyncResults {
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
+  status: string;
   imageUUID?: string;
   mediaUUID?: string;
   mediaURL?: string;
@@ -614,6 +617,7 @@ export type TPhotoMaker = {
 export type TPhotoMakerResponse = {
   taskType: string;
   taskUUID: string;
+  status: string;
   imageUUID: string;
   NSFWContent: boolean;
   cost: number;
