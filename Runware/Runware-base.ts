@@ -95,23 +95,13 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
-  private getResultUUID(result: any): string | undefined {
-    // Find the UUID for a given input type
-    // mediaUUID = generic input
-    // Others = specific input types
-    for (const key of ["mediaUUID", "imageUUID", "videoUUID"]) {
-      if (typeof result[key] === "string") return result[key];
-    }
-    return undefined;
-  }
-
   /**
    * Shared polling logic for async results.
    * @param taskUUID - The task UUID to poll for.
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T extends {mediaUUID?: string; imageUUID?: string; videoUUID?: string;}>({
+  private async pollForAsyncResults<T extends { status: string; taskUUID: string; }>({
     taskUUID,
     numberResults = 1,
   }: {
@@ -122,13 +112,12 @@ export class RunwareBase {
     await getIntervalAsyncWithPromise(
       async ({ resolve, reject }) => {
         try {
-          const results = await this.getResponse<T>({ taskUUID });
+          const response = await this.getResponse<T>({ taskUUID });
 
           // Add results to the collection
-          for (const result of results || []) {
-            const resultUUID = this.getResultUUID(result);
-            if (resultUUID) {
-              allResults.set(resultUUID, result);
+          for (const responseItem of response || []) {
+            if (responseItem.status === "success") {
+              allResults.set(responseItem.taskUUID, responseItem);
             }
           }
 
@@ -799,83 +788,60 @@ export class RunwareBase {
 
   requestImageToText = async ({
     inputImage,
+    inputs,
     includeCost,
     customTaskUUID,
     taskUUID: _taskUUID,
     retry,
     includePayload,
     includeGenerationTime,
+    deliveryMethod,
+    skipResponse,
+    model,
   }: IRequestImageToText): Promise<IImageToText> => {
-    const totalRetry = retry || this._globalMaxRetries;
-    let lis: any = undefined;
-
-    const startTime = Date.now();
-
     try {
-      return await asyncRetry(
-        async () => {
-          await this.ensureConnection();
-          const imageUploaded = inputImage
-            ? await this.uploadImage(inputImage as File | string)
-            : null;
+      let imageUploaded;
 
-          const taskUUID = _taskUUID || customTaskUUID || getUUID();
+      // TODO: Add support for handling all media uploads from inputs object
+      // This is legacy support for inputImage only
+      if (inputImage) {
+        imageUploaded = await this.uploadImage(inputImage as File | string);
+      }
 
-          const payload = {
-            taskUUID,
-            taskType: ETaskType.IMAGE_CAPTION,
-            inputImage: imageUploaded?.imageUUID,
-            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-          };
+      const taskUUID = _taskUUID || customTaskUUID || getUUID();
+      const payload = {
+        taskUUID,
+        taskType: ETaskType.CAPTION,
+        model,
+        inputImage: imageUploaded?.imageUUID,
+        inputs,
+        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
+        retry,
+        includePayload,
+        includeGenerationTime,
+      };
 
-          this.send(payload);
-
-          lis = this.globalListener({
-            taskUUID,
-          });
-
-          const response = await getIntervalWithPromise(
-            ({ resolve, reject }) => {
-              const newReverseClip = this.getSingleMessage({
-                taskUUID,
-              });
-
-              if (!newReverseClip) return;
-
-              if (newReverseClip?.error) {
-                reject(newReverseClip);
-                return true;
-              }
-
-              if (newReverseClip) {
-                delete this._globalMessages[taskUUID];
-                resolve(newReverseClip);
-                return true;
-              }
-            },
-            {
-              debugKey: "remove-image-background",
-              timeoutDuration: this._timeoutDuration,
-            }
-          );
-
-          lis.destroy();
-
-          this.insertAdditionalResponse({
-            response: response,
-            payload: includePayload ? payload : undefined,
-            startTime: includeGenerationTime ? startTime : undefined,
-          });
-
-          return response as IImageToText;
+      const request = await this.baseSingleRequest<IImageToText>({
+        payload: {
+          ...payload,
+          taskType: ETaskType.CAPTION,
         },
-        {
-          maxRetries: totalRetry,
-          callback: () => {
-            lis?.destroy();
-          },
-        }
-      );
+        debugKey: "caption",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const results = await this.pollForAsyncResults<IImageToText>({
+          taskUUID,
+        });
+        return results[0];
+      }
+
+      return request;
     } catch (e) {
       throw e;
     }

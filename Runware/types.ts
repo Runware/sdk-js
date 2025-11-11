@@ -14,9 +14,9 @@ export enum ETaskType {
   UPSCALE = "upscale",
   REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
+  CAPTION = "caption",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
-  IMAGE_CAPTION = "imageCaption",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
   IMAGE_MASKING = "imageMasking",
   PROMPT_ENHANCE = "promptEnhance",
@@ -49,6 +49,7 @@ export interface IImage {
   imageUUID?: string;
   inputImageUUID?: string;
   taskUUID: string;
+  status: string;
   imageURL?: string;
   imageBase64Data?: string;
   imageDataURI?: string;
@@ -251,15 +252,25 @@ export interface IRefiner {
   startStepPercentage?: number;
 }
 export interface IRequestImageToText extends IAdditionalResponsePayload {
+  model?: string;
   inputImage?: File | string;
+  inputs?: {
+    video?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
   includeCost?: boolean;
   customTaskUUID?: string;
   taskUUID?: string;
   retry?: number;
+
+  deliveryMethod?: string;
+  skipResponse?: boolean;
 }
 export interface IImageToText {
   taskType: ETaskType;
   taskUUID: string;
+  status: string;
   text: string;
   cost?: number;
 }
@@ -333,6 +344,7 @@ export interface IRequestVideo extends IRequestImageToText {
 
   [key: string]: any;
 }
+
 export interface IAsyncResults {
   taskUUID: string;
   onPartialImages?: (images: IImage[], error?: IError) => void;
@@ -341,6 +353,7 @@ export interface IAsyncResults {
 export interface IRemoveImage {
   taskType: ETaskType;
   taskUUID: string;
+  status: string;
   imageUUID?: string;
   mediaUUID?: string;
   mediaURL?: string;
@@ -604,6 +617,7 @@ export type TPhotoMaker = {
 export type TPhotoMakerResponse = {
   taskType: string;
   taskUUID: string;
+  status: string;
   imageUUID: string;
   NSFWContent: boolean;
   cost: number;
