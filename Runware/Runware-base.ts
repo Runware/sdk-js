@@ -649,7 +649,7 @@ export class RunwareBase {
             startTime: includeGenerationTime ? startTime : undefined,
           });
 
-          const promise = await this.getSimilarImages({
+          const promise = await this.getResponseWithSimilarTaskUUID({
             taskUUID: taskUUIDs,
             numberResults,
             lis,
@@ -1316,7 +1316,7 @@ export class RunwareBase {
             startTime: includeGenerationTime ? startTime : undefined,
           });
 
-          const promise = await this.getSimilarImages({
+          const promise = await this.getResponseWithSimilarTaskUUID({
             taskUUID: taskUUIDs,
             numberResults,
             lis,
@@ -1534,7 +1534,7 @@ export class RunwareBase {
             startTime: includeGenerationTime ? startTime : undefined,
           });
 
-          const promise = await this.getSimilarImages({
+          const promise = await this.getResponseWithSimilarTaskUUID({
             taskUUID: taskUUIDs,
             numberResults,
             lis,
@@ -1652,7 +1652,7 @@ export class RunwareBase {
     }
   }
 
-  private async getSimilarImages({
+  private async getResponseWithSimilarTaskUUID({
     taskUUID,
     numberResults,
     shouldThrowError,
