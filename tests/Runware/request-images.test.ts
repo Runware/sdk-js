@@ -118,7 +118,7 @@ describe("When user request an image", async () => {
   });
   test("it should request multiple images in parallel", async () => {
     const sendSpy = vi.spyOn(runware as any, "send");
-    const listenToImages = vi.spyOn(runware as any, "listenToImages");
+    const listenToResponse = vi.spyOn(runware as any, "listenToResponse");
 
     await Promise.all([
       runware.requestImages({
@@ -142,7 +142,7 @@ describe("When user request an image", async () => {
       taskType: ETaskType.IMAGE_INFERENCE,
     });
 
-    expect(listenToImages).toHaveBeenCalledTimes(2);
+    expect(listenToResponse).toHaveBeenCalledTimes(2);
   });
 
   test("it should request providerSettings", async() => {

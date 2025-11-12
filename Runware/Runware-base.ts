@@ -42,10 +42,13 @@ import {
   TMediaStorageResponse,
   TVectorize,
   TVectorizeResponse,
+  IRequestAudio,
+  IAudio,
+  MediaUUID,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
-  LISTEN_TO_IMAGES_KEY,
+  LISTEN_TO_MEDIA_KEY,
   TIMEOUT_DURATION,
   accessDeepObject,
   delay,
@@ -95,13 +98,19 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
+  
+
+  private getUniqueUUID(item: MediaUUID): string | undefined {
+    return item.mediaUUID || item.audioUUID  || item.imageUUID  || item.videoUUID;
+  }
+
   /**
    * Shared polling logic for async results.
    * @param taskUUID - The task UUID to poll for.
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T extends { status: string; taskUUID: string; }>({
+  private async pollForAsyncResults<T extends { status: string; } & MediaUUID>({
     taskUUID,
     numberResults = 1,
   }: {
@@ -113,11 +122,15 @@ export class RunwareBase {
       async ({ resolve, reject }) => {
         try {
           const response = await this.getResponse<T>({ taskUUID });
+          
 
           // Add results to the collection
           for (const responseItem of response || []) {
             if (responseItem.status === "success") {
-              allResults.set(responseItem.taskUUID, responseItem);
+              const uuid = this.getUniqueUUID(responseItem);
+              if (uuid) {
+                allResults.set(uuid, responseItem);
+              }
             }
           }
 
@@ -319,7 +332,7 @@ export class RunwareBase {
     }
   };
 
-  private listenToImages({
+  private listenToResponse({
     onPartialImages,
     taskUUID,
     groupKey,
@@ -328,7 +341,7 @@ export class RunwareBase {
   }: {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
-    groupKey: LISTEN_TO_IMAGES_KEY;
+    groupKey: LISTEN_TO_MEDIA_KEY;
     requestPayload?: Record<string, any>;
     startTime?: number;
   }) {
@@ -628,15 +641,15 @@ export class RunwareBase {
 
           // const generationTime = endTime - startTime;
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
-            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_IMAGES,
             requestPayload: includePayload ? newRequestObject : undefined,
             startTime: includeGenerationTime ? startTime : undefined,
           });
 
-          const promise = await this.getSimilarImages({
+          const promise = await this.getResponseWithSimilarTaskUUID({
             taskUUID: taskUUIDs,
             numberResults,
             lis,
@@ -938,6 +951,49 @@ export class RunwareBase {
         taskUUID,
         numberResults: payload?.numberResults,
       });
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  audioInference = async (
+    payload: IRequestAudio
+  ): Promise<IAudio[] | IAudio> => {
+    const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
+
+    try {
+      const requestMethod =
+        deliveryMethod === "sync"
+          ? this.baseSyncRequest
+          : this.baseSingleRequest;
+
+      const request = await requestMethod<IAudio>({
+        payload: {
+          ...rest,
+          numberResults: rest.numberResults || 1,
+          taskType: ETaskType.AUDIO_INFERENCE,
+          deliveryMethod: deliveryMethod,
+        },
+        groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_AUDIO,
+        debugKey: "audio-inference",
+        skipResponse
+      });
+
+
+      if (skipResponse) {
+        return request;
+      }
+
+      const taskUUID = request?.taskUUID;
+      if (deliveryMethod === "async") {
+        return this.pollForAsyncResults<IAudio>({
+          taskUUID,
+          numberResults: payload?.numberResults,
+        });
+      }
+
+      // If not async, just return the initial result
+      return request;
     } catch (e) {
       throw e;
     }
@@ -1253,15 +1309,15 @@ export class RunwareBase {
             numberResults: imageRemaining,
           });
 
-          lis = this.listenToImages({
+          lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
-            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_IMAGES,
             requestPayload: includePayload ? payload : undefined,
             startTime: includeGenerationTime ? startTime : undefined,
           });
 
-          const promise = await this.getSimilarImages({
+          const promise = await this.getResponseWithSimilarTaskUUID({
             taskUUID: taskUUIDs,
             numberResults,
             lis,
@@ -1425,6 +1481,101 @@ export class RunwareBase {
     }
   };
 
+  protected baseSyncRequest = async <T>({
+    payload,
+    groupKey,
+    skipResponse = false
+  }: {
+    payload: Record<string, any>;
+    groupKey: LISTEN_TO_MEDIA_KEY;
+    skipResponse?: boolean;
+  }): Promise<T> => {
+    const {
+      retry,
+      customTaskUUID,
+      includePayload,
+      numberResults = 1,
+      onPartialResponse,
+      includeGenerationTime,
+      ...restPayload
+    } = payload;
+
+    const totalRetry = retry || this._globalMaxRetries;
+    let lis: any = undefined;
+    let taskUUIDs: string[] = [];
+    let retryCount = 0;
+
+    const startTime = Date.now();
+
+    try {
+      return await asyncRetry(
+        async () => {
+          await this.ensureConnection();
+          retryCount++;
+
+          const taskWithSimilarTaskUUID = this._globalImages.filter((audio) =>
+            taskUUIDs.includes(audio.taskUUID)
+          );
+
+          const taskUUID = customTaskUUID || getUUID();
+          taskUUIDs.push(taskUUID);
+          const taskRemaining = numberResults - taskWithSimilarTaskUUID.length;
+
+          const payload = {
+            ...restPayload,
+            taskUUID,
+            numberResults: taskRemaining,
+          };
+
+          this.send(payload);
+
+          if (skipResponse) {
+            return new Promise<T>((resolve, reject) => {
+              const listener = this.addListener({
+                taskUUID,
+                groupKey,
+                lis: (msg) => {
+                  listener.destroy();
+                  if (msg.error) {
+                    reject(msg.error);
+                  } else {
+                    resolve(msg[taskUUID]);
+                  }
+                },
+              });
+            });
+          };
+
+          lis = this.listenToResponse({
+            onPartialImages: onPartialResponse,
+            taskUUID: taskUUID,
+            groupKey,
+            requestPayload: includePayload ? payload : undefined,
+            startTime: includeGenerationTime ? startTime : undefined,
+          });
+
+          const promise = await this.getResponseWithSimilarTaskUUID({
+            taskUUID: taskUUIDs,
+            numberResults,
+            lis,
+            // debugKey,
+          });
+
+          lis.destroy();
+          return promise as T;
+        },
+        {
+          maxRetries: totalRetry,
+          callback: () => {
+            lis?.destroy();
+          },
+        }
+      );
+    } catch (e) {
+      throw e;
+    }
+  };
+
   async ensureConnection() {
     let isConnected = this.connected();
     if (isConnected || this._url === BASE_RUNWARE_URLS.TEST) return;
@@ -1521,7 +1672,7 @@ export class RunwareBase {
     }
   }
 
-  private async getSimilarImages({
+  private async getResponseWithSimilarTaskUUID({
     taskUUID,
     numberResults,
     shouldThrowError,

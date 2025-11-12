@@ -50,7 +50,7 @@ describe("When user request image to text", async () => {
     expect(sendSpy).toHaveBeenCalledWith({
       inputImage: testExamples.imageUploadRes.imageUUID,
       taskUUID: mockTaskUUID,
-      taskType: ETaskType.IMAGE_CAPTION,
+      taskType: ETaskType.CAPTION,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
       taskUUID: mockTaskUUID,

@@ -54,7 +54,7 @@ describe("When user request to upscale gan", async () => {
       inputImage: testExamples.imageUploadRes.imageUUID,
       taskUUID: mockTaskUUID,
       upscaleFactor: 2,
-      taskType: ETaskType.IMAGE_UPSCALE,
+      taskType: ETaskType.UPSCALE,
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
       taskUUID: mockTaskUUID,

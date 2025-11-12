@@ -15,6 +15,7 @@ export enum ETaskType {
   REMOVE_BACKGROUND = "removeBackground",
   VIDEO_INFERENCE = "videoInference",
   CAPTION = "caption",
+  AUDIO_INFERENCE = "audioInference",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
@@ -38,6 +39,7 @@ export type RunwareBaseType = {
 export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 export type IVideoOutputFormat = "MP4" | "WEBM" | "MOV";
+export type IAudioOutputFormat = "MP3"
 
 export interface IAdditionalResponsePayload {
   includePayload?: boolean;
@@ -343,6 +345,48 @@ export interface IRequestVideo extends IRequestImageToText {
   retry?: number;
 
   [key: string]: any;
+}
+
+export interface IAudio {
+  taskUUID: string;
+  taskType: string;
+  status: string;
+  audioUUID?: string;
+  audioURL?: string;
+  audioBase64Data?: string;
+  audioDataURI?: string;
+  cost?: number;
+}
+
+export interface IRequestAudio {
+  model: string;
+  numberResults?: number;
+  outputType?: IOutputType;
+  outputFormat?: IAudioOutputFormat;
+  uploadEndpoint?: string;
+  includeCost?: boolean;
+  positivePrompt?: string;
+  duration?: number;
+  audioSettings?: {
+    sampleRate?: number;
+    bitrate?: number;
+  } & {
+    [key: string]: unknown;
+  };
+  inputs?: {
+    video?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
+  deliveryMethod?: string;
+  
+  taskUUID?: string;
+  customTaskUUID?: string;
+
+  skipResponse?: boolean;
+  retry?: number;
+
+  [key: string]: unknown;
 }
 
 export interface IAsyncResults {
@@ -826,3 +870,10 @@ export type TServerError = {
     taskType: string;
   };
 };
+
+export type MediaUUID = {
+  mediaUUID?: string;
+  audioUUID?: string;
+  imageUUID?: string;
+  videoUUID?: string;
+}

@@ -457,6 +457,41 @@ return interface IImageToText {
 
 &nbsp;
 
+### Audio Inference
+
+[Read Documentation](https://runware.ai/docs/en/audio-inference/introduction)
+
+```js
+
+const  runware  =  new Runware({ apiKey: "API_KEY" });
+const audio = await runware.audioInference({
+	duration: 10,
+	outputFormat: "MP3",
+	numberResults: 2,
+	includeCost: true,
+	audioSettings: {
+		bitrate: 128,
+		sampleRate: 44100
+	},
+	outputType: "URL",
+	model: "elevenlabs:1@1",
+	positivePrompt: "hip hop",
+	deliveryMethod: "async"
+})
+console.log(audio)
+
+return interface IAudio {
+  taskUUID: string;
+  taskType: string;
+  audioUUID?: string;
+  audioURL?: string;
+  audioBase64Data?: string;
+  audioDataURI?: string;
+  cost?: number;
+}
+```
+
+
 ### Model Upload
 
 [Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
@@ -704,6 +739,10 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.2.2
+
+- Added audioInference task type
 
 ### - v1.2.1
 
