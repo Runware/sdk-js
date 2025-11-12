@@ -250,7 +250,7 @@ export const removeAllKeyListener = ({
   return listeners.filter((lis) => lis?.key !== key);
 };
 
-export enum LISTEN_TO_IMAGES_KEY {
+export enum LISTEN_TO_MEDIA_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
   REQUEST_AUDIO = "REQUEST_AUDIO"
 }

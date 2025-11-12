@@ -48,7 +48,7 @@ import {
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
-  LISTEN_TO_IMAGES_KEY,
+  LISTEN_TO_MEDIA_KEY,
   TIMEOUT_DURATION,
   accessDeepObject,
   delay,
@@ -341,7 +341,7 @@ export class RunwareBase {
   }: {
     taskUUID: string;
     onPartialImages?: (images: IImage[], error?: any) => void;
-    groupKey: LISTEN_TO_IMAGES_KEY;
+    groupKey: LISTEN_TO_MEDIA_KEY;
     requestPayload?: Record<string, any>;
     startTime?: number;
   }) {
@@ -644,7 +644,7 @@ export class RunwareBase {
           lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
-            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_IMAGES,
             requestPayload: includePayload ? newRequestObject : undefined,
             startTime: includeGenerationTime ? startTime : undefined,
           });
@@ -974,7 +974,7 @@ export class RunwareBase {
           taskType: ETaskType.AUDIO_INFERENCE,
           deliveryMethod: deliveryMethod,
         },
-
+        groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_AUDIO,
         debugKey: "audio-inference",
       });
 
@@ -1311,7 +1311,7 @@ export class RunwareBase {
           lis = this.listenToResponse({
             onPartialImages,
             taskUUID: taskUUID,
-            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_IMAGES,
+            groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_IMAGES,
             requestPayload: includePayload ? payload : undefined,
             startTime: includeGenerationTime ? startTime : undefined,
           });
@@ -1482,10 +1482,10 @@ export class RunwareBase {
 
   protected baseSyncRequest = async <T>({
     payload,
-    debugKey,
+    groupKey,
   }: {
     payload: Record<string, any>;
-    debugKey: string;
+    groupKey: LISTEN_TO_MEDIA_KEY
   }): Promise<T> => {
     const {
       retry,
@@ -1529,7 +1529,7 @@ export class RunwareBase {
           lis = this.listenToResponse({
             onPartialImages: onPartialResponse,
             taskUUID: taskUUID,
-            groupKey: LISTEN_TO_IMAGES_KEY.REQUEST_AUDIO,
+            groupKey,
             requestPayload: includePayload ? payload : undefined,
             startTime: includeGenerationTime ? startTime : undefined,
           });
