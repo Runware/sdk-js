@@ -976,6 +976,7 @@ export class RunwareBase {
         },
         groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_AUDIO,
         debugKey: "audio-inference",
+        skipResponse
       });
 
 
@@ -1483,9 +1484,11 @@ export class RunwareBase {
   protected baseSyncRequest = async <T>({
     payload,
     groupKey,
+    skipResponse = false
   }: {
     payload: Record<string, any>;
-    groupKey: LISTEN_TO_MEDIA_KEY
+    groupKey: LISTEN_TO_MEDIA_KEY;
+    skipResponse?: boolean;
   }): Promise<T> => {
     const {
       retry,
@@ -1525,6 +1528,23 @@ export class RunwareBase {
           };
 
           this.send(payload);
+
+          if (skipResponse) {
+            return new Promise<T>((resolve, reject) => {
+              const listener = this.addListener({
+                taskUUID,
+                groupKey,
+                lis: (msg) => {
+                  listener.destroy();
+                  if (msg.error) {
+                    reject(msg.error);
+                  } else {
+                    resolve(msg[taskUUID]);
+                  }
+                },
+              });
+            });
+          };
 
           lis = this.listenToResponse({
             onPartialImages: onPartialResponse,
