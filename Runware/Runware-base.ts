@@ -653,6 +653,7 @@ export class RunwareBase {
             taskUUID: taskUUIDs,
             numberResults,
             lis,
+            deliveryMethod: rest.deliveryMethod
           });
 
           lis.destroy();
@@ -1677,11 +1678,13 @@ export class RunwareBase {
     numberResults,
     shouldThrowError,
     lis,
+    deliveryMethod
   }: {
     taskUUID: string | string[];
     numberResults: number;
     shouldThrowError?: boolean;
     lis: any;
+    deliveryMethod?: "sync" | "async";
   }): Promise<IImage[] | IError> {
     return (await getIntervalWithPromise(
       ({ resolve, reject, intervalId }) => {
@@ -1689,6 +1692,8 @@ export class RunwareBase {
         const imagesWithSimilarTask = this._globalImages.filter((img) =>
           taskUUIDs.includes(img.taskUUID)
         );
+
+        const isAsyncResponse = deliveryMethod === "async" && imagesWithSimilarTask.length > 0;
 
         if (this._globalError) {
           const newData = this._globalError;
@@ -1699,7 +1704,7 @@ export class RunwareBase {
           return true;
         }
         // onPartialImages?.(imagesWithSimilarTask)
-        else if (imagesWithSimilarTask.length >= numberResults) {
+        else if (imagesWithSimilarTask.length >= numberResults || isAsyncResponse) {
           // lis?.destroy();
           clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(

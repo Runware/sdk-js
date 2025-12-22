@@ -491,7 +491,6 @@ return interface IAudio {
 }
 ```
 
-
 ### Model Upload
 
 [Read Documentation](https://docs.runware.ai/en/image-inference/model-upload)
@@ -739,6 +738,10 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.2.3
+
+- Handle async delivery method for image inference
 
 ### - v1.2.2
 
