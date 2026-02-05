@@ -45,6 +45,8 @@ import {
   IRequestAudio,
   IAudio,
   MediaUUID,
+  IRequestThreeD,
+  IThreeDImage,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -101,7 +103,7 @@ export class RunwareBase {
   
 
   private getUniqueUUID(item: MediaUUID): string | undefined {
-    return item.mediaUUID || item.audioUUID  || item.imageUUID  || item.videoUUID;
+    return item.mediaUUID || item.audioUUID  || item.imageUUID  || item.videoUUID || item.outputs?.files?.map((file) => file.uuid).join("-");
   }
 
   /**
@@ -1000,9 +1002,53 @@ export class RunwareBase {
     }
   };
 
+  
+  threeDInference = async (
+    payload: IRequestThreeD
+  ): Promise<IThreeDImage[] | IThreeDImage> => {
+    const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
+
+    try {
+      const requestMethod =
+        deliveryMethod === "sync"
+          ? this.baseSyncRequest
+          : this.baseSingleRequest;
+
+      const request = await requestMethod<IThreeDImage>({
+        payload: {
+          ...rest,
+          numberResults: rest.numberResults || 1,
+          taskType: ETaskType.THREE_D_INFERENCE,
+          deliveryMethod: deliveryMethod,
+        },
+        groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_IMAGES,
+        debugKey: "three-d-inference",
+        skipResponse,
+      });
+
+
+      if (skipResponse) {
+        return request;
+      }
+
+      
+      const taskUUID = request?.taskUUID;
+      if (deliveryMethod === "async") {
+        return this.pollForAsyncResults<IThreeDImage>({
+          taskUUID,
+          numberResults: payload?.numberResults,
+        });
+      }
+
+      // If not async, just return the initial result
+      return request;
+    } catch (e) {
+      throw e;
+    }
+  };
+
   getResponse = async <T>(payload: IAsyncResults): Promise<T[]> => {
     const taskUUID = payload.taskUUID;
-    // const mock = getRandomTaskResponses({ count: 2, taskUUID });
     return this.baseSingleRequest({
       payload: {
         ...payload,

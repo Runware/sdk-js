@@ -103,7 +103,7 @@ export class RunwareServer extends RunwareBase {
       if (!data) return;
       const m = JSON.parse(data);
 
-      // console.log("response", JSON.stringify(m, null, 4));
+      console.log("response", JSON.stringify(m, null, 4));
 
       this._listeners.forEach((lis) => {
         const result = lis.listener(m);
