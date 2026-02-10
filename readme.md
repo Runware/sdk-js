@@ -739,6 +739,10 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.4
+
+- Add 3d inference
+
 ### - v1.2.3
 
 - Handle async delivery method for image inference
@@ -774,7 +778,6 @@ Breaking change: `imageUUID` can now be undefined when using removeBackground/re
 **Added or Changed**
 
 - Added method aliases so task types match those of official API. It is recommended to use these new aliases going forward:
-
   - imageInference > requestImages
   - controlNetPreprocess > controlNetPreProcess
   - caption > requestImageToText

@@ -16,6 +16,7 @@ export enum ETaskType {
   VIDEO_INFERENCE = "videoInference",
   CAPTION = "caption",
   AUDIO_INFERENCE = "audioInference",
+  THREE_D_INFERENCE = "3dInference",
   GET_RESPONSE = "getResponse",
   PHOTO_MAKER = "photoMaker",
   IMAGE_CONTROL_NET_PRE_PROCESS = "imageControlNetPreProcess",
@@ -39,7 +40,8 @@ export type RunwareBaseType = {
 export type IOutputType = "base64Data" | "dataURI" | "URL";
 export type IOutputFormat = "JPG" | "PNG" | "WEBP";
 export type IVideoOutputFormat = "MP4" | "WEBM" | "MOV";
-export type IAudioOutputFormat = "MP3"
+export type IAudioOutputFormat = "MP3";
+export type IThreeDOutputFormat = "GLB" | "PLY";
 
 export interface IAdditionalResponsePayload {
   includePayload?: boolean;
@@ -75,6 +77,25 @@ export interface IVideoToImage {
   cost?: number;
   seed?: number;
   videoURL?: string;
+}
+
+interface TOutputFile {
+  uuid: string;
+  url: string;
+}
+
+interface TOutputFiles {
+  files: TOutputFile[];
+}
+
+export interface IThreeDImage {
+  taskType: ETaskType;
+  taskUUID: string;
+  status: string;
+  NSFWContent?: boolean;
+  cost?: number;
+  seed: number;
+  outputs?: TOutputFiles;
 }
 
 export interface IControlNetImage {
@@ -279,12 +300,12 @@ export interface IImageToText {
 
 export interface IRemoveImageBackground extends IRequestImageToText {
   outputType?: IOutputType;
-  outputFormat?: IOutputFormat| "MP4" | "WEBM" | "MOV";
+  outputFormat?: IOutputFormat | "MP4" | "WEBM" | "MOV";
   model: string;
   inputs?: {
     video?: InputsValue;
     image?: InputsValue;
-  }
+  };
   settings?: {
     rgba?: number[];
     postProcessMask?: boolean;
@@ -301,7 +322,6 @@ export interface IRemoveImageBackground extends IRequestImageToText {
   skipResponse?: boolean;
   deliveryMethod?: string;
 }
-
 
 type InputsValue = string | Record<string, unknown>;
 
@@ -379,13 +399,38 @@ export interface IRequestAudio {
     [key: string]: unknown;
   };
   deliveryMethod?: string;
-  
+
   taskUUID?: string;
   customTaskUUID?: string;
 
   skipResponse?: boolean;
   retry?: number;
 
+  [key: string]: unknown;
+}
+
+export interface IRequestThreeD {
+  model: string;
+  numberResults?: number;
+  outputType?: IOutputType;
+  outputFormat?: IThreeDOutputFormat;
+  uploadEndpoint?: string;
+  includeCost?: boolean;
+  positivePrompt?: string;
+  onPartialResponse?: (results: IThreeDImage[], error?: IError) => void;
+
+  inputs?: {
+    image?: InputsValue;
+    mask?: InputsValue;
+  } & {
+    [key: string]: unknown;
+  };
+  deliveryMethod?: string;
+  taskUUID?: string;
+  customTaskUUID?: string;
+
+  skipResponse?: boolean;
+  retry?: number;
   [key: string]: unknown;
 }
 
@@ -434,7 +479,7 @@ export interface IUpscaleGan extends IAdditionalResponsePayload {
     image?: InputsValue;
   } & {
     [key: string]: unknown;
-  }
+  };
   model?: string;
 
   customTaskUUID?: string;
@@ -449,7 +494,7 @@ export type ReconnectingWebsocketProps = {
   addEventListener: (
     type: string,
     listener: EventListener,
-    options: any
+    options: any,
   ) => void;
   send: (data: any) => void;
 } & WebSocket;
@@ -600,7 +645,7 @@ export type TAddModelBaseType = {
   retry?: number;
   onUploadStream?: (
     response?: IAddModelResponse,
-    error?: IErrorResponse
+    error?: IErrorResponse,
   ) => void;
 };
 
@@ -855,7 +900,7 @@ export type TImageMaskingResponse = {
       y_min: number;
       x_max: number;
       y_max: number;
-    }
+    },
   ];
   maskImageURL: string;
   cost: number;
@@ -876,4 +921,5 @@ export type MediaUUID = {
   audioUUID?: string;
   imageUUID?: string;
   videoUUID?: string;
-}
+  outputs?: TOutputFiles;
+};
