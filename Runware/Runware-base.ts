@@ -47,6 +47,8 @@ import {
   MediaUUID,
   IRequestThreeD,
   IThreeDImage,
+  ITextResponse,
+  IRequestTextInference,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -76,7 +78,7 @@ export class RunwareBase {
   // _globalMessages: any[] = [];
   _globalMessages: Record<string, any> = {};
   _globalImages: IImage[] = [];
-  _globalError: IError | undefined;
+  _globalErrors: IError[] = [];
   _connectionSessionUUID: string | undefined;
   _connectionError: TServerError | undefined;
   _sdkType: SdkType;
@@ -100,10 +102,15 @@ export class RunwareBase {
     this._timeoutDuration = timeoutDuration;
   }
 
-  
-
   private getUniqueUUID(item: MediaUUID): string | undefined {
-    return item.mediaUUID || item.audioUUID  || item.imageUUID  || item.videoUUID || item.outputs?.files?.map((file) => file.uuid).join("-");
+    return (
+      item.mediaUUID ||
+      item.audioUUID ||
+      item.imageUUID ||
+      item.videoUUID ||
+      item.outputs?.files?.map((file) => file.uuid).join("-") ||
+      item.text
+    );
   }
 
   /**
@@ -112,7 +119,7 @@ export class RunwareBase {
    * @param numberResults - Number of results expected.
    * @returns Promise resolving to array of results.
    */
-  private async pollForAsyncResults<T extends { status: string; } & MediaUUID>({
+  private async pollForAsyncResults<T extends { status: string } & MediaUUID>({
     taskUUID,
     numberResults = 1,
   }: {
@@ -124,7 +131,6 @@ export class RunwareBase {
       async ({ resolve, reject }) => {
         try {
           const response = await this.getResponse<T>({ taskUUID });
-          
 
           // Add results to the collection
           for (const responseItem of response || []) {
@@ -154,7 +160,7 @@ export class RunwareBase {
         debugKey: "async-response",
         pollingInterval: 2 * 1000,
         timeoutDuration: 10 * 60 * 1000,
-      }
+      },
     );
     return Array.from(allResults.values());
   }
@@ -219,15 +225,15 @@ export class RunwareBase {
       const arrayErrors = (msg as any)?.[0]?.errors
         ? (msg as any)?.[0]?.errors
         : Array.isArray(msg?.errors)
-        ? msg.errors
-        : [msg.errors];
+          ? msg.errors
+          : [msg.errors];
 
       const filteredMessage = arrayMessage.filter(
-        (v) => (v?.taskUUID || v?.taskType) === taskUUID
+        (v) => (v?.taskUUID || v?.taskType) === taskUUID,
       );
 
       const filteredErrors = arrayErrors.filter(
-        (v: any) => (v?.taskUUID || v?.taskType) === taskUUID
+        (v: any) => (v?.taskUUID || v?.taskType) === taskUUID,
       );
 
       if (filteredErrors.length) {
@@ -304,7 +310,7 @@ export class RunwareBase {
   }
 
   private uploadImage = async (
-    file: File | string
+    file: File | string,
   ): Promise<UploadImageType | null> => {
     try {
       return await asyncRetry(async () => {
@@ -351,12 +357,12 @@ export class RunwareBase {
       taskUUID: taskUUID,
       lis: (m) => {
         let images = (m?.[taskUUID] as IImage[])?.filter(
-          (img) => img.taskUUID === taskUUID
+          (img) => img.taskUUID === taskUUID,
         );
 
         if (m.error) {
           onPartialImages?.(images, m?.error && m);
-          this._globalError = m;
+          this._globalErrors.push(m);
         } else {
           images = images.map((image) => {
             this.insertAdditionalResponse({
@@ -403,7 +409,7 @@ export class RunwareBase {
     taskUUID: string;
     onUploadStream?: (
       addModelResponse?: IAddModelResponse,
-      error?: IErrorResponse
+      error?: IErrorResponse,
     ) => void;
   }) {
     return this.addListener({
@@ -510,7 +516,7 @@ export class RunwareBase {
     }: // imageSize,
     // gScale,
     IRequestImage,
-    moreOptions?: Record<string, any>
+    moreOptions?: Record<string, any>,
   ): Promise<ITextToImage[] | undefined> {
     let lis: any = undefined;
     let requestObject: Record<string, any> | undefined = undefined;
@@ -625,7 +631,7 @@ export class RunwareBase {
           retryCount++;
           lis?.destroy();
           const imagesWithSimilarTask = this._globalImages.filter((img) =>
-            taskUUIDs.includes(img.taskUUID)
+            taskUUIDs.includes(img.taskUUID),
           );
 
           const taskUUID = _taskUUID || customTaskUUID || getUUID();
@@ -655,7 +661,7 @@ export class RunwareBase {
             taskUUID: taskUUIDs,
             numberResults,
             lis,
-            deliveryMethod: rest.deliveryMethod
+            deliveryMethod: rest.deliveryMethod,
           });
 
           lis.destroy();
@@ -667,7 +673,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       if (retryCount >= totalRetry) {
@@ -680,7 +686,7 @@ export class RunwareBase {
   // Alias for requestImages
   async imageInference(
     params: IRequestImage,
-    moreOptions?: Record<string, any>
+    moreOptions?: Record<string, any>,
   ): Promise<ITextToImage[] | undefined> {
     return this.requestImages(params, moreOptions);
   }
@@ -770,7 +776,7 @@ export class RunwareBase {
             {
               debugKey: "unprocessed-image",
               timeoutDuration: this._timeoutDuration,
-            }
+            },
           )) as IControlNetImage;
 
           lis.destroy();
@@ -788,7 +794,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e: any) {
       throw e;
@@ -797,7 +803,7 @@ export class RunwareBase {
 
   // Alias for controlNetPreProcess
   controlNetPreprocess = async (
-    params: IControlNetPreprocess
+    params: IControlNetPreprocess,
   ): Promise<IControlNetImage | null> => {
     return this.controlNetPreProcess(params);
   };
@@ -878,7 +884,7 @@ export class RunwareBase {
    * @returns {Promise<IRemoveImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
    */
   removeImageBackground = async (
-    payload: IRemoveImageBackground
+    payload: IRemoveImageBackground,
   ): Promise<IRemoveImage> => {
     const { skipResponse, ...rest } = payload;
 
@@ -913,7 +919,7 @@ export class RunwareBase {
 
   // Alias for removeImageBackground
   removeBackground = async (
-    payload: IRemoveImageBackground
+    payload: IRemoveImageBackground,
   ): Promise<IRemoveImage> => {
     return this.removeImageBackground(payload);
   };
@@ -929,7 +935,7 @@ export class RunwareBase {
   };
 
   videoInference = async (
-    payload: IRequestVideo
+    payload: IRequestVideo,
   ): Promise<IVideoToImage[] | IVideoToImage> => {
     const { skipResponse, inputAudios, referenceVideos, ...rest } = payload;
     try {
@@ -960,7 +966,7 @@ export class RunwareBase {
   };
 
   audioInference = async (
-    payload: IRequestAudio
+    payload: IRequestAudio,
   ): Promise<IAudio[] | IAudio> => {
     const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
 
@@ -979,9 +985,8 @@ export class RunwareBase {
         },
         groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_AUDIO,
         debugKey: "audio-inference",
-        skipResponse
+        skipResponse,
       });
-
 
       if (skipResponse) {
         return request;
@@ -1002,9 +1007,8 @@ export class RunwareBase {
     }
   };
 
-  
   threeDInference = async (
-    payload: IRequestThreeD
+    payload: IRequestThreeD,
   ): Promise<IThreeDImage[] | IThreeDImage> => {
     const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
 
@@ -1026,12 +1030,10 @@ export class RunwareBase {
         skipResponse,
       });
 
-
       if (skipResponse) {
         return request;
       }
 
-      
       const taskUUID = request?.taskUUID;
       if (deliveryMethod === "async") {
         return this.pollForAsyncResults<IThreeDImage>({
@@ -1040,7 +1042,47 @@ export class RunwareBase {
         });
       }
 
-      // If not async, just return the initial result
+      return request;
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  textInference = async (
+    payload: IRequestTextInference,
+  ): Promise<ITextResponse[] | ITextResponse> => {
+    const { skipResponse, deliveryMethod = "sync", ...rest } = payload;
+
+    try {
+      const requestMethod =
+        deliveryMethod === "sync"
+          ? this.baseSyncRequest
+          : this.baseSingleRequest;
+
+      const request = await requestMethod<ITextResponse>({
+        payload: {
+          ...rest,
+          numberResults: rest.numberResults || 1,
+          taskType: ETaskType.TEXT_INFERENCE,
+          deliveryMethod: deliveryMethod,
+        },
+        groupKey: LISTEN_TO_MEDIA_KEY.REQUEST_TEXT,
+        debugKey: "text-inference",
+        skipResponse,
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      const taskUUID = request?.taskUUID;
+      if (deliveryMethod === "async") {
+        return this.pollForAsyncResults<ITextResponse>({
+          taskUUID,
+          numberResults: payload?.numberResults,
+        });
+      }
+
       return request;
     } catch (e) {
       throw e;
@@ -1084,7 +1126,7 @@ export class RunwareBase {
     includeGenerationTime,
     includePayload,
     skipResponse,
-    deliveryMethod
+    deliveryMethod,
   }: IUpscaleGan): Promise<IImage> => {
     try {
       let imageUploaded;
@@ -1110,7 +1152,7 @@ export class RunwareBase {
         includePayload,
         includeGenerationTime,
         retry,
-        deliveryMethod
+        deliveryMethod,
       };
 
       const request = await this.baseSingleRequest<IImage>({
@@ -1139,7 +1181,6 @@ export class RunwareBase {
       throw e;
     }
   };
-
 
   // Alias for upscaleGan
   upscale = async (params: IUpscaleGan): Promise<IImage> => {
@@ -1202,7 +1243,7 @@ export class RunwareBase {
             {
               debugKey: "enhance-prompt",
               timeoutDuration: this._timeoutDuration,
-            }
+            },
           );
 
           lis.destroy();
@@ -1219,7 +1260,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       throw e;
@@ -1228,7 +1269,7 @@ export class RunwareBase {
 
   // Alias for enhancePrompt
   promptEnhance = async (
-    params: IPromptEnhancer
+    params: IPromptEnhancer,
   ): Promise<IEnhancedPrompt[]> => {
     return this.enhancePrompt(params);
   };
@@ -1286,7 +1327,7 @@ export class RunwareBase {
             {
               shouldThrowError: false,
               timeoutDuration: 60 * 60 * 1000,
-            }
+            },
           );
 
           return modelUploadResponse as IAddModelResponse | IErrorResponse;
@@ -1296,7 +1337,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       throw e;
@@ -1305,7 +1346,7 @@ export class RunwareBase {
 
   photoMaker = async (
     payload: TPhotoMaker,
-    moreOptions?: Record<string, any>
+    moreOptions?: Record<string, any>,
   ): Promise<TPhotoMakerResponse[] | undefined> => {
     // This is written to destructure the payload from the additional parameters
     const {
@@ -1332,7 +1373,7 @@ export class RunwareBase {
           await this.ensureConnection();
           retryCount++;
           const imagesWithSimilarTask = this._globalImages.filter((img) =>
-            taskUUIDs.includes(img.taskUUID)
+            taskUUIDs.includes(img.taskUUID),
           );
 
           const taskUUID = _taskUUID || customTaskUUID || getUUID();
@@ -1379,7 +1420,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       if ((e as any).taskUUID) {
@@ -1395,7 +1436,7 @@ export class RunwareBase {
   };
 
   modelSearch = async (
-    payload: TModelSearch
+    payload: TModelSearch,
   ): Promise<TModelSearchResponse> => {
     return this.baseSingleRequest({
       payload: {
@@ -1407,7 +1448,7 @@ export class RunwareBase {
   };
 
   imageMasking = async (
-    payload: TImageMasking
+    payload: TImageMasking,
   ): Promise<TImageMaskingResponse> => {
     return this.baseSingleRequest({
       payload: {
@@ -1419,7 +1460,7 @@ export class RunwareBase {
   };
 
   imageUpload = async (
-    payload: TImageUpload
+    payload: TImageUpload,
   ): Promise<TImageUploadResponse> => {
     return this.baseSingleRequest({
       payload: {
@@ -1431,7 +1472,7 @@ export class RunwareBase {
   };
 
   mediaStorage = async (
-    payload: TMediaStorage
+    payload: TMediaStorage,
   ): Promise<TMediaStorageResponse> => {
     return this.baseSingleRequest({
       payload: {
@@ -1504,7 +1545,7 @@ export class RunwareBase {
             {
               debugKey,
               timeoutDuration: this._timeoutDuration,
-            }
+            },
           );
 
           this.insertAdditionalResponse({
@@ -1521,7 +1562,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       throw e;
@@ -1531,7 +1572,7 @@ export class RunwareBase {
   protected baseSyncRequest = async <T>({
     payload,
     groupKey,
-    skipResponse = false
+    skipResponse = false,
   }: {
     payload: Record<string, any>;
     groupKey: LISTEN_TO_MEDIA_KEY;
@@ -1561,7 +1602,7 @@ export class RunwareBase {
           retryCount++;
 
           const taskWithSimilarTaskUUID = this._globalImages.filter((audio) =>
-            taskUUIDs.includes(audio.taskUUID)
+            taskUUIDs.includes(audio.taskUUID),
           );
 
           const taskUUID = customTaskUUID || getUUID();
@@ -1591,7 +1632,7 @@ export class RunwareBase {
                 },
               });
             });
-          };
+          }
 
           lis = this.listenToResponse({
             onPartialImages: onPartialResponse,
@@ -1616,7 +1657,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
-        }
+        },
       );
     } catch (e) {
       throw e;
@@ -1724,7 +1765,7 @@ export class RunwareBase {
     numberResults,
     shouldThrowError,
     lis,
-    deliveryMethod
+    deliveryMethod,
   }: {
     taskUUID: string | string[];
     numberResults: number;
@@ -1736,25 +1777,32 @@ export class RunwareBase {
       ({ resolve, reject, intervalId }) => {
         const taskUUIDs = Array.isArray(taskUUID) ? taskUUID : [taskUUID];
         const imagesWithSimilarTask = this._globalImages.filter((img) =>
-          taskUUIDs.includes(img.taskUUID)
+          taskUUIDs.includes(img.taskUUID),
         );
 
-        const isAsyncResponse = deliveryMethod === "async" && imagesWithSimilarTask.length > 0;
+        const isAsyncResponse =
+          deliveryMethod === "async" && imagesWithSimilarTask.length > 0;
 
-        if (this._globalError) {
-          const newData = this._globalError;
-          this._globalError = undefined;
-          // throw errorData[0]
+        const errors = this._globalErrors.filter((err) =>
+          taskUUIDs.includes(err.taskUUID),
+        );
+
+        if (errors.length > 0) {
+          const newData = errors[0];
+          this._globalErrors = this._globalErrors.filter(
+            (err) => !taskUUIDs.includes(err.taskUUID),
+          );
           clearInterval(intervalId);
           reject<IError>?.(newData);
           return true;
-        }
-        // onPartialImages?.(imagesWithSimilarTask)
-        else if (imagesWithSimilarTask.length >= numberResults || isAsyncResponse) {
+        } else if (
+          imagesWithSimilarTask.length >= numberResults ||
+          isAsyncResponse
+        ) {
           // lis?.destroy();
           clearInterval(intervalId);
           this._globalImages = this._globalImages.filter(
-            (img) => !taskUUIDs.includes(img.taskUUID)
+            (img) => !taskUUIDs.includes(img.taskUUID),
           );
           resolve<IImage[]>([...imagesWithSimilarTask].slice(0, numberResults));
           return true;
@@ -1765,7 +1813,7 @@ export class RunwareBase {
         debugKey: "getting images",
         shouldThrowError,
         timeoutDuration: this._timeoutDuration,
-      }
+      },
     )) as IImage[];
   }
 
@@ -1813,11 +1861,11 @@ export class RunwareBase {
     error: any;
   }) {
     const imagesWithSimilarTask = this._globalImages.filter((img) =>
-      taskUUIDs.includes(img.taskUUID)
+      taskUUIDs.includes(img.taskUUID),
     );
     if (imagesWithSimilarTask.length > 1) {
       this._globalImages = this._globalImages.filter(
-        (img) => !taskUUIDs.includes(img.taskUUID)
+        (img) => !taskUUIDs.includes(img.taskUUID),
       );
       return imagesWithSimilarTask;
     } else {

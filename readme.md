@@ -739,6 +739,11 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.5
+
+- Fix JS SDK error race condition
+- Add text inference
+
 ### - v1.2.4
 
 - Add 3d inference

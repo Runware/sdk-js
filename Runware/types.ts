@@ -27,6 +27,7 @@ export enum ETaskType {
   MODEL_SEARCH = "modelSearch",
   MEDIA_STORAGE = "mediaStorage",
   VECTORIZE = "vectorize",
+  TEXT_INFERENCE = "textInference",
 }
 
 export type RunwareBaseType = {
@@ -432,6 +433,48 @@ export interface IRequestThreeD {
   skipResponse?: boolean;
   retry?: number;
   [key: string]: unknown;
+}
+
+export interface ITextMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface IRequestTextInference extends IAdditionalResponsePayload {
+  model: string;
+  messages: ITextMessage[];
+  maxTokens?: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  seed?: number;
+  stopSequences?: string[];
+  systemPrompt?: string;
+  outputFormat?: string;
+  numberResults?: number;
+  includeCost?: boolean;
+  onPartialResponse?: (results: IThreeDImage[], error?: IError) => void;
+  deliveryMethod?: string;
+  taskUUID?: string;
+  customTaskUUID?: string;
+
+  skipResponse?: boolean;
+  retry?: number;
+  [key: string]: unknown;
+}
+export interface ITextResponse {
+  text: string;
+  finishReason: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    thinkingTokens: number;
+  };
+  thoughtSignature: string;
+  cost: number;
+  taskUUID: string;
+  status: string;
 }
 
 export interface IAsyncResults {
@@ -922,4 +965,5 @@ export type MediaUUID = {
   imageUUID?: string;
   videoUUID?: string;
   outputs?: TOutputFiles;
+  text?: string;
 };

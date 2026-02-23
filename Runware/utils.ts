@@ -40,7 +40,7 @@ export const getIntervalWithPromise = (
     timeoutDuration?: number;
     shouldThrowError?: boolean;
     pollingInterval?: number;
-  }
+  },
 ) => {
   timeoutDuration =
     timeoutDuration < MINIMUM_TIMEOUT_DURATION
@@ -90,10 +90,10 @@ const evaluateToBoolean = (...args: any) => [...args].every((e) => !!e);
 export const compact = (value: any, data: any) => (!!value ? data : {});
 
 export const getPreprocessorType = (
-  processor: EPreProcessor
+  processor: EPreProcessor,
 ): EPreProcessorGroup => {
   const processorGroup = Object.keys(
-    EPreProcessorGroup
+    EPreProcessorGroup,
   ) as EPreProcessorGroup[];
 
   switch (processor) {
@@ -252,7 +252,8 @@ export const removeAllKeyListener = ({
 
 export enum LISTEN_TO_MEDIA_KEY {
   REQUEST_IMAGES = "REQUEST_IMAGES",
-  REQUEST_AUDIO = "REQUEST_AUDIO"
+  REQUEST_TEXT = "REQUEST_TEXT",
+  REQUEST_AUDIO = "REQUEST_AUDIO",
 }
 
 export const evaluateNonTrue = ({
@@ -288,7 +289,7 @@ export const getIntervalAsyncWithPromise = (
     timeoutDuration?: number;
     shouldThrowError?: boolean;
     pollingInterval?: number;
-  }
+  },
 ) => {
   timeoutDuration =
     timeoutDuration < MINIMUM_TIMEOUT_DURATION
@@ -325,7 +326,6 @@ export const getIntervalAsyncWithPromise = (
 export const isUrl = (value: any): value is string => {
   return (
     typeof value === "string" &&
-    (value.startsWith("http:") ||
-      value.startsWith("https:"))
+    (value.startsWith("http:") || value.startsWith("https:"))
   );
 };
