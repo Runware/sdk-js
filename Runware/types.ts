@@ -173,9 +173,7 @@ export type IControlNetWithUUID = Omit<IControlNet, "guideImage"> & {
 };
 
 export interface IError {
-  error: boolean;
-  errorMessage: string;
-  taskUUID: string;
+  error: IErrorResponse;
 }
 
 export type TPromptWeighting = "compel" | "sdEmbeds";

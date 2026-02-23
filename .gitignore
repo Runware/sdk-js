@@ -3,4 +3,5 @@ dist/
 
 *.env
 /tests/script.ts
+/tests/script-error.ts
 .npmrc

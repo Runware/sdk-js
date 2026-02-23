@@ -5,7 +5,6 @@ import {
   IControlNet,
   IControlNetWithUUID,
   IEnhancedPrompt,
-  IError,
   IImage,
   IImageToText,
   IPromptEnhancer,
@@ -49,6 +48,7 @@ import {
   IThreeDImage,
   ITextResponse,
   IRequestTextInference,
+  IError,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -1784,13 +1784,13 @@ export class RunwareBase {
           deliveryMethod === "async" && imagesWithSimilarTask.length > 0;
 
         const errors = this._globalErrors.filter((err) =>
-          taskUUIDs.includes(err.taskUUID),
+          taskUUIDs.includes(err.error.taskUUID),
         );
 
         if (errors.length > 0) {
           const newData = errors[0];
           this._globalErrors = this._globalErrors.filter(
-            (err) => !taskUUIDs.includes(err.taskUUID),
+            (err) => !taskUUIDs.includes(err.error.taskUUID),
           );
           clearInterval(intervalId);
           reject<IError>?.(newData);
