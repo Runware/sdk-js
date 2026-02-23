@@ -78,7 +78,7 @@ export class RunwareBase {
   // _globalMessages: any[] = [];
   _globalMessages: Record<string, any> = {};
   _globalImages: IImage[] = [];
-  _globalErrors: IError[] = [];
+  _globalError: IError | undefined;
   _connectionSessionUUID: string | undefined;
   _connectionError: TServerError | undefined;
   _sdkType: SdkType;
@@ -362,7 +362,7 @@ export class RunwareBase {
 
         if (m.error) {
           onPartialImages?.(images, m?.error && m);
-          this._globalErrors.push(m);
+          this._globalError = m;
         } else {
           images = images.map((image) => {
             this.insertAdditionalResponse({
@@ -1783,19 +1783,16 @@ export class RunwareBase {
         const isAsyncResponse =
           deliveryMethod === "async" && imagesWithSimilarTask.length > 0;
 
-        const errors = this._globalErrors.filter((err) =>
-          taskUUIDs.includes(err.taskUUID),
-        );
-
-        if (errors.length > 0) {
-          const newData = errors[0];
-          this._globalErrors = this._globalErrors.filter(
-            (err) => !taskUUIDs.includes(err.taskUUID),
-          );
+        if (this._globalError) {
+          const newData = this._globalError;
+          this._globalError = undefined;
+          // throw errorData[0]
           clearInterval(intervalId);
           reject<IError>?.(newData);
           return true;
-        } else if (
+        }
+        // onPartialImages?.(imagesWithSimilarTask)
+        else if (
           imagesWithSimilarTask.length >= numberResults ||
           isAsyncResponse
         ) {
