@@ -358,6 +358,8 @@ export interface IRequestVideo extends IRequestImageToText {
   speech?: {
     voice: string;
     text: string;
+  } & {
+    [key: string]: unknown;
   };
   skipResponse?: boolean;
   customTaskUUID?: string;
