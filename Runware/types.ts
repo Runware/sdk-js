@@ -36,6 +36,8 @@ export type RunwareBaseType = {
   shouldReconnect?: boolean;
   globalMaxRetries?: number;
   timeoutDuration?: number;
+  heartbeatInterval?: number;
+  enableLogging?: boolean;
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";

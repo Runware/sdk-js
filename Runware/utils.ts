@@ -51,12 +51,14 @@ export const getIntervalWithPromise = (
     const timeoutId = setTimeout(() => {
       if (intervalId) {
         clearInterval(intervalId);
-        if (shouldThrowError) {
-          reject(`Response could not be received from server for ${debugKey}`);
-        }
       }
       clearTimeout(timeoutId);
-      // reject();
+      if (shouldThrowError) {
+        reject(`Response could not be received from server for ${debugKey}`);
+      } else {
+        // Always settle the promise — never leave it hanging
+        resolve(undefined);
+      }
     }, timeoutDuration);
 
     let intervalId = setInterval(async () => {

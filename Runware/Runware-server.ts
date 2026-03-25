@@ -11,8 +11,7 @@ export class RunwareServer extends RunwareBase {
   _instantiated: boolean = false;
   _listeners: any[] = [];
   _reconnectingIntervalId: null | any = null;
-  _pingTimeout: any;
-  _pongListener: any;
+  private _connecting: boolean = false;
 
   constructor(props: RunwareBaseType) {
     super(props);
@@ -21,78 +20,72 @@ export class RunwareServer extends RunwareBase {
     this.connect();
   }
 
-  // protected addListener({
-  //   lis,
-  //   check,
-  //   groupKey,
-  // }: {
-  //   lis: (v: any) => any;
-  //   check: (v: any) => any;
-  //   groupKey?: string;
-  // }) {
-  //   const listener = (msg: any) => {
-  //     if (msg?.error) {
-  //       lis(msg);
-  //     } else if (check(msg)) {
-  //       lis(msg);
-  //     }
-  //   };
-  //   const groupListener = { key: getUUID(), listener, groupKey };
-  //   this._listeners.push(groupListener);
-  //   const destroy = () => {
-  //     this._listeners = removeListener(this._listeners, groupListener);
-  //   };
-
-  //   return {
-  //     destroy,
-  //   };
-  // }
-
   protected async connect() {
     if (!this._url) return;
+    if (this._connecting) return;
+    this._connecting = true;
 
     this.resetConnection();
+
+    this._logger.connecting(this._url);
 
     this._ws = new WebSocket(this._url, {
       perMessageDeflate: false,
     });
 
-    // delay(1);
-
-    this._ws.on("error", () => {});
+    this._ws.on("error", (err: any) => {
+      this._connecting = false;
+      this._logger.connectionError(err?.message || err);
+    });
     this._ws.on("close", () => {
+      this._connecting = false;
       this.handleClose();
     });
 
-    this._ws.on("open", () => {
+    this._ws.on("open", async () => {
       if (this._reconnectingIntervalId) {
         clearInterval(this._reconnectingIntervalId);
       }
-      if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
-        this.send({
-          taskType: ETaskType.AUTHENTICATION,
-          apiKey: this._apiKey,
-          connectionSessionUUID: this._connectionSessionUUID,
-        });
-      } else {
-        if (this.isWebsocketReadyState()) {
-          this.send({
-            apiKey: this._apiKey,
+
+      this._logger.authenticating(!!this._connectionSessionUUID);
+
+      try {
+        if (this._connectionSessionUUID && this.isWebsocketReadyState()) {
+          await this.send({
             taskType: ETaskType.AUTHENTICATION,
+            apiKey: this._apiKey,
+            connectionSessionUUID: this._connectionSessionUUID,
           });
+        } else {
+          if (this.isWebsocketReadyState()) {
+            await this.send({
+              apiKey: this._apiKey,
+              taskType: ETaskType.AUTHENTICATION,
+            });
+          }
         }
+      } catch (err) {
+        this._connecting = false;
+        this._logger.error("Failed to send auth message", err);
+        return;
       }
 
-      this.addListener({
+      const authListener = this.addListener({
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
+          this._connecting = false;
           if (m?.error) {
             this._connectionError = m;
+            this._logger.authError(m);
+            authListener?.destroy?.();
             return;
           }
           this._connectionSessionUUID =
             m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
           this._connectionError = undefined;
+          this._logger.authenticated(this._connectionSessionUUID || "");
+          authListener?.destroy?.();
+          this.startHeartbeat();
         },
       });
     });
@@ -100,7 +93,15 @@ export class RunwareServer extends RunwareBase {
     this._ws.on("message", (e: any, isBinary: any) => {
       const data = isBinary ? e : e?.toString();
       if (!data) return;
-      const m = JSON.parse(data);
+      let m;
+      try {
+        m = JSON.parse(data);
+      } catch (err) {
+        this._logger.error("Failed to parse WebSocket message", err);
+        return;
+      }
+
+      if (this.handlePongMessage(m)) return;
 
       this._listeners.forEach((lis) => {
         const result = lis.listener(m);
@@ -111,11 +112,32 @@ export class RunwareServer extends RunwareBase {
     });
   }
 
-  protected send = (msg: Object) => {
+  protected send = async (msg: Object) => {
+    if (!this.isWebsocketReadyState()) {
+      this._logger.sendReconnecting();
+      if (this._ws) {
+        try {
+          if (typeof this._ws.terminate === "function") {
+            this._ws.terminate();
+          } else {
+            this._ws.close();
+          }
+        } catch {}
+      }
+      this._connectionSessionUUID = undefined;
+      // ensureConnection either resolves (ws ready) or throws
+      await this.ensureConnection();
+    }
+    const taskType = (msg as any)?.taskType;
+    const taskUUID = (msg as any)?.taskUUID;
+    this._logger.messageSent(taskType, taskUUID);
     this._ws.send(JSON.stringify([msg]));
   };
 
   protected handleClose() {
+    this._logger.connectionClosed();
+    this._connectionSessionUUID = undefined;
+    this.stopHeartbeat();
     if (this.isInvalidAPIKey()) {
       return;
     }
@@ -124,12 +146,13 @@ export class RunwareServer extends RunwareBase {
     }
 
     if (this._shouldReconnect) {
+      this._logger.reconnectScheduled(1000);
       setTimeout(() => this.connect(), 1000);
     }
-    // this._reconnectingIntervalId = setInterval(() => this.connect(), 1000);
   }
 
   protected resetConnection = () => {
+    this.stopHeartbeat();
     if (this._ws) {
       this._listeners.forEach((list) => {
         list?.destroy?.();
@@ -144,16 +167,6 @@ export class RunwareServer extends RunwareBase {
       this._listeners = [];
     }
   };
-
-  protected heartBeat() {
-    clearTimeout(this._pingTimeout);
-
-    this._pingTimeout = setTimeout(() => {
-      if (this.isWebsocketReadyState()) {
-        this.send({ ping: true });
-      }
-    }, 5000);
-  }
 
   //end of data
 }
