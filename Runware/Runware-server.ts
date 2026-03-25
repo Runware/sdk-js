@@ -29,9 +29,15 @@ export class RunwareServer extends RunwareBase {
 
     this._logger.connecting(this._url);
 
-    this._ws = new WebSocket(this._url, {
-      perMessageDeflate: false,
-    });
+    try {
+      this._ws = new WebSocket(this._url, {
+        perMessageDeflate: false,
+      });
+    } catch (err) {
+      this._connecting = false;
+      this._logger.connectionError(err);
+      return;
+    }
 
     this._ws.on("error", (err: any) => {
       this._connecting = false;
@@ -135,6 +141,7 @@ export class RunwareServer extends RunwareBase {
   };
 
   protected handleClose() {
+    this._connecting = false;
     this._logger.connectionClosed();
     this._connectionSessionUUID = undefined;
     this.stopHeartbeat();

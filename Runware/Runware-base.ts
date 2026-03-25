@@ -356,18 +356,20 @@ export class RunwareBase {
         return;
       }
 
-      this.addListener({
+      const authListener = this.addListener({
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
             this._connectionError = m;
             this._logger.authError(m);
+            authListener?.destroy?.();
             return;
           }
           this._connectionSessionUUID =
             m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
           this._connectionError = undefined;
           this._logger.authenticated(this._connectionSessionUUID || "");
+          authListener?.destroy?.();
           this.startHeartbeat();
         },
       });
