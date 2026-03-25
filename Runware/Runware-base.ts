@@ -767,7 +767,7 @@ export class RunwareBase {
             taskUUID: taskUUID,
             numberResults: imageRemaining,
           };
-          this.send(newRequestObject);
+          await this.send(newRequestObject);
 
           // const generationTime = endTime - startTime;
 
@@ -869,7 +869,7 @@ export class RunwareBase {
             ...(outputQuality ? { outputQuality } : {}),
           };
 
-          this.send({
+          await this.send({
             ...payload,
           });
           lis = this.globalListener({
@@ -1340,7 +1340,7 @@ export class RunwareBase {
             taskType: ETaskType.PROMPT_ENHANCE,
           };
 
-          this.send(payload);
+          await this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -1415,7 +1415,7 @@ export class RunwareBase {
           await this.ensureConnection();
           const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
-          this.send({
+          await this.send({
             ...addModelPayload,
             taskUUID,
             taskType: ETaskType.MODEL_UPLOAD,
@@ -1515,7 +1515,7 @@ export class RunwareBase {
             numberResults,
           };
 
-          this.send({
+          await this.send({
             ...payload,
             numberResults: imageRemaining,
           });
@@ -1641,7 +1641,7 @@ export class RunwareBase {
           };
 
           this._logger.requestStart(debugKey, taskUUID);
-          this.send(payload);
+          await this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -1742,7 +1742,7 @@ export class RunwareBase {
           };
 
           this._logger.requestStart(restPayload.taskType || groupKey, taskUUID);
-          this.send(payload);
+          await this.send(payload);
 
           if (skipResponse) {
             this._logger.info(`Async mode (skipResponse) — waiting for server acknowledgement`, { taskUUID });

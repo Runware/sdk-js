@@ -21,7 +21,7 @@ describe("videoInference (real WebSocket, async)", () => {
       width: 720,
       height: 1280,
       numberResults: 1,
-      outputFormat: "mp4",
+      outputFormat: "MP4",
       includeCost: true,
       skipResponse: true,
     })) as IVideoToImage;
@@ -74,7 +74,7 @@ describe("videoInference (real WebSocket, async)", () => {
         width: 720,
         height: 1280,
         numberResults: 1,
-        outputFormat: "mp4",
+        outputFormat: "MP4",
         skipResponse: true,
       }) as Promise<IVideoToImage>,
       server.videoInference({
@@ -84,7 +84,7 @@ describe("videoInference (real WebSocket, async)", () => {
         width: 720,
         height: 1280,
         numberResults: 1,
-        outputFormat: "mp4",
+        outputFormat: "MP4",
         skipResponse: true,
       }) as Promise<IVideoToImage>,
     ]);

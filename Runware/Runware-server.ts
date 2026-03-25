@@ -44,7 +44,6 @@ export class RunwareServer extends RunwareBase {
       this._logger.connectionError(err?.message || err);
     });
     this._ws.on("close", () => {
-      this._connecting = false;
       this.handleClose();
     });
 
@@ -99,7 +98,7 @@ export class RunwareServer extends RunwareBase {
     this._ws.on("message", (e: any, isBinary: any) => {
       const data = isBinary ? e : e?.toString();
       if (!data) return;
-      let m;
+      let m: any;
       try {
         m = JSON.parse(data);
       } catch (err) {
