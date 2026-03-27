@@ -739,6 +739,11 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.6
+
+- Update upscale() to accept open-ended payload
+
+
 ### - v1.2.5
 
 - Fix JS SDK error race condition

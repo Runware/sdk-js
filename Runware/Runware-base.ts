@@ -1111,23 +1111,9 @@ export class RunwareBase {
    * @since 1.2.0
    * @returns {Promise<IImage>} If called with `inputs.image` or `inputs.video`, returns an object with `mediaUUID` and `mediaURL`. If called with `inputImage`, returns an object with `imageUUID` and `imageURL` (not guaranteed).
    */
-  upscaleGan = async ({
-    inputImage,
-    inputs,
-    model,
-    upscaleFactor,
-    outputType,
-    outputFormat,
-    includeCost,
-    outputQuality,
-    customTaskUUID,
-    taskUUID: _taskUUID,
-    retry,
-    includeGenerationTime,
-    includePayload,
-    skipResponse,
-    deliveryMethod,
-  }: IUpscaleGan): Promise<IImage> => {
+  upscaleGan = async (payload: IUpscaleGan): Promise<IImage> => {
+    const { inputImage, skipResponse, deliveryMethod = "sync", ...rest } = payload;
+
     try {
       let imageUploaded;
 
@@ -1137,28 +1123,13 @@ export class RunwareBase {
         imageUploaded = await this.uploadImage(inputImage as File | string);
       }
 
-      const taskUUID = _taskUUID || customTaskUUID || getUUID();
-      const payload = {
-        taskUUID,
-        inputImage: imageUploaded?.imageUUID,
-        taskType: ETaskType.UPSCALE,
-        inputs,
-        model,
-        upscaleFactor,
-        ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-        ...(outputType ? { outputType } : {}),
-        ...(outputQuality ? { outputQuality } : {}),
-        ...(outputFormat ? { outputFormat } : {}),
-        includePayload,
-        includeGenerationTime,
-        retry,
-        deliveryMethod,
-      };
 
       const request = await this.baseSingleRequest<IImage>({
         payload: {
-          ...payload,
+          ...rest,
+          ...(imageUploaded?.imageUUID ? { inputImage: imageUploaded.imageUUID } : {}),
           taskType: ETaskType.UPSCALE,
+          deliveryMethod,
         },
         debugKey: "upscale",
       });
@@ -1166,6 +1137,7 @@ export class RunwareBase {
       if (skipResponse) {
         return request;
       }
+      
 
       if (deliveryMethod === "async") {
         const taskUUID = request?.taskUUID;
