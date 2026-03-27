@@ -39,16 +39,13 @@ describe("When user request to remove image background", async () => {
   });
 
   test("it should remove an image background", async () => {
-    const imageUploadSpy = vi.spyOn(runware as any, "uploadImage");
     const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
     await runware.removeImageBackground({ inputImage: mockUploadFile });
 
-    expect(imageUploadSpy).toHaveBeenCalled();
-
     expect(sendSpy).toHaveBeenCalledWith({
-      inputImage: testExamples.imageUploadRes.imageUUID,
+      inputImage: mockUploadFile,
       taskUUID: mockTaskUUID,
       taskType: ETaskType.REMOVE_BACKGROUND,
     });
