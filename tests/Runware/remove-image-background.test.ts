@@ -1,13 +1,12 @@
 import {
   expect,
   test,
-  beforeAll,
   vi,
   describe,
   afterEach,
   beforeEach,
 } from "vitest";
-import { mockTaskUUID, mockUploadFile, testExamples } from "../test-utils";
+import { mockTaskUUID, mockUploadFile } from "../test-utils";
 import { startMockServer } from "../mockServer";
 import { ETaskType } from "../../Runware";
 
@@ -32,20 +31,15 @@ describe("When user request to remove image background", async () => {
     mockServer.stop();
   });
 
-  beforeAll(async () => {
-    vi.spyOn(runware as any, "uploadImage").mockReturnValue(
-      testExamples.imageUploadRes
-    );
-  });
-
   test("it should remove an image background", async () => {
     const globalListenerSpy = vi.spyOn(runware as any, "globalListener");
     const sendSpy = vi.spyOn(runware as any, "send");
 
-    await runware.removeImageBackground({ inputImage: mockUploadFile });
+    await runware.removeImageBackground({ inputImage: mockUploadFile, model: "runware:110@1" });
 
     expect(sendSpy).toHaveBeenCalledWith({
       inputImage: mockUploadFile,
+      model: "runware:110@1",
       taskUUID: mockTaskUUID,
       taskType: ETaskType.REMOVE_BACKGROUND,
     });
@@ -55,7 +49,7 @@ describe("When user request to remove image background", async () => {
   });
 
   test("removeBackground delegates to removeImageBackground", async () => {
-    const result = await runware.removeBackground({ inputImage: mockUploadFile });
-    expect(result).toEqual(await runware.removeImageBackground({ inputImage: mockUploadFile }));
+    const result = await runware.removeBackground({ inputImage: mockUploadFile, model: "runware:110@1" });
+    expect(result).toEqual(await runware.removeImageBackground({ inputImage: mockUploadFile, model: "runware:110@1" }));
   });
 });
