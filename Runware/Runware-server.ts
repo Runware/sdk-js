@@ -4,6 +4,7 @@ import WebSocket from "ws";
 
 import { RunwareBase } from "./Runware-base";
 import { ETaskType, RunwareBaseType, SdkType } from "./types";
+import { buildSdkUrl, SDK_VERSION } from "./utils";
 
 // let allImages: IImage[] = [];
 
@@ -53,8 +54,13 @@ export class RunwareServer extends RunwareBase {
 
     this.resetConnection();
 
-    this._ws = new WebSocket(this._url, {
+    const url = buildSdkUrl(this._url);
+    this._ws = new WebSocket(url, {
       perMessageDeflate: false,
+      headers: {
+        "X-SDK-Name": "js-runware-sdk",
+        "X-SDK-Version": SDK_VERSION,
+      },
     });
 
     // delay(1);
