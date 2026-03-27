@@ -58,7 +58,7 @@ export class RunwareServer extends RunwareBase {
     this._ws = new WebSocket(url, {
       perMessageDeflate: false,
       headers: {
-        "X-SDK-Name": "js-runware-sdk",
+        "X-SDK-Name": "js",
         "X-SDK-Version": SDK_VERSION,
       },
     });
