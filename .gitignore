@@ -5,3 +5,4 @@ dist/
 /tests/script.ts
 /tests/script-error.ts
 .npmrc
+.claude
