@@ -55,6 +55,7 @@ describe("When user request to upscale gan", async () => {
       taskUUID: mockTaskUUID,
       upscaleFactor: 2,
       taskType: ETaskType.UPSCALE,
+      deliveryMethod: "sync",
     });
     expect(globalListenerSpy).toHaveBeenCalledWith({
       taskUUID: mockTaskUUID,
