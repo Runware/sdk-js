@@ -22,7 +22,7 @@ export const asyncRetry = async (
       maxRetries--;
       if (maxRetries > 0) {
         await delay(delayInSeconds); // Delay before the next retry
-        await asyncRetry(apiCall, { ...options, maxRetries });
+        return await asyncRetry(apiCall, { ...options, maxRetries });
       } else {
         throw error; // Throw the error if max retries are reached
       }

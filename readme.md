@@ -739,10 +739,14 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.7
+
+- Fix in-memory recursive while loop call without returning for async-retry
+- Add sdk versioning to connection
+
 ### - v1.2.6
 
 - Update upscale() to accept open-ended payload
-
 
 ### - v1.2.5
 
