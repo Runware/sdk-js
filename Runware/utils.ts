@@ -7,6 +7,14 @@ import {
   IRequestImage,
 } from "./types";
 import { v4 as uuidv4, validate as validateUUID } from "uuid";
+import pkg from "../package.json";
+
+export const SDK_VERSION = pkg.version;
+
+export function buildSdkUrl(baseUrl: string): string {
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}sdk=js&version=${SDK_VERSION}`;
+}
 
 export const TIMEOUT_DURATION = 60000; // 120S;
 export const MINIMUM_TIMEOUT_DURATION = 1000; // 120S;

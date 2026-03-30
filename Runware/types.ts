@@ -513,7 +513,7 @@ export interface IEnhancedPrompt extends IImageToText {}
 
 export interface IUpscaleGan extends IAdditionalResponsePayload {
   inputImage?: File | string;
-  upscaleFactor: number;
+  upscaleFactor?: number;
   outputType?: IOutputType;
   outputFormat?: IOutputFormat | "MP4" | "WEBM" | "MOV";
   includeCost?: boolean;
@@ -533,6 +533,8 @@ export interface IUpscaleGan extends IAdditionalResponsePayload {
 
   skipResponse?: boolean;
   deliveryMethod?: string;
+
+  [key: string]: any;
 }
 
 export type ReconnectingWebsocketProps = {
