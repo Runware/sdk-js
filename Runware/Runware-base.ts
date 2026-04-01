@@ -1,5 +1,6 @@
 // @ts-ignore
 import { asyncRetry } from "./async-retry";
+import { RunwareLogger, createLogger } from "./logger";
 import {
   EControlMode,
   IControlNet,
@@ -85,7 +86,13 @@ export class RunwareBase {
   _shouldReconnect: boolean;
   _globalMaxRetries: number;
   _timeoutDuration: number;
+  _heartbeatIntervalId: any = null;
+  _pongTimeoutId: any = null;
+  _heartbeatInterval: number;
+  _missedPongCount: number = 0;
+  _maxMissedPongs: number = 3;
   ensureConnectionUUID: string | null = null;
+  _logger: RunwareLogger;
 
   constructor({
     apiKey,
@@ -93,6 +100,8 @@ export class RunwareBase {
     shouldReconnect = true,
     globalMaxRetries = 2,
     timeoutDuration = TIMEOUT_DURATION,
+    heartbeatInterval = 45000,
+    enableLogging = false,
   }: RunwareBaseType) {
     this._apiKey = apiKey;
     this._url = url;
@@ -100,6 +109,9 @@ export class RunwareBase {
     this._shouldReconnect = shouldReconnect;
     this._globalMaxRetries = globalMaxRetries;
     this._timeoutDuration = timeoutDuration;
+    // Clamp heartbeat interval between 10s and 120s
+    this._heartbeatInterval = Math.max(10000, Math.min(120000, heartbeatInterval));
+    this._logger = createLogger(enableLogging);
   }
 
   private getUniqueUUID(item: MediaUUID): string | undefined {
@@ -204,6 +216,73 @@ export class RunwareBase {
     return this._connectionError?.error?.code === "invalidApiKey";
   };
 
+  protected startHeartbeat() {
+    this.stopHeartbeat();
+    this._logger.heartbeatStarted(this._heartbeatInterval);
+    this._heartbeatIntervalId = setInterval(() => {
+      if (!this.isWebsocketReadyState()) {
+        this.stopHeartbeat();
+        return;
+      }
+      try {
+        this._ws.send(
+          JSON.stringify([{ taskType: "ping", ping: true }]),
+        );
+        this._logger.heartbeatPingSent();
+      } catch {
+        this.stopHeartbeat();
+        return;
+      }
+      // Clear any previous pong timeout to prevent accumulation
+      if (this._pongTimeoutId) {
+        clearTimeout(this._pongTimeoutId);
+        this._pongTimeoutId = null;
+      }
+      this._pongTimeoutId = setTimeout(() => {
+        this._missedPongCount++;
+        this._logger.heartbeatPongMissed(this._missedPongCount, this._maxMissedPongs);
+        if (this._missedPongCount >= this._maxMissedPongs) {
+          if (this._ws) {
+            if (typeof this._ws.terminate === "function") {
+              this._ws.terminate();
+            } else {
+              this._ws.close();
+            }
+          }
+        }
+      }, 10000);
+    }, this._heartbeatInterval);
+  }
+
+  protected stopHeartbeat() {
+    if (this._heartbeatIntervalId) {
+      clearInterval(this._heartbeatIntervalId);
+      this._heartbeatIntervalId = null;
+      this._logger.heartbeatStopped();
+    }
+    if (this._pongTimeoutId) {
+      clearTimeout(this._pongTimeoutId);
+      this._pongTimeoutId = null;
+    }
+    this._missedPongCount = 0;
+  }
+
+  protected handlePongMessage(data: any) {
+    const messages = Array.isArray(data?.data) ? data.data : [];
+    for (const msg of messages) {
+      if (msg?.taskType === "ping" && msg?.pong === true) {
+        this._missedPongCount = 0;
+        if (this._pongTimeoutId) {
+          clearTimeout(this._pongTimeoutId);
+          this._pongTimeoutId = null;
+        }
+        this._logger.heartbeatPongReceived();
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected addListener({
     lis,
     // check,
@@ -258,33 +337,53 @@ export class RunwareBase {
   }
 
   protected connect() {
-    this._ws.onopen = (e: any) => {
-      if (this._connectionSessionUUID) {
-        this.send({
-          taskType: ETaskType.AUTHENTICATION,
-          apiKey: this._apiKey,
-          connectionSessionUUID: this._connectionSessionUUID,
-        });
-      } else {
-        this.send({ apiKey: this._apiKey, taskType: ETaskType.AUTHENTICATION });
+    this._logger.connecting(this._url || "unknown");
+
+    this._ws.onopen = async (e: any) => {
+      this._logger.authenticating(!!this._connectionSessionUUID);
+      try {
+        if (this._connectionSessionUUID) {
+          await this.send({
+            taskType: ETaskType.AUTHENTICATION,
+            apiKey: this._apiKey,
+            connectionSessionUUID: this._connectionSessionUUID,
+          });
+        } else {
+          await this.send({ apiKey: this._apiKey, taskType: ETaskType.AUTHENTICATION });
+        }
+      } catch (err) {
+        this._logger.error("Failed to send auth message", err);
+        return;
       }
 
-      this.addListener({
+      const authListener = this.addListener({
         taskUUID: ETaskType.AUTHENTICATION,
         lis: (m) => {
           if (m?.error) {
             this._connectionError = m;
+            this._logger.authError(m);
+            authListener?.destroy?.();
             return;
           }
           this._connectionSessionUUID =
             m?.[ETaskType.AUTHENTICATION]?.[0]?.connectionSessionUUID;
           this._connectionError = undefined;
+          this._logger.authenticated(this._connectionSessionUUID || "");
+          authListener?.destroy?.();
+          this.startHeartbeat();
         },
       });
     };
 
     this._ws.onmessage = (e: any) => {
-      const data = JSON.parse(e.data);
+      let data;
+      try {
+        data = JSON.parse(e.data);
+      } catch (err) {
+        this._logger.error("Failed to parse WebSocket message", err);
+        return;
+      }
+      if (this.handlePongMessage(data)) return;
       for (const lis of this._listeners) {
         const result = (lis as any)?.listener?.(data);
         if (result) return;
@@ -292,16 +391,39 @@ export class RunwareBase {
     };
 
     this._ws.onclose = (e: any) => {
-      // console.log("closing");
-      // console.log("invalid", this._invalidAPIkey);
+      this._logger.connectionClosed(e?.code);
+      this._connectionSessionUUID = undefined;
+      this.stopHeartbeat();
       if (this.isInvalidAPIKey()) {
         return;
       }
     };
+
+    this._ws.onerror = (e: any) => {
+      this._logger.connectionError(e?.message || e);
+    };
   }
 
   // We moving to an array format, it make sense to consolidate all request to an array here
-  protected send = (msg: Object) => {
+  protected send = async (msg: Object) => {
+    if (!this.isWebsocketReadyState()) {
+      this._logger.sendReconnecting();
+      if (this._ws) {
+        try {
+          if (typeof this._ws.terminate === "function") {
+            this._ws.terminate();
+          } else {
+            this._ws.close();
+          }
+        } catch {}
+      }
+      this._connectionSessionUUID = undefined;
+      // ensureConnection either resolves (ws ready) or throws
+      await this.ensureConnection();
+    }
+    const taskType = (msg as any)?.taskType;
+    const taskUUID = (msg as any)?.taskUUID;
+    this._logger.messageSent(taskType, taskUUID);
     this._ws.send(JSON.stringify([msg]));
   };
 
@@ -645,7 +767,7 @@ export class RunwareBase {
             taskUUID: taskUUID,
             numberResults: imageRemaining,
           };
-          this.send(newRequestObject);
+          await this.send(newRequestObject);
 
           // const generationTime = endTime - startTime;
 
@@ -747,7 +869,7 @@ export class RunwareBase {
             ...(outputQuality ? { outputQuality } : {}),
           };
 
-          this.send({
+          await this.send({
             ...payload,
           });
           lis = this.globalListener({
@@ -1190,7 +1312,7 @@ export class RunwareBase {
             taskType: ETaskType.PROMPT_ENHANCE,
           };
 
-          this.send(payload);
+          await this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -1265,7 +1387,7 @@ export class RunwareBase {
           await this.ensureConnection();
           const taskUUID = _taskUUID || customTaskUUID || getUUID();
 
-          this.send({
+          await this.send({
             ...addModelPayload,
             taskUUID,
             taskType: ETaskType.MODEL_UPLOAD,
@@ -1293,7 +1415,7 @@ export class RunwareBase {
                 return true;
               } else if (errorResult) {
                 reject(errorResult);
-                return false;
+                return true;
               }
             },
             {
@@ -1302,6 +1424,7 @@ export class RunwareBase {
             },
           );
 
+          lis?.destroy();
           return modelUploadResponse as IAddModelResponse | IErrorResponse;
         },
         {
@@ -1364,7 +1487,7 @@ export class RunwareBase {
             numberResults,
           };
 
-          this.send({
+          await this.send({
             ...payload,
             numberResults: imageRemaining,
           });
@@ -1489,7 +1612,8 @@ export class RunwareBase {
             taskUUID,
           };
 
-          this.send(payload);
+          this._logger.requestStart(debugKey, taskUUID);
+          await this.send(payload);
 
           lis = this.globalListener({
             taskUUID,
@@ -1497,19 +1621,20 @@ export class RunwareBase {
 
           const response = await getIntervalWithPromise(
             ({ resolve, reject }) => {
-              // console.log("multiple", isMultiple);
               const response = isMultiple
                 ? this.getMultipleMessages({ taskUUID })
                 : this.getSingleMessage({ taskUUID });
               if (!response) return;
 
               if (response?.error) {
+                this._logger.requestError(taskUUID, response);
                 reject(response);
                 return true;
               }
 
               if (response) {
                 delete this._globalMessages[taskUUID];
+                this._logger.requestComplete(debugKey, taskUUID, Date.now() - startTime);
                 resolve(response);
                 return true;
               }
@@ -1534,6 +1659,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
+          logger: this._logger,
         },
       );
     } catch (e) {
@@ -1587,9 +1713,11 @@ export class RunwareBase {
             numberResults: taskRemaining,
           };
 
-          this.send(payload);
+          this._logger.requestStart(restPayload.taskType || groupKey, taskUUID);
+          await this.send(payload);
 
           if (skipResponse) {
+            this._logger.info(`Async mode (skipResponse) — waiting for server acknowledgement`, { taskUUID });
             return new Promise<T>((resolve, reject) => {
               const listener = this.addListener({
                 taskUUID,
@@ -1597,8 +1725,10 @@ export class RunwareBase {
                 lis: (msg) => {
                   listener.destroy();
                   if (msg.error) {
+                    this._logger.requestError(taskUUID, msg.error);
                     reject(msg.error);
                   } else {
+                    this._logger.requestComplete(restPayload.taskType || groupKey, taskUUID, Date.now() - startTime);
                     resolve(msg[taskUUID]);
                   }
                 },
@@ -1618,9 +1748,9 @@ export class RunwareBase {
             taskUUID: taskUUIDs,
             numberResults,
             lis,
-            // debugKey,
           });
 
+          this._logger.requestComplete(restPayload.taskType || groupKey, taskUUID, Date.now() - startTime);
           lis.destroy();
           return promise as T;
         },
@@ -1629,6 +1759,7 @@ export class RunwareBase {
           callback: () => {
             lis?.destroy();
           },
+          logger: this._logger,
         },
       );
     } catch (e) {
@@ -1640,9 +1771,10 @@ export class RunwareBase {
     let isConnected = this.connected();
     if (isConnected || this._url === BASE_RUNWARE_URLS.TEST) return;
 
+    this._logger.ensureConnectionStart();
+
     const retryInterval = 2000;
     const pollingInterval = 200;
-    // const pollingInterval = this._sdkType === SdkType.CLIENT ? 200 : 2000;
 
     try {
       if (this.isInvalidAPIKey()) {
@@ -1650,7 +1782,6 @@ export class RunwareBase {
       }
 
       return new Promise((resolve, reject) => {
-        //  const isConnected =
         let retry = 0;
         const MAX_RETRY = 30;
 
@@ -1670,7 +1801,6 @@ export class RunwareBase {
             try {
               const hasConnected = this.connected();
 
-              // only one instance should be responsible for making the call again, not other ensureConnection
               let shouldCallServer = false;
 
               if (
@@ -1683,18 +1813,19 @@ export class RunwareBase {
                 shouldCallServer = true;
               }
 
-              // Retry every (retryInterval % retry) => 60s
-              // every 20 seconds (ie. => retry is 10 (20s), retry is 20 (40s))
               const SHOULD_RETRY = retry % 10 === 0 && shouldCallServer;
 
               if (hasConnected) {
                 clearAllIntervals();
+                this._logger.ensureConnectionSuccess();
                 resolve(true);
               } else if (retry >= MAX_RETRY) {
                 clearAllIntervals();
+                this._logger.ensureConnectionTimeout();
                 reject(new Error("Retry timed out"));
               } else {
                 if (SHOULD_RETRY) {
+                  this._logger.reconnecting(retry + 1);
                   this.connect();
                 }
                 retry++;
@@ -1711,11 +1842,13 @@ export class RunwareBase {
 
           if (hasConnected) {
             clearAllIntervals();
+            this._logger.ensureConnectionSuccess();
             resolve(true);
             return;
           }
           if (!!this.isInvalidAPIKey()) {
             clearAllIntervals();
+            this._logger.error("Connection failed — invalid API key");
             reject(this._connectionError);
             return;
           }
@@ -1846,7 +1979,10 @@ export class RunwareBase {
   }
 
   disconnect = async () => {
+    this._logger.disconnected("user initiated");
     this._shouldReconnect = false;
+    this._connectionSessionUUID = undefined;
+    this.stopHeartbeat();
     this._ws?.terminate?.();
     this._ws?.close?.();
   };

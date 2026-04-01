@@ -739,6 +739,10 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.8
+
+- Add improvements in inference process
+
 ### - v1.2.7
 
 - Fix in-memory recursive while loop call without returning for async-retry
