@@ -28,6 +28,7 @@ export enum ETaskType {
   MEDIA_STORAGE = "mediaStorage",
   VECTORIZE = "vectorize",
   TEXT_INFERENCE = "textInference",
+  GET_TASK_DETAILS = "getTaskDetails",
 }
 
 export type RunwareBaseType = {
@@ -970,4 +971,22 @@ export type MediaUUID = {
   videoUUID?: string;
   outputs?: TOutputFiles;
   text?: string;
+};
+
+export type TGetTaskDetailsRequest = {
+  taskUUID: string;
+};
+
+export type TGetTaskDetailsResponse = {
+  taskType: string;
+  taskUUID: string;
+  request: any[];
+  response: {
+    data: any[];
+    error: {
+      code: string;
+      message: string;
+      taskUUID: string;
+    } | null;
+  }[];
 };

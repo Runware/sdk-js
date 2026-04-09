@@ -739,6 +739,10 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.2.9
+
+- Add getTaskDetails task type
+
 ### - v1.2.8
 
 - Add improvements in inference process

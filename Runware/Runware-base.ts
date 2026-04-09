@@ -50,6 +50,8 @@ import {
   ITextResponse,
   IRequestTextInference,
   IError,
+  TGetTaskDetailsRequest,
+  TGetTaskDetailsResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -1053,6 +1055,18 @@ export class RunwareBase {
         taskType: ETaskType.VECTORIZE,
       },
       debugKey: "vectorize",
+    });
+  };
+
+  getTaskDetails = async (
+    payload: TGetTaskDetailsRequest,
+  ): Promise<TGetTaskDetailsResponse> => {
+    return this.baseSingleRequest({
+      payload: {
+        ...payload,
+        taskType: ETaskType.GET_TASK_DETAILS,
+      },
+      debugKey: "get-task-details",
     });
   };
 
