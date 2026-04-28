@@ -1998,7 +1998,7 @@ export class RunwareBase {
     this._connectionSessionUUID = undefined;
     this.stopHeartbeat();
     this._ws?.terminate?.();
-    this._ws?.close?.();
+    this._ws?.close?.(1000, "", { keepClosed: true });
   };
 
   private connected = () =>
