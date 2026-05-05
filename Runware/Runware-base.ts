@@ -52,6 +52,8 @@ import {
   IError,
   TGetTaskDetailsRequest,
   TGetTaskDetailsResponse,
+  IRequestTraining,
+  TTrainingResponse,
 } from "./types";
 import {
   BASE_RUNWARE_URLS,
@@ -1067,6 +1069,29 @@ export class RunwareBase {
         taskType: ETaskType.GET_TASK_DETAILS,
       },
       debugKey: "get-task-details",
+    });
+  };
+
+  training = async (
+    payload: IRequestTraining,
+  ): Promise<TTrainingResponse | TTrainingResponse[]> => {
+    const { skipResponse = true, ...rest } = payload;
+
+    const request = await this.baseSingleRequest<TTrainingResponse>({
+      payload: {
+        ...rest,
+        deliveryMethod: "async",
+        taskType: ETaskType.TRAINING,
+      },
+      debugKey: "training",
+    });
+
+    if (skipResponse) {
+      return request;
+    }
+
+    return this.pollForAsyncResults<TTrainingResponse>({
+      taskUUID: request?.taskUUID,
     });
   };
 

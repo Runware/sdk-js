@@ -29,6 +29,7 @@ export enum ETaskType {
   VECTORIZE = "vectorize",
   TEXT_INFERENCE = "textInference",
   GET_TASK_DETAILS = "getTaskDetails",
+  TRAINING = "training",
 }
 
 export type RunwareBaseType = {
@@ -989,4 +990,35 @@ export type TGetTaskDetailsResponse = {
       taskUUID: string;
     } | null;
   }[];
+};
+
+export interface IImportModel {
+  air: string;
+  name: string;
+  uniqueIdentifier: string;
+  version: string;
+  private?: boolean;
+  heroImageURL?: string;
+  shortDescription?: string;
+}
+
+export interface IRequestTraining extends IAdditionalResponsePayload {
+  model: string;
+  importModel: IImportModel;
+  inputs: {
+    dataset: string;
+  };
+  webhookURL?: string;
+  customTaskUUID?: string;
+  taskUUID?: string;
+  skipResponse?: boolean;
+  [key: string]: unknown;
+}
+
+export type TTrainingResponse = {
+  taskType: string;
+  taskUUID: string;
+  status: string;
+  cost?: number;
+  air?: string;
 };
