@@ -138,9 +138,11 @@ export class RunwareBase {
   private async pollForAsyncResults<T extends { status: string } & MediaUUID>({
     taskUUID,
     numberResults = 1,
+    dedupeKey,
   }: {
     taskUUID: string;
     numberResults?: number;
+    dedupeKey?: string | ((item: T) => string | undefined);
   }): Promise<T[]> {
     const allResults = new Map<string, T>();
     await getIntervalAsyncWithPromise(
@@ -151,7 +153,10 @@ export class RunwareBase {
           // Add results to the collection
           for (const responseItem of response || []) {
             if (responseItem.status === "success") {
-              const uuid = this.getUniqueUUID(responseItem);
+              const uuid =
+                typeof dedupeKey === "function"
+                  ? dedupeKey(responseItem)
+                  : dedupeKey || this.getUniqueUUID(responseItem);
               if (uuid) {
                 allResults.set(uuid, responseItem);
               }
@@ -1092,6 +1097,7 @@ export class RunwareBase {
 
     return this.pollForAsyncResults<TTrainingResponse>({
       taskUUID: request?.taskUUID,
+      dedupeKey: (response) => response.taskUUID,
     });
   };
 
