@@ -739,6 +739,10 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.3.0
+
+- Add `training` task type.
+
 ### - v1.2.10
 
 - Ensure calling disconnect() prevents automatic reconnection.
