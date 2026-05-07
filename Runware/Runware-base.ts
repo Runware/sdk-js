@@ -1080,6 +1080,7 @@ export class RunwareBase {
   training = async (
     payload: IRequestTraining,
   ): Promise<TTrainingResponse | TTrainingResponse[]> => {
+    // training usually takes hours, so we skipResponse by default
     const { skipResponse = true, ...rest } = payload;
 
     const request = await this.baseSingleRequest<TTrainingResponse>({
