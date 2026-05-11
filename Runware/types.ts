@@ -1012,6 +1012,7 @@ export interface IRequestTraining extends IAdditionalResponsePayload {
   customTaskUUID?: string;
   taskUUID?: string;
   skipResponse?: boolean;
+  includeCost?: boolean;
   [key: string]: unknown;
 }
 
