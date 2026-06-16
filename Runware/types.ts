@@ -1,3 +1,5 @@
+import type { RunwareLoggingConfig } from "./logger";
+
 export enum Environment {
   PRODUCTION = "PRODUCTION",
   DEVELOPMENT = "DEVELOPMENT",
@@ -39,7 +41,8 @@ export type RunwareBaseType = {
   globalMaxRetries?: number;
   timeoutDuration?: number;
   heartbeatInterval?: number;
-  enableLogging?: boolean;
+  logging?: RunwareLoggingConfig;
+  dryRun?: boolean;
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";

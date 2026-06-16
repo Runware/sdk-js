@@ -9,6 +9,7 @@ export default defineConfig({
   minify: true,
   target: "esnext",
   outDir: "dist",
+  external: ["@sentry/browser", "@sentry/node"],
   // outExtension({ format }) {
   //   console.log("gforat", format);
   //   return {

@@ -95,6 +95,7 @@ export class RunwareBase {
   _heartbeatInterval: number;
   _missedPongCount: number = 0;
   _maxMissedPongs: number = 3;
+  _dryRun: boolean;
   ensureConnectionUUID: string | null = null;
   _logger: RunwareLogger;
 
@@ -105,17 +106,22 @@ export class RunwareBase {
     globalMaxRetries = 2,
     timeoutDuration = TIMEOUT_DURATION,
     heartbeatInterval = 45000,
-    enableLogging = false,
+    logging,
+    dryRun = false,
   }: RunwareBaseType) {
     this._apiKey = apiKey;
     this._url = url;
+    this._dryRun = dryRun;
     this._sdkType = SdkType.CLIENT;
     this._shouldReconnect = shouldReconnect;
     this._globalMaxRetries = globalMaxRetries;
     this._timeoutDuration = timeoutDuration;
     // Clamp heartbeat interval between 10s and 120s
-    this._heartbeatInterval = Math.max(10000, Math.min(120000, heartbeatInterval));
-    this._logger = createLogger(enableLogging);
+    this._heartbeatInterval = Math.max(
+      10000,
+      Math.min(120000, heartbeatInterval),
+    );
+    this._logger = createLogger(logging);
   }
 
   private getUniqueUUID(item: MediaUUID): string | undefined {
@@ -197,6 +203,61 @@ export class RunwareBase {
   }
 
   protected isWebsocketReadyState = () => this._ws?.readyState === 1;
+
+  protected isWebsocketHealthyForSend = () =>
+    this.isWebsocketReadyState() && this._missedPongCount === 0;
+
+  protected canSendMessage = (taskType?: string) =>
+    taskType === ETaskType.AUTHENTICATION
+      ? this.isWebsocketHealthyForSend()
+      : this.isWebsocketHealthyForSend() && !!this._connectionSessionUUID;
+
+  protected closeCurrentWebsocket() {
+    if (this._ws) {
+      try {
+        if (typeof this._ws.terminate === "function") {
+          this._ws.terminate();
+        } else {
+          this._ws.close();
+        }
+      } catch {}
+    }
+    this._connectionSessionUUID = undefined;
+    this.stopHeartbeat();
+  }
+
+  private getReadyStateLabel(readyState?: number): string {
+    if (readyState === 0) return "CONNECTING";
+    if (readyState === 1) return "OPEN";
+    if (readyState === 2) return "CLOSING";
+    if (readyState === 3) return "CLOSED";
+    return "UNKNOWN";
+  }
+
+  private createConnectionTimeoutError({
+    retryInterval,
+    maxRetry,
+  }: {
+    retryInterval: number;
+    maxRetry: number;
+  }): Error {
+    const readyState =
+      typeof this._ws?.readyState === "number" ? this._ws.readyState : undefined;
+    const readyStateLabel = this.getReadyStateLabel(readyState);
+    const sessionState = this._connectionSessionUUID ? "present" : "missing";
+    const heartbeatState =
+      this._missedPongCount > 0
+        ? `unhealthy (${this._missedPongCount}/${this._maxMissedPongs} missed pongs)`
+        : `healthy (${this._missedPongCount}/${this._maxMissedPongs} missed pongs)`;
+    const timeoutMs = retryInterval * maxRetry;
+
+    return new Error(
+      `WebSocket reconnection timed out after ${timeoutMs}ms while waiting for an OPEN authenticated connection. ` +
+        `Last state: readyState=${readyStateLabel}${readyState === undefined ? "" : ` (${readyState})`}, ` +
+        `session=${sessionState}, heartbeat=${heartbeatState}. ` +
+        `The SDK did not send the request into the stale socket; check network connectivity, API key validity, and server availability.`,
+    );
+  }
 
   // protected addListener({
   //   lis,
@@ -392,6 +453,15 @@ export class RunwareBase {
         this._logger.error("Failed to parse WebSocket message", err);
         return;
       }
+      const messageData = Array.isArray(data?.data)
+        ? data.data[0]
+        : Array.isArray(data)
+          ? data[0]
+          : data;
+      this._logger.messageReceived(
+        messageData?.taskType,
+        messageData?.taskUUID,
+      );
       if (this.handlePongMessage(data)) return;
       for (const lis of this._listeners) {
         const result = (lis as any)?.listener?.(data);
@@ -415,23 +485,15 @@ export class RunwareBase {
 
   // We moving to an array format, it make sense to consolidate all request to an array here
   protected send = async (msg: Object) => {
-    if (!this.isWebsocketReadyState()) {
+    const taskType = (msg as { taskType?: string })?.taskType ?? "unknown";
+    const taskUUID = (msg as { taskUUID?: string })?.taskUUID;
+
+    if (!this.canSendMessage(taskType)) {
       this._logger.sendReconnecting();
-      if (this._ws) {
-        try {
-          if (typeof this._ws.terminate === "function") {
-            this._ws.terminate();
-          } else {
-            this._ws.close();
-          }
-        } catch {}
-      }
-      this._connectionSessionUUID = undefined;
+      this.closeCurrentWebsocket();
       // ensureConnection either resolves (ws ready) or throws
       await this.ensureConnection();
     }
-    const taskType = (msg as any)?.taskType;
-    const taskUUID = (msg as any)?.taskUUID;
     this._logger.messageSent(taskType, taskUUID);
     this._ws.send(JSON.stringify([msg]));
   };
@@ -807,6 +869,15 @@ export class RunwareBase {
         },
       );
     } catch (e) {
+      // Report inference failures to telemetry. Without this, requestImages
+      // errors never reach Sentry. The code + model AIR are folded into the
+      // message so distinct failures become distinct Sentry issues.
+      const err = e as { error?: { code?: string }; code?: string };
+      const code = err?.error?.code ?? err?.code ?? "unknown";
+      this._logger.inferenceError(code, String(model ?? "unknown"), {
+        taskUUID: taskUUIDs[taskUUIDs.length - 1] ?? "unknown",
+        error: err?.error ?? e,
+      });
       if (retryCount >= totalRetry) {
         return this.handleIncompleteImages({ taskUUIDs, error: e });
       }
@@ -1835,12 +1906,25 @@ export class RunwareBase {
 
         let retryIntervalId: any;
         let pollingIntervalId: any;
+        let timeoutId: any;
 
         const clearAllIntervals = () => {
           this.ensureConnectionUUID = null;
           clearInterval(retryIntervalId);
           clearInterval(pollingIntervalId);
+          clearTimeout(timeoutId);
         };
+
+        timeoutId = setTimeout(() => {
+          clearAllIntervals();
+          this._logger.ensureConnectionTimeout();
+          reject(
+            this.createConnectionTimeoutError({
+              retryInterval,
+              maxRetry: MAX_RETRY,
+            }),
+          );
+        }, retryInterval * MAX_RETRY);
 
         if (this._sdkType === SdkType.SERVER) {
           retryIntervalId = setInterval(async () => {
@@ -1868,7 +1952,12 @@ export class RunwareBase {
               } else if (retry >= MAX_RETRY) {
                 clearAllIntervals();
                 this._logger.ensureConnectionTimeout();
-                reject(new Error("Retry timed out"));
+                reject(
+                  this.createConnectionTimeoutError({
+                    retryInterval,
+                    maxRetry: MAX_RETRY,
+                  }),
+                );
               } else {
                 if (SHOULD_RETRY) {
                   this._logger.reconnecting(retry + 1);
@@ -2031,9 +2120,11 @@ export class RunwareBase {
     this.stopHeartbeat();
     this._ws?.terminate?.();
     this._ws?.close?.(1000, "", { keepClosed: true });
+    // Deliver any buffered telemetry before the caller exits the process.
+    await this._logger.flush();
   };
 
   private connected = () =>
-    this.isWebsocketReadyState() && !!this._connectionSessionUUID;
+    this.isWebsocketHealthyForSend() && !!this._connectionSessionUUID;
   //end of data
 }

@@ -111,9 +111,9 @@ tests/Runware/
 
 ## Telemetry Logging
 
-All tests run with `enableLogging: true` by default, so you will see colored `[RUNWARE]` telemetry output showing connection, auth, heartbeat, send, and error events in the console.
+All tests run with `logging: { enabled: true }` by default, so you will see colored `[RUNWARE]` telemetry output showing connection, auth, heartbeat, send, and error events in the console.
 
-To disable logging for a specific test, pass `{ enableLogging: false }` to `createRealServer()`.
+To disable logging for a specific test, pass `{ logging: { enabled: false } }` to `createRealServer()`.
 
 ---
 

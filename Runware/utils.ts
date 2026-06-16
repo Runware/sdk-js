@@ -11,9 +11,22 @@ import pkg from "../package.json";
 
 export const SDK_VERSION = pkg.version;
 
-export function buildSdkUrl(baseUrl: string): string {
+export function buildSdkUrl(
+  baseUrl: string,
+  extraParams?: Record<string, string | number | boolean | undefined>,
+): string {
+  const params = new URLSearchParams();
+  params.set("sdk", "js");
+  params.set("version", SDK_VERSION);
+  if (extraParams) {
+    for (const [key, value] of Object.entries(extraParams)) {
+      if (value !== undefined) {
+        params.set(key, String(value));
+      }
+    }
+  }
   const separator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${separator}sdk=js&version=${SDK_VERSION}`;
+  return `${baseUrl}${separator}${params.toString()}`;
 }
 
 export const TIMEOUT_DURATION = 60000; // 120S;
