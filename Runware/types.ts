@@ -151,6 +151,8 @@ export type IControlNetPreprocess = {
   customTaskUUID?: string;
   taskUUID?: string;
   retry?: number;
+  deliveryMethod?: string;
+  skipResponse?: boolean;
 } & IAdditionalResponsePayload;
 
 // export type IControlNetA = RequireOnlyOne<
