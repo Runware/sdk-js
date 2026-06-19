@@ -742,6 +742,10 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.3.2
+
+- Support `async` ControlNet Preprocess delivery
+
 ### - v1.3.1
 
 - Add WebSocket health checks: half-open ("zombie") connections are now detected via heartbeat ping/pong and the socket is reconnected before sending, so requests are no longer lost into a dead connection.
