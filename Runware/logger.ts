@@ -143,7 +143,10 @@ export type RunwareSentryLoader = (
 // We never call the global `init()` — instead we build an isolated client so
 // Runware telemetry can never clobber a host app's own Sentry.
 interface RunwareIsolatedSentryClient {
-  captureMessage: (message: string, level?: RunwareSentryCaptureLevel) => unknown;
+  captureMessage: (
+    message: string,
+    level?: RunwareSentryCaptureLevel,
+  ) => unknown;
   flush: (timeout?: number) => Promise<boolean>;
 }
 
@@ -163,7 +166,10 @@ interface RunwareSentryModule {
   makeFetchTransport?: unknown;
   defaultStackParser?: unknown;
   withScope?: (callback: (scope: RunwareSentryScope) => void) => void;
-  captureMessage?: (message: string, level?: RunwareSentryCaptureLevel) => unknown;
+  captureMessage?: (
+    message: string,
+    level?: RunwareSentryCaptureLevel,
+  ) => unknown;
   logger?: Partial<Record<RunwareSentryLogLevel, RunwareSentryLogFn>>;
 }
 
@@ -398,7 +404,9 @@ function buildIsolatedEmitter(
   const ClientCtor =
     runtime === "browser" ? module.BrowserClient : module.NodeClient;
   const transport =
-    runtime === "browser" ? module.makeFetchTransport : module.makeNodeTransport;
+    runtime === "browser"
+      ? module.makeFetchTransport
+      : module.makeNodeTransport;
   const withScope = module.withScope;
 
   if (!ClientCtor || !transport || !module.defaultStackParser || !withScope) {
@@ -498,8 +506,7 @@ function normalizeTargets(type?: RunwareLogType): Set<RunwareLogTarget> {
   if (!type) {
     // Default-on: enabling logging sends telemetry to the Runware org Sentry
     // (plus console). Opt out with `type: "console"`.
-    addTarget("console");
-    addTarget("telemetry");
+    return targets;
   } else if (type === "both") {
     addTarget("console");
     addTarget("telemetry");
@@ -537,7 +544,9 @@ function registerRunwareExitFlush(
   runwareExitHandlerRegistered = true;
   process.once("beforeExit", () => {
     void Promise.all(
-      [...runwareExitFlushers].map((flushOne) => flushOne(2000).catch(() => {})),
+      [...runwareExitFlushers].map((flushOne) =>
+        flushOne(2000).catch(() => {}),
+      ),
     );
   });
 }
@@ -574,7 +583,10 @@ export class RunwareLogger {
     this.sentry = config?.sentry;
     this.telemetrySentry = createRunwareTelemetrySentryOptions();
 
-    if (this.enabled && (this.shouldUseTelemetry() || this.shouldUseCustomerSentry())) {
+    if (
+      this.enabled &&
+      (this.shouldUseTelemetry() || this.shouldUseCustomerSentry())
+    ) {
       // Pre-warm the dynamic import + client build so the first event isn't
       // racing process exit, and flush buffered logs on natural exit.
       if (this.shouldUseTelemetry()) void this.loadSentryEmitter("telemetry");
