@@ -4,17 +4,20 @@
  * Colored console output and optional lazy Sentry-backed telemetry for SDK
  * internals. Logging is disabled unless `logging.enabled` is true.
  *
- * When enabled, telemetry is sent to the Runware org Sentry by default (an
- * isolated client that never touches the host app's own Sentry). Opt out with
- * `type: "console"`. Error-severity events appear as Sentry Issues; everything
- * else is sent as structured logs. Buffered telemetry is flushed on
- * `runware.disconnect()` and on natural process exit.
+ * When enabled, logs go to the console only by default. Opt in to remote
+ * telemetry with `type: "telemetry"` (Runware org Sentry only) or
+ * `type: "both"` (console + telemetry). Telemetry uses an isolated client that
+ * never touches the host app's own Sentry. Error-severity events appear as
+ * Sentry Issues; everything else is sent as structured logs. Buffered telemetry
+ * is flushed on `runware.disconnect()` and on natural process exit.
  *
  * Usage:
  *   const runware = new RunwareServer({
  *     apiKey: "...",
- *     logging: { enabled: true, level: "info" }, // console + Runware telemetry
+ *     logging: { enabled: true, level: "info" }, // console only
  *   });
+ *   // Send telemetry to Runware as well:
+ *   //   logging: { enabled: true, type: "both" }
  *   // ...
  *   await runware.disconnect(); // flushes telemetry before exit
  */
