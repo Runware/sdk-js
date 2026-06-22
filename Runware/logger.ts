@@ -516,7 +516,6 @@ function normalizeTargets(type?: RunwareLogType): Set<RunwareLogTarget> {
     addTarget(type);
   }
 
-  if (targets.size === 0) addTarget("console");
   return targets;
 }
 
