@@ -957,10 +957,10 @@ export class RunwareLogger {
 
   // ── Heartbeat ─────────────────────────────────────────────────────────
 
-  heartbeatStarted(intervalMs: number) {
+  heartbeatStarted(intervalMs: number, maxMissedPongs: number) {
     this.log(
       LogLevel.HEARTBEAT,
-      `Heartbeat started — ping every ${intervalMs / 1000}s, ${3} missed pongs before close`,
+      `Heartbeat started — ping every ${intervalMs / 1000}s, ${maxMissedPongs} missed pongs before close`,
       undefined,
       "heartbeat",
     );

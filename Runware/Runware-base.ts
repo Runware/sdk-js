@@ -288,7 +288,7 @@ export class RunwareBase {
 
   protected startHeartbeat() {
     this.stopHeartbeat();
-    this._logger.heartbeatStarted(this._heartbeatInterval);
+    this._logger.heartbeatStarted(this._heartbeatInterval, this._maxMissedPongs);
     this._heartbeatIntervalId = setInterval(() => {
       if (!this.isWebsocketReadyState()) {
         this.stopHeartbeat();
