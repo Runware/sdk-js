@@ -504,9 +504,7 @@ function normalizeTargets(type?: RunwareLogType): Set<RunwareLogTarget> {
   const addTarget = (target: RunwareLogTarget) => targets.add(target);
 
   if (!type) {
-    // Default-on: enabling logging sends telemetry to the Runware org Sentry
-    // (plus console). Opt out with `type: "console"`.
-    return targets;
+    addTarget("console");
   } else if (type === "both") {
     addTarget("console");
     addTarget("telemetry");
