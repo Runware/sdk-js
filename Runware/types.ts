@@ -40,6 +40,7 @@ export type RunwareBaseType = {
   timeoutDuration?: number;
   heartbeatInterval?: number;
   enableLogging?: boolean;
+  dryRun?: boolean;
 };
 
 export type IOutputType = "base64Data" | "dataURI" | "URL";
