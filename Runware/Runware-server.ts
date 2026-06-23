@@ -29,7 +29,9 @@ export class RunwareServer extends RunwareBase {
     this.resetConnection();
 
     try {
-      const url = buildSdkUrl(this._url);
+      const url = buildSdkUrl(this._url, {
+        dryRun: this._dryRun ? 1 : undefined,
+      });
       this._logger.connecting(url);
 
       this._ws = new WebSocket(url, {
@@ -125,23 +127,15 @@ export class RunwareServer extends RunwareBase {
   }
 
   protected send = async (msg: Object) => {
-    if (!this.isWebsocketReadyState()) {
+    const taskType = (msg as { taskType?: string })?.taskType ?? "unknown";
+    const taskUUID = (msg as { taskUUID?: string })?.taskUUID;
+
+    if (!this.canSendMessage(taskType)) {
       this._logger.sendReconnecting();
-      if (this._ws) {
-        try {
-          if (typeof this._ws.terminate === "function") {
-            this._ws.terminate();
-          } else {
-            this._ws.close();
-          }
-        } catch {}
-      }
-      this._connectionSessionUUID = undefined;
+      this.closeCurrentWebsocket();
       // ensureConnection either resolves (ws ready) or throws
       await this.ensureConnection();
     }
-    const taskType = (msg as any)?.taskType;
-    const taskUUID = (msg as any)?.taskUUID;
     this._logger.messageSent(taskType, taskUUID);
     this._ws.send(JSON.stringify([msg]));
   };

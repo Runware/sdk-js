@@ -742,6 +742,11 @@ export type TImageMaskingResponse = {
 
 ## Changelog
 
+### - v1.3.1
+
+- Add WebSocket health checks: half-open ("zombie") connections are now detected via heartbeat ping/pong and the socket is reconnected before sending, so requests are no longer lost into a dead connection.
+- Add `dryRun` option: when enabled, the SDK connects in dry-run mode (`dryRun=1`) so requests are validated by the server without executing inference.
+
 ### - v1.3.0
 
 - Add `training` task type.

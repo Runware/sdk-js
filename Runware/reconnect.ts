@@ -16,6 +16,7 @@ type Options = {
   connectionTimeout?: number;
   maxRetries?: number;
   debug?: boolean;
+  logger?: (...params: unknown[]) => void;
 };
 
 const isWebSocket = (constructor) => constructor && constructor.CLOSING === 2;
@@ -101,9 +102,7 @@ const ReconnectingWebsocket = function (
     );
   }
 
-  const log = config.debug
-    ? (...params) => console.log("RWS:", ...params)
-    : () => {};
+  const log = config.debug && config.logger ? config.logger : () => {};
 
   /**
    * Not using dispatchEvent, otherwise we must use a DOM Event object

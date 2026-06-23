@@ -8,7 +8,9 @@ export class RunwareClient extends RunwareBase {
     const { shouldReconnect, ...rest } = props;
 
     super(rest);
-    const url = buildSdkUrl(this._url || "");
+    const url = buildSdkUrl(this._url || "", {
+      dryRun: this._dryRun ? 1 : undefined,
+    });
     this._ws = new (ReconnectingWebsocket as any)(
       url
     ) as ReconnectingWebsocketProps;
