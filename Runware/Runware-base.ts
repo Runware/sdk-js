@@ -872,111 +872,38 @@ export class RunwareBase {
     return this.requestImages(params, moreOptions);
   }
 
-  controlNetPreProcess = async ({
-    inputImage,
-    preProcessorType,
-    height,
-    width,
-    outputType,
-    outputFormat,
-    highThresholdCanny,
-    lowThresholdCanny,
-    includeHandsAndFaceOpenPose,
-    includeCost,
-    outputQuality,
-    customTaskUUID,
-    taskUUID: _taskUUID,
-    retry,
-    includeGenerationTime,
-    includePayload,
-  }: IControlNetPreprocess): Promise<IControlNetImage | null> => {
-    const totalRetry = retry || this._globalMaxRetries;
-    let lis: any = undefined;
-
-    const startTime = Date.now();
-
+  controlNetPreProcess = async (
+    payload: IControlNetPreprocess,
+  ): Promise<IControlNetImage | null> => {
+    const { inputImage, skipResponse, deliveryMethod = "async", ...rest } = payload;
     try {
-      return await asyncRetry(
-        async () => {
-          await this.ensureConnection();
-          const image = await this.uploadImage(inputImage);
-          if (!image?.imageUUID) return null;
+      const image = await this.uploadImage(inputImage);
+      if (!image?.imageUUID) return null;
 
-          const taskUUID = _taskUUID || customTaskUUID || getUUID();
-          const payload = {
-            inputImage: image.imageUUID,
-            taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
-            taskUUID,
-            preProcessorType,
-            ...evaluateNonTrue({ key: "height", value: height }),
-            ...evaluateNonTrue({ key: "width", value: width }),
-            ...evaluateNonTrue({ key: "outputType", value: outputType }),
-            ...evaluateNonTrue({ key: "outputFormat", value: outputFormat }),
-            ...evaluateNonTrue({ key: "includeCost", value: includeCost }),
-            ...evaluateNonTrue({
-              key: "highThresholdCanny",
-              value: highThresholdCanny,
-            }),
-            ...evaluateNonTrue({
-              key: "lowThresholdCanny",
-              value: lowThresholdCanny,
-            }),
-            ...evaluateNonTrue({
-              key: "includeHandsAndFaceOpenPose",
-              value: includeHandsAndFaceOpenPose,
-            }),
-            ...(outputQuality ? { outputQuality } : {}),
-          };
-
-          await this.send({
-            ...payload,
-          });
-          lis = this.globalListener({
-            taskUUID,
-          });
-
-          const guideImage = (await getIntervalWithPromise(
-            ({ resolve, reject }) => {
-              const uploadedImage = this.getSingleMessage({
-                taskUUID,
-              });
-
-              if (!uploadedImage) return;
-
-              if (uploadedImage?.error) {
-                reject(uploadedImage);
-                return true;
-              }
-
-              if (uploadedImage) {
-                // delete this._globalMessages[taskUUID];
-                resolve(uploadedImage);
-                return true;
-              }
-            },
-            {
-              debugKey: "unprocessed-image",
-              timeoutDuration: this._timeoutDuration,
-            },
-          )) as IControlNetImage;
-
-          lis.destroy();
-
-          this.insertAdditionalResponse({
-            response: guideImage,
-            payload: includePayload ? payload : undefined,
-            startTime: includeGenerationTime ? startTime : undefined,
-          });
-
-          return guideImage;
+      const request = await this.baseSingleRequest<IControlNetImage>({
+        payload: {
+          ...rest,
+          inputImage: image.imageUUID,
+          taskType: ETaskType.IMAGE_CONTROL_NET_PRE_PROCESS,
+          deliveryMethod,
         },
-        {
-          maxRetries: totalRetry,
-          callback: () => {
-            lis?.destroy();
-          },
-        },
-      );
+        debugKey: "unprocessed-image",
+      });
+
+      if (skipResponse) {
+        return request;
+      }
+
+      if (deliveryMethod === "async") {
+        const taskUUID = request?.taskUUID;
+        const results = await this.pollForAsyncResults<IControlNetImage & { status: string }>({
+          taskUUID,
+          dedupeKey: (response) => response.guideImageUUID,
+        });
+        return results[0] ?? null;
+      }
+
+      return request;
     } catch (e: any) {
       throw e;
     }
