@@ -6,10 +6,9 @@ import {
   GetWithPromiseCallBackType,
   IRequestImage,
 } from "./types";
+import { SDK_VERSION } from "./version";
 import { v4 as uuidv4, validate as validateUUID } from "uuid";
-import pkg from "../package.json";
-
-export const SDK_VERSION = pkg.version;
+export { SDK_VERSION } from "./version";
 
 export function buildSdkUrl(
   baseUrl: string,

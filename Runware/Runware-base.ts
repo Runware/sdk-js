@@ -1,6 +1,6 @@
 // @ts-ignore
 import { asyncRetry } from "./async-retry";
-import { RunwareLogger, createLogger } from "./logger";
+import { RunwareLogger, createLogger, type RunwareSentryLoader } from "./logger";
 import {
   EControlMode,
   IControlNet,
@@ -99,16 +99,19 @@ export class RunwareBase {
   ensureConnectionUUID: string | null = null;
   _logger: RunwareLogger;
 
-  constructor({
-    apiKey,
-    url = BASE_RUNWARE_URLS.PRODUCTION,
-    shouldReconnect = true,
-    globalMaxRetries = 2,
-    timeoutDuration = TIMEOUT_DURATION,
-    heartbeatInterval = 45000,
-    logging,
-    dryRun = false,
-  }: RunwareBaseType) {
+  constructor(
+    {
+      apiKey,
+      url = BASE_RUNWARE_URLS.PRODUCTION,
+      shouldReconnect = true,
+      globalMaxRetries = 2,
+      timeoutDuration = TIMEOUT_DURATION,
+      heartbeatInterval = 45000,
+      logging,
+      dryRun = false,
+    }: RunwareBaseType,
+    defaultSentryLoader?: RunwareSentryLoader,
+  ) {
     this._apiKey = apiKey;
     this._url = url;
     this._dryRun = dryRun;
@@ -121,7 +124,7 @@ export class RunwareBase {
       10000,
       Math.min(120000, heartbeatInterval),
     );
-    this._logger = createLogger(logging);
+    this._logger = createLogger(logging, defaultSentryLoader);
   }
 
   private getUniqueUUID(item: MediaUUID): string | undefined {

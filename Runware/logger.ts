@@ -4,12 +4,13 @@
  * Colored console output and optional lazy Sentry-backed telemetry for SDK
  * internals. Logging is disabled unless `logging.enabled` is true.
  *
- * When enabled, logs go to the console only by default. Opt in to remote
- * telemetry with `type: "telemetry"` (Runware org Sentry only) or
- * `type: "both"` (console + telemetry). Telemetry uses an isolated client that
- * never touches the host app's own Sentry. Error-severity events appear as
- * Sentry Issues; everything else is sent as structured logs. Buffered telemetry
- * is flushed on `runware.disconnect()` and on natural process exit.
+ * When enabled, logs go to the console by default. Passing Sentry options
+ * without an explicit `type` also enables Runware telemetry. You can opt in
+ * to remote telemetry with `type: "telemetry"` (Runware org Sentry only) or
+ * `type: "both"` (console + telemetry). Telemetry uses an isolated client
+ * that never touches the host app's own Sentry. Error-severity events appear
+ * as Sentry Issues; everything else is sent as structured logs. Buffered
+ * telemetry is flushed on `runware.disconnect()` and on natural process exit.
  *
  * Usage:
  *   const runware = new RunwareServer({
@@ -356,13 +357,6 @@ function getRuntime(runtime?: RunwareSentryRuntime): RunwareSentryRuntime {
     : "node";
 }
 
-async function defaultSentryLoader(
-  runtime: RunwareSentryRuntime,
-): Promise<unknown> {
-  if (runtime === "browser") return import("@sentry/browser");
-  return import("@sentry/node");
-}
-
 function isSentryClient(value: unknown): value is RunwareSentryClient {
   if (!isPlainRecord(value)) return false;
   return (
@@ -572,16 +566,24 @@ export class RunwareLogger {
   private sentryDisabled: Partial<Record<SentryTarget, boolean>> = {};
   private sentryFailureWarned: Partial<Record<SentryTarget, boolean>> = {};
   private exitFlushRegistered = false;
+  private defaultSentryLoader?: RunwareSentryLoader;
 
-  constructor(logging?: RunwareLoggingConfig | false) {
+  constructor(
+    logging?: RunwareLoggingConfig | false,
+    defaultSentryLoader?: RunwareSentryLoader,
+  ) {
     const config = logging || undefined;
     this.enabled = config?.enabled === true;
     this.level = config?.level ?? "info";
     this.targets = normalizeTargets(config?.type);
+    if (!config?.type && config?.sentry) {
+      this.targets.add("telemetry");
+    }
     this.events = config?.events ? new Set(config.events) : undefined;
     this.sampleRate = normalizeSampleRate(config?.sampleRate);
     this.sentry = config?.sentry;
     this.telemetrySentry = createRunwareTelemetrySentryOptions();
+    this.defaultSentryLoader = defaultSentryLoader;
 
     if (
       this.enabled &&
@@ -683,16 +685,29 @@ export class RunwareLogger {
     }
   }
 
+  private withDefaultSentryLoader(
+    sentry: RunwareSentryOptions,
+  ): RunwareSentryOptions {
+    if (sentry.client || sentry.loader || !this.defaultSentryLoader) {
+      return sentry;
+    }
+    return { ...sentry, loader: this.defaultSentryLoader };
+  }
+
   private getSentryOptions(
     target: SentryTarget,
   ): RunwareSentryOptions | undefined {
-    if (target === "sentry") return this.sentry;
+    if (target === "sentry") {
+      return this.sentry
+        ? this.withDefaultSentryLoader(this.sentry)
+        : undefined;
+    }
 
     // Telemetry always targets the Runware org DSN via its own isolated client.
     // We may reuse the customer's module loader/runtime (affects how the SDK is
     // imported), but never their `client` — that would redirect telemetry into
     // the customer's Sentry.
-    return {
+    return this.withDefaultSentryLoader({
       ...this.telemetrySentry,
       initOptions: {
         ...(this.sentry?.initOptions ?? {}),
@@ -700,7 +715,7 @@ export class RunwareLogger {
       },
       ...(this.sentry?.loader ? { loader: this.sentry.loader } : {}),
       ...(this.sentry?.runtime ? { runtime: this.sentry.runtime } : {}),
-    };
+    });
   }
 
   private async loadSentryEmitter(
@@ -730,7 +745,8 @@ export class RunwareLogger {
       }
 
       const runtime = getRuntime(sentry.runtime);
-      const loaded = await (sentry.loader ?? defaultSentryLoader)(runtime);
+      if (!sentry.loader) return null;
+      const loaded = await sentry.loader(runtime);
 
       const module = normalizeSentryModule(loaded);
       if (module) {
@@ -1150,7 +1166,8 @@ const NOOP_LOGGER = new RunwareLogger();
 
 export function createLogger(
   logging?: RunwareLoggingConfig | false,
+  defaultSentryLoader?: RunwareSentryLoader,
 ): RunwareLogger {
   if (!logging || logging.enabled !== true) return NOOP_LOGGER;
-  return new RunwareLogger(logging);
+  return new RunwareLogger(logging, defaultSentryLoader);
 }

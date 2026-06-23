@@ -3,7 +3,11 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   clean: true,
   dts: true,
-  entry: ["Runware/index.ts"],
+  entry: {
+    index: "Runware/index.ts",
+    "index.browser": "Runware/index.browser.ts",
+    "index.node": "Runware/index.node.ts",
+  },
   format: ["esm", "cjs"],
   sourcemap: true,
   minify: true,
