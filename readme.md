@@ -1,5 +1,8 @@
 # Runware Javascript & Typescript SDK
 
+> [!NOTE]
+> A new official SDK is available at [runware-typescript](https://github.com/runware/runware-typescript) (published as [`@runware/sdk`](https://www.npmjs.com/package/@runware/sdk)). It covers the full inference and utility surface with REST or WebSocket transports and gets all new features going forward. This library remains supported during the transition.
+
 > This SDK is used to run AI image generation with the Runware API, powered by the RunWare inference platform. With this SDK you can generate images with text-to-image and image-to-image with sub-second inference times. It also allows the use of an existing library of more than 150k models, including any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting, outpainting, ControlNets, and more. Visit the Runware site for [detailed feature breakdown](https://runware.ai/features/).
 
 ## Get API access
@@ -738,6 +741,10 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.3.2
+
+- Support `async` ControlNet Preprocess delivery
 
 ### - v1.3.1
 
