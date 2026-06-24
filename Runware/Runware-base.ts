@@ -1,6 +1,6 @@
 // @ts-ignore
 import { asyncRetry } from "./async-retry";
-import { RunwareLogger, createLogger } from "./logger";
+import { RunwareLogger, createLogger, type RunwareSentryLoader } from "./logger";
 import {
   EControlMode,
   IControlNet,
@@ -99,16 +99,19 @@ export class RunwareBase {
   ensureConnectionUUID: string | null = null;
   _logger: RunwareLogger;
 
-  constructor({
-    apiKey,
-    url = BASE_RUNWARE_URLS.PRODUCTION,
-    shouldReconnect = true,
-    globalMaxRetries = 2,
-    timeoutDuration = TIMEOUT_DURATION,
-    heartbeatInterval = 45000,
-    enableLogging = false,
-    dryRun = false,
-  }: RunwareBaseType) {
+  constructor(
+    {
+      apiKey,
+      url = BASE_RUNWARE_URLS.PRODUCTION,
+      shouldReconnect = true,
+      globalMaxRetries = 2,
+      timeoutDuration = TIMEOUT_DURATION,
+      heartbeatInterval = 45000,
+      logging,
+      dryRun = false,
+    }: RunwareBaseType,
+    defaultSentryLoader?: RunwareSentryLoader,
+  ) {
     this._apiKey = apiKey;
     this._url = url;
     this._dryRun = dryRun;
@@ -117,8 +120,11 @@ export class RunwareBase {
     this._globalMaxRetries = globalMaxRetries;
     this._timeoutDuration = timeoutDuration;
     // Clamp heartbeat interval between 10s and 120s
-    this._heartbeatInterval = Math.max(10000, Math.min(120000, heartbeatInterval));
-    this._logger = createLogger(enableLogging);
+    this._heartbeatInterval = Math.max(
+      10000,
+      Math.min(120000, heartbeatInterval),
+    );
+    this._logger = createLogger(logging, defaultSentryLoader);
   }
 
   private getUniqueUUID(item: MediaUUID): string | undefined {
@@ -285,7 +291,7 @@ export class RunwareBase {
 
   protected startHeartbeat() {
     this.stopHeartbeat();
-    this._logger.heartbeatStarted(this._heartbeatInterval);
+    this._logger.heartbeatStarted(this._heartbeatInterval, this._maxMissedPongs);
     this._heartbeatIntervalId = setInterval(() => {
       if (!this.isWebsocketReadyState()) {
         this.stopHeartbeat();
@@ -450,6 +456,15 @@ export class RunwareBase {
         this._logger.error("Failed to parse WebSocket message", err);
         return;
       }
+      const messageData = Array.isArray(data?.data)
+        ? data.data[0]
+        : Array.isArray(data)
+          ? data[0]
+          : data;
+      this._logger.messageReceived(
+        messageData?.taskType,
+        messageData?.taskUUID,
+      );
       if (this.handlePongMessage(data)) return;
       for (const lis of this._listeners) {
         const result = (lis as any)?.listener?.(data);
@@ -857,6 +872,15 @@ export class RunwareBase {
         },
       );
     } catch (e) {
+      // Report inference failures to telemetry. Without this, requestImages
+      // errors never reach Sentry. The code + model AIR are folded into the
+      // message so distinct failures become distinct Sentry issues.
+      const err = e as { error?: { code?: string }; code?: string };
+      const code = err?.error?.code ?? err?.code ?? "unknown";
+      this._logger.inferenceError(code, String(model ?? "unknown"), {
+        taskUUID: taskUUIDs[taskUUIDs.length - 1] ?? "unknown",
+        error: err?.error ?? e,
+      });
       if (retryCount >= totalRetry) {
         return this.handleIncompleteImages({ taskUUIDs, error: e });
       }
@@ -2026,6 +2050,8 @@ export class RunwareBase {
     this.stopHeartbeat();
     this._ws?.terminate?.();
     this._ws?.close?.(1000, "", { keepClosed: true });
+    // Deliver any buffered telemetry before the caller exits the process.
+    await this._logger.flush();
   };
 
   private connected = () =>

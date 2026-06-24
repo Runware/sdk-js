@@ -750,6 +750,7 @@ export type TImageMaskingResponse = {
 
 - Add WebSocket health checks: half-open ("zombie") connections are now detected via heartbeat ping/pong and the socket is reconnected before sending, so requests are no longer lost into a dead connection.
 - Add `dryRun` option: when enabled, the SDK connects in dry-run mode (`dryRun=1`) so requests are validated by the server without executing inference.
+- Introduce optional logging & telemetry via `logging: { enabled, type, level }`: colored console output plus Sentry-backed telemetry. Errors surface as Sentry issues, lifecycle events as structured logs, and no Sentry setup is required by the consumer.
 
 ### - v1.3.0
 

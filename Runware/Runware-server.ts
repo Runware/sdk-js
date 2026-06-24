@@ -3,6 +3,7 @@
 import WebSocket from "ws";
 
 import { RunwareBase } from "./Runware-base";
+import { loadNodeSentry } from "./sentry-node";
 import { ETaskType, RunwareBaseType, SdkType } from "./types";
 import { buildSdkUrl, SDK_VERSION } from "./utils";
 
@@ -15,7 +16,7 @@ export class RunwareServer extends RunwareBase {
   private _connecting: boolean = false;
 
   constructor(props: RunwareBaseType) {
-    super(props);
+    super(props, loadNodeSentry);
 
     this._sdkType = SdkType.SERVER;
     this.connect();
@@ -114,6 +115,16 @@ export class RunwareServer extends RunwareBase {
         this._logger.error("Failed to parse WebSocket message", err);
         return;
       }
+
+      const messageData = Array.isArray(m?.data)
+        ? m.data[0]
+        : Array.isArray(m)
+          ? m[0]
+          : m;
+      this._logger.messageReceived(
+        messageData?.taskType,
+        messageData?.taskUUID,
+      );
 
       if (this.handlePongMessage(m)) return;
 

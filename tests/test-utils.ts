@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { RunwareServer } from "../Runware/Runware-server";
+import type { RunwareLoggingConfig } from "../Runware/logger";
 
 dotenv.config();
 
@@ -13,17 +14,17 @@ if (!API_KEY) {
 /**
  * Creates a real RunwareServer connected to the API via WebSocket.
  * Uses .env credentials — no mocks, no fake servers.
- * Pass enableLogging: true to see detailed SDK telemetry in the console.
+ * Pass logging: { enabled: true } to see detailed SDK telemetry in the console.
  */
 export const createRealServer = async (
-  options?: { enableLogging?: boolean },
+  options?: { logging?: RunwareLoggingConfig },
 ): Promise<RunwareServer> => {
   const server = await RunwareServer.initialize({
     apiKey: API_KEY,
     url: URL,
     shouldReconnect: false,
     heartbeatInterval: 30000,
-    enableLogging: options?.enableLogging ?? true,
+    logging: options?.logging ?? { enabled: true },
   });
   return server as RunwareServer;
 };
