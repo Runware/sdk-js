@@ -126,7 +126,7 @@ export class RunwareServer extends RunwareBase {
     });
   }
 
-  protected send = async (msg: Object) => {
+  protected send = async (msg: Record<string, unknown>) => {
     const taskType = (msg as { taskType?: string })?.taskType ?? "unknown";
     const taskUUID = (msg as { taskUUID?: string })?.taskUUID;
 
@@ -137,7 +137,7 @@ export class RunwareServer extends RunwareBase {
       await this.ensureConnection();
     }
     this._logger.messageSent(taskType, taskUUID);
-    this._ws.send(JSON.stringify([msg]));
+    this._ws.send(this.serializeWebsocketMessage(msg));
   };
 
   protected handleClose() {

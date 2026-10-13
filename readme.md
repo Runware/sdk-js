@@ -1,9 +1,58 @@
 # Runware Javascript & Typescript SDK
 
-> [!NOTE]
-> A new official SDK is available at [runware-typescript](https://github.com/runware/runware-typescript) (published as [`@runware/sdk`](https://www.npmjs.com/package/@runware/sdk)). It covers the full inference and utility surface with REST or WebSocket transports and gets all new features going forward. This library remains supported during the transition.
+> [!CAUTION]
+> **`@runware/sdk-js` is deprecated and reaches end of life on 2027-01-31.** v1.3.3 is the final release. The package receives no further features, fixes or security updates after that date, and this repository is archived.
+> Migrate to the new official SDK, [`@runware/sdk`](https://www.npmjs.com/package/@runware/sdk) ([runware-typescript](https://github.com/runware/runware-typescript)). It covers the full inference and utility surface with REST or WebSocket transports and gets all new features. See [Migrating to @runware/sdk](#migrating-to-runwaresdk) below.
 
 > This SDK is used to run AI image generation with the Runware API, powered by the RunWare inference platform. With this SDK you can generate images with text-to-image and image-to-image with sub-second inference times. It also allows the use of an existing library of more than 150k models, including any model or LoRA from the CivitAI gallery. The API also supports upscaling, background removal, inpainting, outpainting, ControlNets, and more. Visit the Runware site for [detailed feature breakdown](https://runware.ai/features/).
+
+## Migrating to @runware/sdk
+
+The new SDK talks to the same Runware API with the same task parameters, so most request payloads carry over unchanged. What changes is the client surface: one `createClient()` and one `run()` method instead of a method per task. Full reference: [TypeScript SDK docs](https://runware.ai/docs/tools/typescript).
+
+```sh
+npm uninstall @runware/sdk-js
+npm install @runware/sdk
+```
+
+```js
+// Before: @runware/sdk-js
+import { Runware } from "@runware/sdk-js";
+
+const runware = new Runware({ apiKey: "API_KEY" });
+const images = await runware.requestImages({
+  model: "runware:101@1",
+  positivePrompt: "A serene mountain landscape at sunset",
+  width: 1024,
+  height: 1024,
+});
+
+// After: @runware/sdk
+import { createClient } from "@runware/sdk";
+
+const client = await createClient({ apiKey: "API_KEY", transport: "websocket" }); // or "rest"
+await client.connect(); // WebSocket only. REST needs no connect().
+const images = await client.run({
+  model: "runware:101@1",
+  positivePrompt: "A serene mountain landscape at sunset",
+  width: 1024,
+  height: 1024,
+});
+await client.disconnect();
+```
+
+| `@runware/sdk-js` | `@runware/sdk` |
+| --- | --- |
+| `new Runware({ apiKey })`, `Runware.initialize()`, `RunwareServer` | `await createClient({ apiKey, transport: "websocket" \| "rest" })` |
+| `ensureConnection()` / `disconnect()` | `client.connect()` / `client.disconnect()` |
+| `requestImages()`, `videoInference()`, `audioInference()`, `textInference()`, `threeDInference()`, `photoMaker()` | `client.run({ model, ...params })`. The task type is inferred from the model identifier. |
+| `upscaleGan()`, `removeImageBackground()`, `requestImageToText()`, `enhancePrompt()`, `controlNetPreProcess()`, `imageMasking()`, `vectorize()`, `training()` | `client.run({ taskType, ...params })` with the API task type this SDK sent on the wire (`upscale`, `removeBackground`, `caption`, `promptEnhance`, `imageControlNetPreProcess`, `imageMasking`, `vectorize`, `training`). |
+| `imageUpload()`, `mediaStorage()` | `client.mediaStorage({ operation: "upload", media })` |
+| `modelSearch()`, `modelUpload()`, `getTaskDetails()`, `getResponse()` | Same names on `client`. |
+| `skipResponse` / `deliveryMethod: "async"` | Async delivery is the default and the SDK polls for the result. Pass `deliveryMethod: "sync"` for fast tasks. |
+| Per-request `retry` / `timeoutDuration` | Second argument to `run()`: `{ timeout, signal }` with an `AbortController`. |
+| `onPartialImages` | `onResult(item)` in the second argument to `run()`. |
+| Local file path as an input | Wrap it with `fileToBase64()` or `fileToDataURI()` from `@runware/sdk`. The new SDK never reads the filesystem on its own. |
 
 ## Get API access
 
@@ -741,6 +790,13 @@ export type TImageMaskingResponse = {
 [**Demo**](https://codesandbox.io/s/picfinder-api-implementation-9tf85s?file=/src/App.tsx).
 
 ## Changelog
+
+### - v1.3.3 (final release)
+
+- `@runware/sdk-js` is deprecated in favour of [`@runware/sdk`](https://www.npmjs.com/package/@runware/sdk). End of life: 2027-01-31. See [Migrating to @runware/sdk](#migrating-to-runwaresdk).
+- Security: update `ws` to 8.21.3 and `uuid` to 11.x (the last `uuid` line that ships a CommonJS build).
+- Prevent SDK-only `skipResponse` and `additionalProperties` parameters from being sent in WebSocket payloads.
+- Build before publish via `prepublishOnly`.
 
 ### - v1.3.2
 
