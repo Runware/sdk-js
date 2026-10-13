@@ -46,10 +46,10 @@ await client.disconnect();
 | `new Runware({ apiKey })`, `Runware.initialize()`, `RunwareServer` | `await createClient({ apiKey, transport: "websocket" \| "rest" })` |
 | `ensureConnection()` / `disconnect()` | `client.connect()` / `client.disconnect()` |
 | `requestImages()`, `videoInference()`, `audioInference()`, `textInference()`, `threeDInference()`, `photoMaker()` | `client.run({ model, ...params })`. The task type is inferred from the model identifier. |
-| `upscaleGan()`, `removeImageBackground()`, `requestImageToText()`, `enhancePrompt()`, `controlNetPreProcess()`, `imageMasking()`, `vectorize()`, `training()` | `client.run({ taskType, ...params })` with the API task type this SDK sent on the wire (`upscale`, `removeBackground`, `caption`, `promptEnhance`, `imageControlNetPreProcess`, `imageMasking`, `vectorize`, `training`). |
+| `upscaleGan()`, `removeImageBackground()`, `requestImageToText()`, `enhancePrompt()`, `controlNetPreProcess()`, `imageMasking()`, `vectorize()`, `training()` | `client.run({ taskType, ...params })` with the API task type this SDK sent on the wire (`upscale`, `removeBackground`, `caption`, `promptEnhance`, `controlNetPreprocess`, `imageMasking`, `vectorize`, `training`). For ControlNet preprocessing, pass `model` and `inputs: { image }`, e.g. `client.run({ taskType: "controlNetPreprocess", model, inputs: { image } })`. |
 | `imageUpload()`, `mediaStorage()` | `client.mediaStorage({ operation: "upload", media })` |
 | `modelSearch()`, `modelUpload()`, `getTaskDetails()`, `getResponse()` | Same names on `client`. |
-| `skipResponse` / `deliveryMethod: "async"` | Async delivery is the default and the SDK polls for the result. Pass `deliveryMethod: "sync"` for fast tasks. |
+| `skipResponse` | No direct equivalent: `run()` resolves after the final result, not after the submission acknowledgement/task UUID. Async delivery is the default and the SDK polls for the result; pass `deliveryMethod: "sync"` for fast tasks. |
 | Per-request `retry` / `timeoutDuration` | Second argument to `run()`: `{ timeout, signal }` with an `AbortController`. |
 | `onPartialImages` | `onResult(item)` in the second argument to `run()`. |
 | Local file path as an input | Wrap it with `fileToBase64()` or `fileToDataURI()` from `@runware/sdk`. The new SDK never reads the filesystem on its own. |
