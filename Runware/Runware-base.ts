@@ -472,7 +472,7 @@ export class RunwareBase {
   }
 
   // We moving to an array format, it make sense to consolidate all request to an array here
-  protected send = async (msg: Object) => {
+  protected send = async (msg: Record<string, unknown>) => {
     const taskType = (msg as { taskType?: string })?.taskType ?? "unknown";
     const taskUUID = (msg as { taskUUID?: string })?.taskUUID;
 
@@ -483,8 +483,18 @@ export class RunwareBase {
       await this.ensureConnection();
     }
     this._logger.messageSent(taskType, taskUUID);
-    this._ws.send(JSON.stringify([msg]));
+    this._ws.send(this.serializeWebsocketMessage(msg));
   };
+
+  protected serializeWebsocketMessage(msg: Record<string, unknown>) {
+    const {
+      skipResponse: _skipResponse,
+      additionalProperties: _additionalProperties,
+      ...websocketMessage
+    } = msg;
+
+    return JSON.stringify([websocketMessage]);
+  }
 
   private destroy(lis: any) {
     removeFromAray(this._listeners, lis);
